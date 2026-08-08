@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Gradle dependencies (reads gradle/libs.versions.toml and the build.gradle.kts files directly -
+  # no manual per-library setup needed).
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Dependabot itself needs to know to watch for updates to any GitHub Actions workflows added later.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
