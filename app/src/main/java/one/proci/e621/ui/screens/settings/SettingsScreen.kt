@@ -26,7 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,7 +87,6 @@ fun SettingsScreen(
     onImportBlacklist: suspend () -> Result<String>,
     onPushBlacklist: suspend (String) -> Result<Unit>,
     onSetAccentColor: (Int?) -> Unit,
-    onResetEula: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var username by remember(settings.username) { mutableStateOf(settings.username) }
@@ -266,10 +264,6 @@ fun SettingsScreen(
                 }
                 OutlinedButton(onClick = { showEulaDialog = true }) {
                     Text(stringResource(R.string.eula_read_again))
-                }
-                // TODO: remove - temporary testing-only escape hatch for the disagree/re-prompt flow.
-                OutlinedButton(onClick = onResetEula, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                    Text("[Debug] Reset EULA acceptance")
                 }
             }
 

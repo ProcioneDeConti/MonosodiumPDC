@@ -262,7 +262,6 @@ fun E621NavGraph() {
                 onImportBlacklist = settingsViewModel::importBlacklistFromE621,
                 onPushBlacklist = settingsViewModel::pushBlacklistToE621,
                 onSetAccentColor = settingsViewModel::setAccentColor,
-                onResetEula = settingsViewModel::resetEulaAcceptance,
             )
         }
         composable(Routes.MESSAGES) {

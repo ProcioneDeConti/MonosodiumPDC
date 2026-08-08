@@ -44,12 +44,6 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.updateAccentColor(color) }
     }
 
-    // TODO: remove once the disagree/re-prompt flow has been verified - testing-only escape hatch,
-    // there's deliberately no other way to un-accept the EULA from within the app.
-    fun resetEulaAcceptance() {
-        viewModelScope.launch { userPreferences.setEulaAccepted(null) }
-    }
-
     /** Pulls the blacklist saved on the user's e621 account and persists it locally. */
     suspend fun importBlacklistFromE621(): Result<String> {
         _isSyncing.value = true
