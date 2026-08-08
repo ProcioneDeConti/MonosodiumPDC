@@ -14,3 +14,7 @@
 .cxx
 local.properties
 .kotlin
+
+# Release signing - never commit these; back them up somewhere safe outside the repo instead.
+keystore.properties
+/keystore/
