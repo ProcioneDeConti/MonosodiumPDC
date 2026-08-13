@@ -1,6 +1,7 @@
 package one.proci.e621.ui.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,11 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,6 +36,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +58,10 @@ fun ProfileScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onOpenPost: (Long) -> Unit,
+    onOpenPosts: (String) -> Unit,
+    onOpenFavorites: (String) -> Unit,
+    onOpenComments: (Long, String) -> Unit,
+    onOpenFeedback: (Long, String) -> Unit,
     avatarRepository: AvatarRepository,
     modifier: Modifier = Modifier,
 ) {
@@ -89,6 +103,10 @@ fun ProfileScreen(
                 profile = state.profile,
                 avatarRepository = avatarRepository,
                 onOpenPost = onOpenPost,
+                onOpenPosts = onOpenPosts,
+                onOpenFavorites = onOpenFavorites,
+                onOpenComments = onOpenComments,
+                onOpenFeedback = onOpenFeedback,
                 modifier = Modifier.padding(padding),
             )
         }
@@ -100,6 +118,10 @@ private fun ProfileContent(
     profile: UserProfile,
     avatarRepository: AvatarRepository,
     onOpenPost: (Long) -> Unit,
+    onOpenPosts: (String) -> Unit,
+    onOpenFavorites: (String) -> Unit,
+    onOpenComments: (Long, String) -> Unit,
+    onOpenFeedback: (Long, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -110,6 +132,31 @@ private fun ProfileContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ProfileHeader(profile, avatarRepository, onOpenPost)
+
+        ProfileSection(stringResource(R.string.profile_section_activity)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ActivityRow(
+                    icon = Icons.Filled.PhotoLibrary,
+                    label = stringResource(R.string.profile_action_posts),
+                    onClick = { onOpenPosts(profile.name) },
+                )
+                ActivityRow(
+                    icon = Icons.Filled.Favorite,
+                    label = stringResource(R.string.profile_action_favorites),
+                    onClick = { onOpenFavorites(profile.name) },
+                )
+                ActivityRow(
+                    icon = Icons.AutoMirrored.Filled.Comment,
+                    label = stringResource(R.string.profile_action_comments),
+                    onClick = { onOpenComments(profile.id, profile.name) },
+                )
+                ActivityRow(
+                    icon = Icons.Filled.Star,
+                    label = stringResource(R.string.profile_action_records),
+                    onClick = { onOpenFeedback(profile.id, profile.name) },
+                )
+            }
+        }
 
         val stats = listOfNotNull(
             profile.favoriteCount?.let { stringResource(R.string.profile_stat_favorites) to it },
@@ -157,33 +204,42 @@ private fun ProfileContent(
 
 @Composable
 private fun ProfileHeader(profile: UserProfile, avatarRepository: AvatarRepository, onOpenPost: (Long) -> Unit) {
+    val gradient = Brush.verticalGradient(
+        listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.surfaceVariant),
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+            .background(gradient, RoundedCornerShape(7.dp))
             .padding(vertical = 28.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val avatarId = profile.avatarId
-        UserAvatar(
-            userId = profile.id,
-            name = profile.name,
-            avatarRepository = avatarRepository,
-            size = 120.dp,
-            modifier = if (avatarId != null) Modifier.clickable { onOpenPost(avatarId) } else Modifier,
-        )
+        Box(
+            modifier = Modifier
+                .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .padding(4.dp),
+        ) {
+            UserAvatar(
+                userId = profile.id,
+                name = profile.name,
+                avatarRepository = avatarRepository,
+                size = 112.dp,
+                modifier = if (avatarId != null) Modifier.clickable { onOpenPost(avatarId) } else Modifier,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         Text(
             profile.name,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         profile.levelLabel()?.let { label ->
             Spacer(Modifier.height(6.dp))
             Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(7.dp))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
@@ -206,15 +262,43 @@ private fun ProfileHeader(profile: UserProfile, avatarRepository: AvatarReposito
 }
 
 @Composable
+private fun ActivityRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
+        }
+        Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun ProfileSection(title: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         content()
     }
 }
@@ -235,7 +319,7 @@ private fun StatsGrid(stats: List<Pair<String, Int>>) {
 private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
             .padding(vertical = 14.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

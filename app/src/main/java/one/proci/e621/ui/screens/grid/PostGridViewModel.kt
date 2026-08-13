@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.UserPreferences
+import one.proci.e621.data.util.GridThumbnailSize
 
 data class PostGridUiState(
     val query: String = "",
@@ -24,6 +25,7 @@ data class PostGridUiState(
     val error: String? = null,
     val blacklistDisabled: Boolean = false,
     val username: String = "",
+    val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
 )
 
 class PostGridViewModel(
@@ -41,6 +43,7 @@ class PostGridViewModel(
         val isLoadingMore: Boolean = false,
         val endReached: Boolean = false,
         val error: String? = null,
+        val nextPage: Int = 2,
     )
 
     private val internalState = MutableStateFlow(InternalState(query = initialQuery))
@@ -62,6 +65,7 @@ class PostGridViewModel(
             error = s.error,
             blacklistDisabled = blacklistDisabled,
             username = settings.username,
+            gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PostGridUiState())
 
@@ -79,6 +83,10 @@ class PostGridViewModel(
         userPreferences.setBlacklistDisabled(disabled)
     }
 
+    fun setGridThumbnailSizeDp(dp: Int) {
+        viewModelScope.launch { userPreferences.setGridThumbnailSizeDp(dp) }
+    }
+
     /** Patches a single post (after voting/favoriting) so the grid/pager reflect the change without a refetch. */
     fun updatePost(updated: Post) {
         internalState.update { s ->
@@ -91,7 +99,7 @@ class PostGridViewModel(
         val query = internalState.value.query
         loadJob = viewModelScope.launch {
             internalState.update {
-                it.copy(isRefreshing = true, error = null, activeQuery = query, rawPosts = emptyList(), endReached = false)
+                it.copy(isRefreshing = true, error = null, activeQuery = query, rawPosts = emptyList(), endReached = false, nextPage = 2)
             }
             runCatching { repository.fetchPosts(tags = query) }
                 .onSuccess { raw ->
@@ -107,32 +115,52 @@ class PostGridViewModel(
      * Pages forward using the id of the last post actually fetched (not the last visible one),
      * so blacklisted posts don't throw off pagination. If an entire fetched page ends up hidden,
      * keeps fetching (bounded) until something becomes visible or the feed truly ends.
+     *
+     * A custom `order:` (e.g. order:score_asc) sorts results by something other than id, so the
+     * id-based cursor doesn't bound the next page correctly and can re-return already-seen posts -
+     * plain page-number pagination is used for those queries instead. Either way, results are
+     * de-duplicated by id before being appended, since Compose's grid keys items by post id and
+     * throws on a duplicate key.
      */
     fun loadMore() {
         val current = internalState.value
         if (current.isLoadingMore || current.isRefreshing || current.endReached) return
+        val useCustomOrder = current.activeQuery.contains("order:", ignoreCase = true)
         var cursor = current.rawPosts.lastOrNull()?.id ?: return
+        var pageNumber = current.nextPage
         loadJob = viewModelScope.launch {
             internalState.update { it.copy(isLoadingMore = true) }
             val settings = userPreferences.settingsState.value
             val blacklistDisabled = userPreferences.blacklistDisabled.value
+            val seenIds = current.rawPosts.mapTo(mutableSetOf()) { it.id }
             val accumulated = mutableListOf<Post>()
             var reachedEnd = false
             var attempts = 0
             try {
                 while (attempts < 5) {
                     attempts++
-                    val page = repository.fetchPosts(tags = current.activeQuery, beforeId = cursor)
+                    val page = if (useCustomOrder) {
+                        repository.fetchPosts(tags = current.activeQuery, pageNumber = pageNumber)
+                    } else {
+                        repository.fetchPosts(tags = current.activeQuery, beforeId = cursor)
+                    }
                     if (page.isEmpty()) {
                         reachedEnd = true
                         break
                     }
+                    pageNumber++
                     cursor = page.last().id
-                    accumulated += page
-                    if (blacklistDisabled || page.any { !settings.isBlacklisted(it) }) break
+                    val newPosts = page.filter { seenIds.add(it.id) }
+                    accumulated += newPosts
+                    if (blacklistDisabled || newPosts.any { !settings.isBlacklisted(it) }) break
                 }
                 internalState.update {
-                    it.copy(rawPosts = it.rawPosts + accumulated, isLoadingMore = false, endReached = reachedEnd)
+                    it.copy(
+                        rawPosts = it.rawPosts + accumulated,
+                        isLoadingMore = false,
+                        endReached = reachedEnd,
+                        nextPage = pageNumber,
+                    )
                 }
             } catch (e: Exception) {
                 internalState.update { it.copy(isLoadingMore = false, error = e.messageOrDefault()) }

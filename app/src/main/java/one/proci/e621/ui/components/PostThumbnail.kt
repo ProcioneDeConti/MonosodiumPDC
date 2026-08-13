@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import one.proci.e621.data.model.Post
+import one.proci.e621.data.util.formatCount
 import one.proci.e621.ui.theme.FavoriteGold
 import one.proci.e621.ui.theme.RatingExplicit
 import one.proci.e621.ui.theme.RatingQuestionable
@@ -44,7 +45,7 @@ fun PostThumbnail(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier
     Box(
         modifier = modifier
             .aspectRatio(aspect.coerceIn(0.5f, 2f))
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(7.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick),
     ) {
@@ -66,7 +67,7 @@ fun PostThumbnail(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
                     .size(20.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(7.dp))
                     .background(Color.Black.copy(alpha = 0.55f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -100,7 +101,7 @@ private fun InfoDock(post: Post, modifier: Modifier = Modifier) {
     ) {
         RatingChip(rating = post.rating)
         Text(
-            text = "Score: ${formatScore(post.score.total)}",
+            text = "Score: ${formatCount(post.score.total)}",
             color = Color.White,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
@@ -122,14 +123,6 @@ private fun InfoDock(post: Post, modifier: Modifier = Modifier) {
     }
 }
 
-/** Below 1000, the exact score; at or above, one decimal place + "K" (e.g. "1.1K", "-3.5K"). */
-private fun formatScore(score: Int): String {
-    val magnitude = kotlin.math.abs(score)
-    if (magnitude < 1000) return score.toString()
-    val formatted = "%.1fK".format(magnitude / 1000.0)
-    return if (score < 0) "-$formatted" else formatted
-}
-
 @Composable
 private fun RatingChip(rating: String) {
     val (color, label) = when (rating) {
@@ -139,9 +132,9 @@ private fun RatingChip(rating: String) {
     }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(2.dp))
             .background(color.copy(alpha = 0.85f))
-            .padding(horizontal = 5.dp, vertical = 1.dp),
+            .padding(horizontal = 4.dp, vertical = 3.dp),
     ) {
         Text(
             text = label,

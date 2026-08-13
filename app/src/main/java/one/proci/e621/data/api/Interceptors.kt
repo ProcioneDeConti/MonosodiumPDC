@@ -6,6 +6,23 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import one.proci.e621.data.settings.UserSettings
 
+/**
+ * e621 and e6AI (e6ai.net) share the same relative API paths (same underlying e621ng software) -
+ * this just swaps the request's host per-call based on which site is currently active, so a
+ * single Retrofit/OkHttp client (built once, against e621's base URL) transparently serves both.
+ */
+class SiteInterceptor(private val settings: StateFlow<UserSettings>) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val original = chain.request()
+        val host = settings.value.site.apiHost
+        if (original.url.host == host) return chain.proceed(original)
+        val request = original.newBuilder()
+            .url(original.url.newBuilder().host(host).build())
+            .build()
+        return chain.proceed(request)
+    }
+}
+
 /** e621 blocks requests with generic/default User-Agents (403), so every request must identify the app. */
 class UserAgentInterceptor(private val settings: StateFlow<UserSettings>) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {

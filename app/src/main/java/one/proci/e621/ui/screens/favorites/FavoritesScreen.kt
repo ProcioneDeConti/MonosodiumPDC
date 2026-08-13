@@ -38,6 +38,7 @@ fun FavoritesScreen(
     onPostClick: (index: Int) -> Unit,
     onOpenSettings: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
+    onThumbnailSizeChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -85,6 +86,8 @@ fun FavoritesScreen(
                 onPostClick = onPostClick,
                 blacklistDisabled = state.blacklistDisabled,
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
+                thumbnailSizeDp = state.gridThumbnailSizeDp,
+                onThumbnailSizeChange = onThumbnailSizeChange,
                 modifier = Modifier.padding(padding),
             )
         }

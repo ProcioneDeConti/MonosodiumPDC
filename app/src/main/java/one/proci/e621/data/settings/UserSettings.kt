@@ -2,10 +2,16 @@ package one.proci.e621.data.settings
 
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.model.Rating
+import one.proci.e621.data.util.GridThumbnailSize
+import one.proci.e621.data.util.ImageCacheLimits
 
 data class UserSettings(
-    val username: String = "",
-    val apiKey: String = "",
+    /** Which site is currently active - e621 or e6AI (e6ai.net). Each keeps its own separate login, below. */
+    val useE6Ai: Boolean = false,
+    val e621Username: String = "",
+    val e621ApiKey: String = "",
+    val e6aiUsername: String = "",
+    val e6aiApiKey: String = "",
     val enabledRatings: Set<Rating> = setOf(Rating.SAFE, Rating.QUESTIONABLE, Rating.EXPLICIT),
     /** While off, the app is locked to safe-rated content regardless of [enabledRatings]. */
     val adultModeEnabled: Boolean = false,
@@ -14,6 +20,10 @@ data class UserSettings(
     val accentColor: Int? = null,
     /** The hash (see [one.proci.e621.data.util.eulaHash]) of whichever EULA text the user last agreed to; null means never agreed. */
     val eulaAcceptedHash: String? = null,
+    /** Max on-disk size, in MB, for cached post images/thumbnails. See [one.proci.e621.data.util.ImageCacheLimits]. */
+    val imageCacheLimitMb: Int = ImageCacheLimits.DEFAULT_MB,
+    /** Min adaptive cell width, in dp, for post grid thumbnails - user-adjustable via pinch/spread. See [GridThumbnailSize]. */
+    val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     /**
      * False only for the placeholder instance DataStore hasn't finished its first real read yet -
      * every value that actually comes out of [UserPreferences.settingsFlow] sets this true. Exists
@@ -23,16 +33,22 @@ data class UserSettings(
      */
     val isLoaded: Boolean = false,
 ) {
+    val site: Site get() = if (useE6Ai) Site.E6AI else Site.E621
+
+    /** The active site's credentials - e621 and e6AI are separate accounts, so switching sites swaps these. */
+    val username: String get() = if (useE6Ai) e6aiUsername else e621Username
+    val apiKey: String get() = if (useE6Ai) e6aiApiKey else e621ApiKey
+
     val isAuthenticated: Boolean get() = username.isNotBlank() && apiKey.isNotBlank()
 
     /**
-     * e621 requires a descriptive User-Agent identifying the app and a way to contact the
+     * e621/e6AI require a descriptive User-Agent identifying the app and a way to contact the
      * developer/user; generic client User-Agents get blocked with 403. See https://e621.net/help/api
      */
     val userAgent: String
         get() {
             val who = username.ifBlank { "anonymous" }
-            return "e621ForAndroid/1.0 (by $who on e621)"
+            return "e621ForAndroid/1.0 (by $who on ${site.apiHost})"
         }
 
     /**

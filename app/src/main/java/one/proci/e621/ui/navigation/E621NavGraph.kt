@@ -26,6 +26,8 @@ import one.proci.e621.ui.screens.detail.PostByIdScreen
 import one.proci.e621.ui.screens.detail.PostDetailScreen
 import one.proci.e621.ui.screens.favorites.FavoritesScreen
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
+import one.proci.e621.ui.screens.feedback.UserFeedbackScreen
+import one.proci.e621.ui.screens.feedback.UserFeedbackViewModel
 import one.proci.e621.ui.screens.forum.ForumScreen
 import one.proci.e621.ui.screens.forum.ForumTopicScreen
 import one.proci.e621.ui.screens.forum.ForumTopicViewModel
@@ -42,6 +44,8 @@ import one.proci.e621.ui.screens.savedsearches.SavedSearchesScreen
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsScreen
 import one.proci.e621.ui.screens.settings.SettingsViewModel
+import one.proci.e621.ui.screens.usercomments.UserCommentsScreen
+import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
 
 private object Routes {
     const val SEARCH = "search/{id}/{query}"
@@ -56,6 +60,8 @@ private object Routes {
     const val SAVED_SEARCHES = "saved_searches/{query}"
     const val PROFILE = "profile?id={id}"
     const val POST_DETAIL = "post_detail/{postId}"
+    const val USER_FEEDBACK = "user_feedback/{id}/{username}"
+    const val USER_COMMENTS = "user_comments/{id}/{username}"
 
     fun search(id: Int, query: String) = "search/$id/${Uri.encode(query)}"
     fun detail(source: String, searchId: Int, index: Int) = "detail/$source/$searchId/$index"
@@ -67,6 +73,8 @@ private object Routes {
     /** Null [id] means "the signed-in user's own profile" - encoded as -1, since Nav route args can't be nullable. */
     fun profile(id: Long? = null) = "profile?id=${id ?: -1L}"
     fun postDetail(postId: Long) = "post_detail/$postId"
+    fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
+    fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
 }
 
 private const val SOURCE_SEARCH = "search"
@@ -79,6 +87,10 @@ fun E621NavGraph() {
     val app = context.applicationContext as E621Application
     val factory = remember { AppViewModelFactory(app) }
     val coroutineScope = rememberCoroutineScope()
+    // Which site (e621 or e6AI) is currently active - read here rather than per-screen so
+    // "open in browser"/"share post link" always point at the right domain.
+    val userSettings by app.userPreferences.settingsState.collectAsStateWithLifecycle()
+    val activeSite = userSettings.site
 
     val navController = rememberNavController()
     // Favorites, Settings, Messages, Forum, Saved Searches, and Notifications are all hoisted
@@ -170,6 +182,7 @@ fun E621NavGraph() {
                 onOpenSavedSearches = { currentQuery -> navController.navigate(Routes.savedSearches(currentQuery)) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
@@ -192,6 +205,7 @@ fun E621NavGraph() {
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_FAVORITES, NO_SEARCH_ID, index)) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onSetBlacklistDisabled = favoritesViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = favoritesViewModel::setGridThumbnailSizeDp,
             )
         }
         composable(
@@ -226,6 +240,7 @@ fun E621NavGraph() {
                     onAddTagToSearch = ::navigateToSearch,
                     onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                     onOpenProfile = { id -> navigateToProfile(id) },
+                    site = activeSite,
                 )
             } else {
                 val searchViewModel = searchViewModels[searchId]
@@ -244,6 +259,7 @@ fun E621NavGraph() {
                         onAddTagToSearch = { tag -> navigateToSearch("${state.activeQuery} $tag".trim()) },
                         onExcludeTagFromSearch = { tag -> navigateToSearch("${state.activeQuery} -$tag".trim()) },
                         onOpenProfile = { id -> navigateToProfile(id) },
+                        site = activeSite,
                     )
                 }
             }
@@ -257,11 +273,13 @@ fun E621NavGraph() {
                 onBack = { navController.popBackStack() },
                 onSaveAccount = settingsViewModel::saveAccount,
                 onSetAdultModeEnabled = settingsViewModel::setAdultModeEnabled,
+                onSetUseE6Ai = settingsViewModel::setUseE6Ai,
                 onSetRatingEnabled = settingsViewModel::setRatingEnabled,
                 onSaveBlacklist = settingsViewModel::saveBlacklist,
                 onImportBlacklist = settingsViewModel::importBlacklistFromE621,
                 onPushBlacklist = settingsViewModel::pushBlacklistToE621,
                 onSetAccentColor = settingsViewModel::setAccentColor,
+                onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,
             )
         }
         composable(Routes.MESSAGES) {
@@ -385,7 +403,54 @@ fun E621NavGraph() {
                 onBack = { navController.popBackStack() },
                 onRetry = profileViewModel::refresh,
                 onOpenPost = { postId -> navController.navigate(Routes.postDetail(postId)) },
+                onOpenPosts = { username -> navigateToSearch("user:$username") },
+                onOpenFavorites = { username -> navigateToSearch("fav:$username") },
+                onOpenComments = { id, username -> navController.navigate(Routes.userComments(id, username)) },
+                onOpenFeedback = { id, username -> navController.navigate(Routes.userFeedback(id, username)) },
                 avatarRepository = app.avatarRepository,
+            )
+        }
+        composable(
+            route = Routes.USER_FEEDBACK,
+            arguments = listOf(
+                navArgument("id") { type = NavType.LongType },
+                navArgument("username") { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("id") ?: 0L
+            val username = Uri.decode(backStackEntry.arguments?.getString("username") ?: "")
+            val feedbackFactory = remember(backStackEntry) { factory.userFeedbackViewModelFactory(id, username) }
+            val feedbackViewModel: UserFeedbackViewModel =
+                viewModel(viewModelStoreOwner = backStackEntry, factory = feedbackFactory)
+            val state by feedbackViewModel.uiState.collectAsStateWithLifecycle()
+            UserFeedbackScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = feedbackViewModel::refresh,
+                onLoadMore = feedbackViewModel::loadMore,
+                onOpenProfile = { profileId -> navigateToProfile(profileId) },
+                avatarRepository = app.avatarRepository,
+            )
+        }
+        composable(
+            route = Routes.USER_COMMENTS,
+            arguments = listOf(
+                navArgument("id") { type = NavType.LongType },
+                navArgument("username") { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("id") ?: 0L
+            val username = Uri.decode(backStackEntry.arguments?.getString("username") ?: "")
+            val commentsFactory = remember(backStackEntry) { factory.userCommentsViewModelFactory(id, username) }
+            val commentsViewModel: UserCommentsViewModel =
+                viewModel(viewModelStoreOwner = backStackEntry, factory = commentsFactory)
+            val state by commentsViewModel.uiState.collectAsStateWithLifecycle()
+            UserCommentsScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = commentsViewModel::refresh,
+                onLoadMore = commentsViewModel::loadMore,
+                onOpenPost = { postId -> navController.navigate(Routes.postDetail(postId)) },
             )
         }
         composable(
@@ -406,6 +471,7 @@ fun E621NavGraph() {
                 onAddTagToSearch = ::navigateToSearch,
                 onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                 onOpenProfile = { id -> navigateToProfile(id) },
+                site = activeSite,
             )
         }
         composable(

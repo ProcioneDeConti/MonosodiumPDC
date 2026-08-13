@@ -134,7 +134,7 @@ fun EulaReadOnlyDialog(onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(7.dp),
             color = MaterialTheme.colorScheme.surface,
         ) {
             Column(modifier = Modifier.heightIn(max = 480.dp).padding(20.dp)) {

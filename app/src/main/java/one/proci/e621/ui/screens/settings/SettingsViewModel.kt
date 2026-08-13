@@ -11,6 +11,14 @@ import one.proci.e621.data.repository.UserRepository
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.settings.UserSettings
 
+/** Outcome of [SettingsViewModel.saveAccount], for the UI to report back to the user. */
+sealed class AccountSaveOutcome {
+    /** Credentials were blank (e.g. the user is signing out) - saved as-is, no auth check made. */
+    data object Saved : AccountSaveOutcome()
+    data object Authenticated : AccountSaveOutcome()
+    data class AuthFailed(val message: String) : AccountSaveOutcome()
+}
+
 class SettingsViewModel(
     private val userPreferences: UserPreferences,
     private val userRepository: UserRepository,
@@ -21,12 +29,24 @@ class SettingsViewModel(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-    fun saveAccount(username: String, apiKey: String) {
-        viewModelScope.launch { userPreferences.updateAccount(username, apiKey) }
+    /** Persists the given credentials, then verifies them against e621 unless they're blank (signing out). */
+    suspend fun saveAccount(username: String, apiKey: String): AccountSaveOutcome {
+        userPreferences.updateAccount(username, apiKey)
+        if (username.isBlank() || apiKey.isBlank()) return AccountSaveOutcome.Saved
+        return try {
+            userRepository.fetchProfile(null)
+            AccountSaveOutcome.Authenticated
+        } catch (e: Exception) {
+            AccountSaveOutcome.AuthFailed(e.message ?: e.toString())
+        }
     }
 
     fun setAdultModeEnabled(enabled: Boolean) {
         viewModelScope.launch { userPreferences.setAdultModeEnabled(enabled) }
+    }
+
+    fun setUseE6Ai(enabled: Boolean) {
+        viewModelScope.launch { userPreferences.setUseE6Ai(enabled) }
     }
 
     fun setRatingEnabled(rating: Rating, enabled: Boolean) {
@@ -42,6 +62,10 @@ class SettingsViewModel(
 
     fun setAccentColor(color: Int?) {
         viewModelScope.launch { userPreferences.updateAccentColor(color) }
+    }
+
+    fun setImageCacheLimitMb(mb: Int) {
+        viewModelScope.launch { userPreferences.setImageCacheLimitMb(mb) }
     }
 
     /** Pulls the blacklist saved on the user's e621 account and persists it locally. */

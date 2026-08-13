@@ -189,6 +189,7 @@ fun PostGridScreen(
     onOpenSavedSearches: (currentQuery: String) -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
+    onThumbnailSizeChange: (Int) -> Unit,
     unreadMessageCount: Int,
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
@@ -226,6 +227,8 @@ fun PostGridScreen(
                 onPostClick = onPostClick,
                 blacklistDisabled = state.blacklistDisabled,
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
+                thumbnailSizeDp = state.gridThumbnailSizeDp,
+                onThumbnailSizeChange = onThumbnailSizeChange,
                 modifier = Modifier.padding(padding),
             )
         }
@@ -577,7 +580,7 @@ private fun SearchTopBar(
                 modifier = Modifier
                     .weight(1f)
                     .height(SearchBarHeight)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
                     .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
                         focusRequester.requestFocus()
                     }
@@ -687,7 +690,7 @@ private fun SearchTopBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                 ) {
                     Text(
@@ -712,7 +715,7 @@ private fun SearchTopBar(
                         .padding(horizontal = 8.dp)
                         .heightIn(max = SuggestionsMaxHeight)
                         .verticalScroll(rememberScrollState())
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -736,7 +739,7 @@ private fun SuggestionChip(suggestion: TagSuggestion, isNegative: Boolean, onCli
     val background = categoryColor(suggestion.tagCategory)
     val content = categoryContentColor(suggestion.tagCategory)
     val borderColor = if (isNegative) RatingExplicit else RatingSafe
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(7.dp)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -788,7 +791,7 @@ private fun SearchTagChip(
 ) {
     val borderColor = if (tag.negative) RatingExplicit else RatingSafe
     val catColor = categoryColor(tag.category)
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(7.dp)
     Box(
         modifier = Modifier
             .clip(shape)
@@ -817,7 +820,7 @@ private fun EasterEggDialog(onDismiss: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(7.dp))
                 .background(ViewerBackground)
                 .padding(16.dp),
         ) {
@@ -825,7 +828,7 @@ private fun EasterEggDialog(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(7.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 ScrollingRainbowBackground(modifier = Modifier.fillMaxSize())

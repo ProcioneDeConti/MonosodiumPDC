@@ -73,6 +73,7 @@ fun E621Theme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = E621Typography,
+        shapes = E621Shapes,
         content = content,
     )
 }

@@ -45,6 +45,12 @@ class PostActionsRepository(private val api: E621ApiService) {
     suspend fun fetchComments(postId: Long): List<Comment> =
         api.getComments(postId).filterNot { it.isHidden }
 
+    /** A given user's comments across all posts, most recent first; @param beforeId for infinite scroll. */
+    suspend fun fetchCommentsByUser(userId: Long, beforeId: Long? = null, limit: Int = 50): List<Comment> {
+        val page = beforeId?.let { "b$it" }
+        return api.getCommentsByCreator(creatorId = userId, limit = limit, page = page).filterNot { it.isHidden }
+    }
+
     /** Most recent reason a post was flagged for, or null if e621 has no (visible) flag record for it. */
     suspend fun fetchFlagReason(postId: Long): String? =
         api.getPostFlags(postId, limit = 1).firstOrNull()?.reason?.takeIf { it.isNotBlank() }

@@ -40,15 +40,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -57,6 +61,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -101,6 +106,8 @@ import one.proci.e621.data.model.Post
 import one.proci.e621.data.model.TagCategory
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.PostActionsRepository
+import one.proci.e621.data.settings.Site
+import one.proci.e621.data.util.formatCount
 import one.proci.e621.ui.components.DTextView
 import one.proci.e621.ui.components.MediaViewer
 import one.proci.e621.ui.components.UserAvatar
@@ -140,6 +147,7 @@ fun PostDetailScreen(
     onAddTagToSearch: (String) -> Unit,
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
+    site: Site,
     modifier: Modifier = Modifier,
 ) {
     if (posts.isEmpty()) return
@@ -169,6 +177,8 @@ fun PostDetailScreen(
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) onLoadMore()
     }
+
+    val currentPost = posts.getOrNull(pagerState.currentPage)
 
     // A weighted Column (rather than layering everything in one full-bleed Box) so the info
     // panel occupies its own space below the pager instead of covering the bottom of the
@@ -204,12 +214,12 @@ fun PostDetailScreen(
                     onBack = ::handleBack,
                     index = pagerState.currentPage,
                     total = posts.size,
+                    rating = currentPost?.rating,
                     onShowInfo = { infoSheetVisible = true },
                 )
             }
         }
 
-        val currentPost = posts.getOrNull(pagerState.currentPage)
         androidx.compose.animation.AnimatedVisibility(
             visible = infoVisible && currentPost != null,
             enter = fadeIn() + expandVertically(),
@@ -225,26 +235,27 @@ fun PostDetailScreen(
                     onAddTagToSearch = onAddTagToSearch,
                     onExcludeTagFromSearch = onExcludeTagFromSearch,
                     onOpenComments = { commentsSheetVisible = true },
+                    site = site,
                 )
             }
         }
     }
 
-    val infoSheetPost = posts.getOrNull(pagerState.currentPage)
-    if (infoSheetVisible && infoSheetPost != null) {
+    if (infoSheetVisible && currentPost != null) {
         PostInfoSheet(
-            post = infoSheetPost,
+            post = currentPost,
             postActionsRepository = postActionsRepository,
             onDismiss = { infoSheetVisible = false },
             onOpenComments = {
                 infoSheetVisible = false
                 commentsSheetVisible = true
             },
+            site = site,
         )
     }
-    if (commentsSheetVisible && infoSheetPost != null) {
+    if (commentsSheetVisible && currentPost != null) {
         CommentsSheet(
-            post = infoSheetPost,
+            post = currentPost,
             postActionsRepository = postActionsRepository,
             avatarRepository = avatarRepository,
             onDismiss = { commentsSheetVisible = false },
@@ -254,7 +265,7 @@ fun PostDetailScreen(
 }
 
 @Composable
-private fun TopBar(onBack: () -> Unit, index: Int, total: Int, onShowInfo: () -> Unit) {
+private fun TopBar(onBack: () -> Unit, index: Int, total: Int, rating: String?, onShowInfo: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,6 +283,10 @@ private fun TopBar(onBack: () -> Unit, index: Int, total: Int, onShowInfo: () ->
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(modifier = Modifier.weight(1f))
+        if (rating != null) {
+            RatingChip(rating)
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         IconButton(onClick = onShowInfo) {
             Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.action_info), tint = Color.White)
         }
@@ -289,6 +304,7 @@ private fun InfoPanel(
     onAddTagToSearch: (String) -> Unit,
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenComments: () -> Unit,
+    site: Site,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -308,19 +324,12 @@ private fun InfoPanel(
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            RatingChip(post.rating)
-            VoteFavoriteRow(
-                post = post,
-                postActionsRepository = postActionsRepository,
-                onPostUpdated = onPostUpdated,
-                onOpenComments = onOpenComments,
-            )
-        }
+        VoteFavoriteRow(
+            post = post,
+            postActionsRepository = postActionsRepository,
+            onPostUpdated = onPostUpdated,
+            onOpenComments = onOpenComments,
+        )
 
         Row(
             modifier = Modifier
@@ -387,7 +396,7 @@ private fun InfoPanel(
                         text = { Text(stringResource(R.string.share_post_link)) },
                         onClick = {
                             shareMenuExpanded = false
-                            MediaSharer(context).shareText("https://e621.net/posts/${post.id}")
+                            MediaSharer(context).shareText("${site.webBaseUrl}/posts/${post.id}")
                         },
                     )
                 }
@@ -433,7 +442,7 @@ private fun VoteFavoriteRow(
         }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // Two grouped pill containers (Material "assist chip" styling already used for tag
         // chips elsewhere) so voting and favoriting read as distinct clusters rather than one
         // undifferentiated row of icons.
@@ -441,7 +450,7 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp)),
         ) {
             VoteTooltipIconButton(
                 tooltipText = "${post.score.up} upvotes",
@@ -456,10 +465,11 @@ private fun VoteFavoriteRow(
                 )
             }
             Text(
-                text = "${post.score.total}",
+                text = formatCount(post.score.total),
                 color = scoreColor(post.score.total),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                softWrap = false,
             )
             VoteTooltipIconButton(
                 tooltipText = "${post.score.down} downvotes",
@@ -481,8 +491,8 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                .padding(end = 14.dp),
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                .padding(end = 8.dp),
         ) {
             IconButton(
                 enabled = !isFavoriting,
@@ -519,7 +529,12 @@ private fun VoteFavoriteRow(
                     modifier = Modifier.size(30.dp),
                 )
             }
-            Text("${post.favCount}", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                formatCount(post.favCount),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                softWrap = false,
+            )
         }
     }
 }
@@ -532,17 +547,18 @@ private fun CommentCountPill(count: Int, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(PillHeight)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(7.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "$count",
+            text = formatCount(count),
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            softWrap = false,
         )
     }
 }
@@ -560,7 +576,7 @@ private fun VoteTooltipIconButton(
         tooltip = { PlainTooltip { Text(tooltipText) } },
         state = rememberTooltipState(),
     ) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(52.dp)) {
+        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
             icon()
         }
     }
@@ -591,6 +607,7 @@ private fun PostInfoSheet(
     postActionsRepository: PostActionsRepository,
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
+    site: Site,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val clipboard = LocalClipboardManager.current
@@ -605,7 +622,7 @@ private fun PostInfoSheet(
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
     // leaves a ring of accent color tracing that curve rather than a flat bar sitting inside it.
-    val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val sheetShape = RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -617,7 +634,7 @@ private fun PostInfoSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 5.dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                .clip(RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp))
                 .background(ViewerBackground),
         ) {
             Box(
@@ -625,7 +642,7 @@ private fun PostInfoSheet(
                     .padding(top = 10.dp)
                     .align(Alignment.CenterHorizontally)
                     .size(width = 32.dp, height = 4.dp)
-                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
+                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(7.dp)),
             )
         Column(
             modifier = Modifier
@@ -653,10 +670,10 @@ private fun PostInfoSheet(
                 )
                 PillAction(
                     icon = Icons.Filled.Public,
-                    label = stringResource(R.string.view_on_e621),
+                    label = stringResource(R.string.view_on_e621, site.displayName),
                     onClick = {
                         runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://e621.net/posts/${post.id}")))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${site.webBaseUrl}/posts/${post.id}")))
                         }
                     },
                 )
@@ -813,7 +830,7 @@ private fun CommentsSheet(
         }
     }
 
-    val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val sheetShape = RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -825,7 +842,7 @@ private fun CommentsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 5.dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                .clip(RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp))
                 .background(ViewerBackground),
         ) {
             Box(
@@ -833,7 +850,7 @@ private fun CommentsSheet(
                     .padding(top = 10.dp)
                     .align(Alignment.CenterHorizontally)
                     .size(width = 32.dp, height = 4.dp)
-                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
+                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(7.dp)),
             )
             Text(
                 text = "${stringResource(R.string.comments_title)} (${comments?.size ?: post.commentCount})",
@@ -947,7 +964,7 @@ private fun PillAction(icon: androidx.compose.ui.graphics.vector.ImageVector, la
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
@@ -1002,7 +1019,7 @@ private fun StatusInfoRow(post: Post) {
         Text(stringResource(R.string.info_status), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium)
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(7.dp))
                 .background(color)
                 .padding(horizontal = 10.dp, vertical = 3.dp),
         ) {
@@ -1031,9 +1048,9 @@ private fun FlagReasonBox(postId: Long, postActionsRepository: PostActionsReposi
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 6.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(7.dp))
                 .background(RatingExplicit.copy(alpha = 0.2f))
-                .border(1.dp, RatingExplicit, RoundedCornerShape(8.dp))
+                .border(1.dp, RatingExplicit, RoundedCornerShape(7.dp))
                 .padding(10.dp),
         ) {
             Text(
@@ -1074,25 +1091,16 @@ private fun RatingChip(rating: String) {
     }
     Box(
         modifier = Modifier
-            .height(PillHeight)
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-            .padding(6.dp),
+            .size(26.dp)
+            .background(color, RoundedCornerShape(2.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .background(color, RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = label,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 9.dp),
-            )
-        }
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -1198,7 +1206,7 @@ private fun TagChip(
         TagCategory.SPECIES -> TagSpecies to Color.White
         TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> TagGeneral to Color.White
     }
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(7.dp)
     var menuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val addedToBlacklistTemplate = stringResource(R.string.tag_added_to_blacklist)
@@ -1222,16 +1230,16 @@ private fun TagChip(
             Text(tag.name.replace('_', ' '), color = content, fontSize = 12.sp)
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.tag_menu_add_blacklist)) },
-                onClick = {
-                    menuExpanded = false
-                    onAddToBlacklist(tag.name)
-                    Toast.makeText(context, String.format(addedToBlacklistTemplate, tag.name), Toast.LENGTH_SHORT).show()
-                },
+            Text(
+                text = tag.name.replace('_', ' '),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
+            HorizontalDivider()
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.tag_menu_search)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 onClick = {
                     menuExpanded = false
                     onSearch(tag.name)
@@ -1239,6 +1247,7 @@ private fun TagChip(
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.tag_menu_add_to_search)) },
+                leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 onClick = {
                     menuExpanded = false
                     onAddToSearch(tag.name)
@@ -1246,9 +1255,30 @@ private fun TagChip(
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.tag_menu_exclude_from_search)) },
+                leadingIcon = { Icon(Icons.Filled.Remove, contentDescription = null) },
                 onClick = {
                     menuExpanded = false
                     onExcludeFromSearch(tag.name)
+                },
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(R.string.tag_menu_add_blacklist),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                },
+                onClick = {
+                    menuExpanded = false
+                    onAddToBlacklist(tag.name)
+                    Toast.makeText(context, String.format(addedToBlacklistTemplate, tag.name), Toast.LENGTH_SHORT).show()
                 },
             )
         }

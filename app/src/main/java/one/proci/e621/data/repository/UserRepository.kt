@@ -3,6 +3,7 @@ package one.proci.e621.data.repository
 import one.proci.e621.data.api.E621ApiService
 import one.proci.e621.data.model.UpdateUserFields
 import one.proci.e621.data.model.UpdateUserRequest
+import one.proci.e621.data.model.UserFeedback
 import one.proci.e621.data.model.UserProfile
 import java.io.IOException
 
@@ -24,6 +25,12 @@ class UserRepository(private val api: E621ApiService) {
     suspend fun fetchNotificationStatus(): NotificationStatus {
         val me = api.getCurrentUser()
         return NotificationStatus(me.unreadDmailCount, me.forumNotificationDot)
+    }
+
+    /** A user's feedback ("records") history, most recent first; @param beforeId for infinite scroll. */
+    suspend fun fetchFeedbacks(userId: Long, beforeId: Long? = null, limit: Int = 50): List<UserFeedback> {
+        val page = beforeId?.let { "b$it" }
+        return api.getUserFeedbacks(userId = userId, limit = limit, page = page)
     }
 
     /** Pushes the local blacklist to e621, overwriting whatever is currently saved there. */

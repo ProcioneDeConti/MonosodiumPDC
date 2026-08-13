@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,13 +36,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -63,11 +69,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
+import coil3.annotation.DelicateCoilApi
 import kotlinx.coroutines.launch
 import one.proci.e621.BuildConfig
 import one.proci.e621.R
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.settings.UserSettings
+import one.proci.e621.data.util.ImageCacheLimits
 import one.proci.e621.ui.screens.eula.EulaReadOnlyDialog
 import one.proci.e621.ui.theme.AccentPresets
 
@@ -80,13 +89,15 @@ fun SettingsScreen(
     settings: UserSettings,
     isSyncing: Boolean,
     onBack: () -> Unit,
-    onSaveAccount: (username: String, apiKey: String) -> Unit,
+    onSaveAccount: suspend (username: String, apiKey: String) -> AccountSaveOutcome,
     onSetAdultModeEnabled: (Boolean) -> Unit,
+    onSetUseE6Ai: (Boolean) -> Unit,
     onSetRatingEnabled: (Rating, Boolean) -> Unit,
     onSaveBlacklist: (String) -> Unit,
     onImportBlacklist: suspend () -> Result<String>,
     onPushBlacklist: suspend (String) -> Result<Unit>,
     onSetAccentColor: (Int?) -> Unit,
+    onSetImageCacheLimitMb: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var username by remember(settings.username) { mutableStateOf(settings.username) }
@@ -95,10 +106,15 @@ fun SettingsScreen(
     var showEulaDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val savedMessage = stringResource(R.string.settings_saved)
-    val importedMessage = stringResource(R.string.settings_blacklist_imported)
-    val pushedMessage = stringResource(R.string.settings_blacklist_pushed)
+    val authSuccessMessage = stringResource(R.string.settings_auth_success)
+    val authFailedTemplate = stringResource(R.string.settings_auth_failed)
+    val importedMessage = stringResource(R.string.settings_blacklist_imported, settings.site.displayName)
+    val pushedMessage = stringResource(R.string.settings_blacklist_pushed, settings.site.displayName)
     val syncFailedTemplate = stringResource(R.string.settings_blacklist_sync_failed)
+    val cacheClearedMessage = stringResource(R.string.settings_cache_cleared)
 
     Scaffold(
         modifier = modifier,
@@ -131,11 +147,21 @@ fun SettingsScreen(
                 )
             }
 
+            SettingsSection(stringResource(R.string.settings_site), titleTrailing = {
+                Switch(checked = settings.useE6Ai, onCheckedChange = onSetUseE6Ai)
+            }) {
+                Text(
+                    stringResource(R.string.settings_site_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             SettingsSection(stringResource(R.string.settings_account)) {
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text(stringResource(R.string.settings_username)) },
+                    label = { Text(stringResource(R.string.settings_username, settings.site.displayName)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -153,9 +179,34 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Text(
+                    stringResource(R.string.settings_api_key_get_link, settings.site.apiHost),
+                    style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { uriHandler.openUri("${settings.site.webBaseUrl}/api_keys") },
+                )
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(
+                        Icons.Filled.WarningAmber,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        stringResource(R.string.settings_api_key_warning),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Button(onClick = {
-                    onSaveAccount(username, apiKey)
-                    scope.launch { snackbarHostState.showSnackbar(savedMessage) }
+                    scope.launch {
+                        val message = when (val outcome = onSaveAccount(username, apiKey)) {
+                            AccountSaveOutcome.Saved -> savedMessage
+                            AccountSaveOutcome.Authenticated -> authSuccessMessage
+                            is AccountSaveOutcome.AuthFailed -> String.format(authFailedTemplate, outcome.message)
+                        }
+                        snackbarHostState.showSnackbar(message)
+                    }
                 }) {
                     Text(stringResource(R.string.settings_save))
                 }
@@ -168,6 +219,41 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 AccentColorPicker(currentColor = settings.accentColor, onSelect = onSetAccentColor)
+            }
+
+            SettingsSection(stringResource(R.string.settings_cache)) {
+                Text(
+                    stringResource(R.string.settings_cache_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                var cacheUsageBytes by remember { mutableLongStateOf(0L) }
+                @OptIn(DelicateCoilApi::class)
+                LaunchedEffect(Unit) {
+                    cacheUsageBytes = SingletonImageLoader.get(context).diskCache?.size ?: 0L
+                }
+                Text(
+                    stringResource(R.string.settings_cache_usage, formatCacheSize((cacheUsageBytes / (1024 * 1024)).toInt())),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                CacheLimitSlider(
+                    currentMb = settings.imageCacheLimitMb,
+                    onLimitChanged = onSetImageCacheLimitMb,
+                )
+                OutlinedButton(onClick = {
+                    @OptIn(DelicateCoilApi::class)
+                    SingletonImageLoader.get(context).apply {
+                        diskCache?.clear()
+                        memoryCache?.clear()
+                    }
+                    cacheUsageBytes = 0L
+                    scope.launch { snackbarHostState.showSnackbar(cacheClearedMessage) }
+                }) {
+                    Text(stringResource(R.string.settings_cache_clear))
+                }
             }
 
             SettingsSection(stringResource(R.string.settings_content)) {
@@ -217,7 +303,7 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    stringResource(R.string.settings_blacklist_sync_hint),
+                    stringResource(R.string.settings_blacklist_sync_hint, settings.site.displayName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -236,7 +322,7 @@ fun SettingsScreen(
                             }
                         },
                     ) {
-                        Text(stringResource(R.string.settings_blacklist_import))
+                        Text(stringResource(R.string.settings_blacklist_import, settings.site.displayName))
                     }
                     OutlinedButton(
                         enabled = settings.isAuthenticated && !isSyncing,
@@ -249,7 +335,7 @@ fun SettingsScreen(
                             }
                         },
                     ) {
-                        Text(stringResource(R.string.settings_blacklist_push))
+                        Text(stringResource(R.string.settings_blacklist_push, settings.site.displayName))
                     }
                     if (isSyncing) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -323,7 +409,7 @@ private fun SettingsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -345,6 +431,42 @@ private fun SettingsSection(
 
 private fun formatSyncFailed(template: String, e: Throwable): String =
     String.format(template, e.message ?: e.toString())
+
+private fun formatCacheSize(mb: Int, unlimitedLabel: String = "Unlimited"): String = when {
+    mb == ImageCacheLimits.UNLIMITED -> unlimitedLabel
+    mb >= 1000 -> "%.1f GB".format(mb / 1000.0)
+    else -> "$mb MB"
+}
+
+@Composable
+private fun CacheLimitSlider(currentMb: Int, onLimitChanged: (Int) -> Unit) {
+    // The slider works in discrete indices rather than raw MB, since its rightmost position is
+    // the "Unlimited" sentinel rather than another numeric step. Local state mirrors the drag
+    // position live; the setting itself is only committed (and the image cache resized) once the
+    // user releases the thumb, not on every intermediate value.
+    var sliderIndex by remember(currentMb) { mutableFloatStateOf(ImageCacheLimits.indexForMb(currentMb).toFloat()) }
+    val steps = ImageCacheLimits.lastIndex - 1
+    val unlimitedLabel = stringResource(R.string.settings_cache_unlimited)
+
+    Column {
+        Text(
+            stringResource(
+                R.string.settings_cache_limit_value,
+                formatCacheSize(ImageCacheLimits.mbForIndex(sliderIndex.toInt()), unlimitedLabel),
+            ),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Slider(
+            value = sliderIndex,
+            onValueChange = { sliderIndex = it },
+            onValueChangeFinished = {
+                onLimitChanged(ImageCacheLimits.mbForIndex(Math.round(sliderIndex)))
+            },
+            valueRange = 0f..ImageCacheLimits.lastIndex.toFloat(),
+            steps = steps,
+        )
+    }
+}
 
 @Composable
 private fun RatingRow(label: String, checked: Boolean, enabled: Boolean = true, onCheckedChange: (Boolean) -> Unit) {

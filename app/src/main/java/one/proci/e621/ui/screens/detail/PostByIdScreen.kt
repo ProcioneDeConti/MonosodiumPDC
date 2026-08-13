@@ -32,6 +32,7 @@ import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
+import one.proci.e621.data.settings.Site
 import one.proci.e621.ui.theme.ViewerBackground
 
 /**
@@ -53,6 +54,7 @@ fun PostByIdScreen(
     onAddTagToSearch: (String) -> Unit,
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
+    site: Site,
     modifier: Modifier = Modifier,
 ) {
     var post by remember(postId) { mutableStateOf<Post?>(null) }
@@ -82,6 +84,7 @@ fun PostByIdScreen(
             onAddTagToSearch = onAddTagToSearch,
             onExcludeTagFromSearch = onExcludeTagFromSearch,
             onOpenProfile = onOpenProfile,
+            site = site,
             modifier = modifier,
         )
     } else {

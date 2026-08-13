@@ -78,7 +78,7 @@ private fun DBlockView(block: DBlock, style: TextStyle, linkColor: Color) {
             style = style.copy(fontFamily = FontFamily.Monospace),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
                 .padding(8.dp)
                 .horizontalScroll(rememberScrollState()),
         )
@@ -87,7 +87,7 @@ private fun DBlockView(block: DBlock, style: TextStyle, linkColor: Color) {
                 modifier = Modifier
                     .width(3.dp)
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)),
+                    .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(7.dp)),
             )
             Spacer(Modifier.width(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -133,7 +133,7 @@ private fun SpoilerText(nodes: List<DInline>, style: TextStyle, linkColor: Color
     var revealed by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(3.dp))
+            .clip(RoundedCornerShape(7.dp))
             .let {
                 if (revealed) {
                     it

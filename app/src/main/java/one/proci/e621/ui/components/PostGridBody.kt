@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -29,15 +31,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
 import one.proci.e621.data.model.Post
+import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.ui.theme.RatingQuestionable
+import kotlin.math.roundToInt
 
 /**
  * The pull-to-refresh, infinite-scroll staggered grid shared by the search grid and the
@@ -57,10 +66,22 @@ fun PostGridBody(
     modifier: Modifier = Modifier,
     blacklistDisabled: Boolean = false,
     onEnableBlacklist: () -> Unit = {},
+    thumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
+    onThumbnailSizeChange: (Int) -> Unit = {},
     emptyContent: @Composable () -> Unit = { DefaultEmptyState() },
 ) {
     val gridState = rememberLazyStaggeredGridState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Live-updated during a pinch/spread gesture (see the grid's pointerInput below); only
+    // committed back via onThumbnailSizeChange once the gesture ends, so a fast pinch doesn't spam
+    // DataStore writes. A single stable MutableState instance (not re-`remember`ed per value) so
+    // the gesture handler - launched once via pointerInput(Unit) - keeps reading/writing the same
+    // object across recompositions; it's instead re-synced from the persisted value via the
+    // LaunchedEffect below (e.g. once the initial DataStore read completes).
+    var liveSizeDp by remember { mutableFloatStateOf(thumbnailSizeDp.toFloat()) }
+    LaunchedEffect(thumbnailSizeDp) { liveSizeDp = thumbnailSizeDp.toFloat() }
+    val onThumbnailSizeChangeState = rememberUpdatedState(onThumbnailSizeChange)
 
     LaunchedEffect(error, posts.isEmpty()) {
         if (error != null && posts.isNotEmpty()) {
@@ -105,12 +126,40 @@ fun PostGridBody(
                     posts.isEmpty() -> emptyContent()
                     else -> {
                         LazyVerticalStaggeredGrid(
-                            columns = StaggeredGridCells.Adaptive(minSize = 120.dp),
+                            columns = StaggeredGridCells.Adaptive(minSize = liveSizeDp.dp),
                             state = gridState,
                             contentPadding = PaddingValues(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalItemSpacing = 6.dp,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                // Only intercepts once a second pointer comes down, so ordinary
+                                // one-finger scrolling is left entirely alone. Runs on the Initial
+                                // (outside-in) pass and consumes from that point on, so the grid's
+                                // own (Main-pass) scroll/drag handling sees the change already
+                                // consumed and backs off for the rest of the gesture.
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        var zooming = false
+                                        do {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            if (!zooming && event.changes.count { it.pressed } >= 2) {
+                                                zooming = true
+                                            }
+                                            if (zooming) {
+                                                val zoomChange = event.calculateZoom()
+                                                if (zoomChange != 1f) {
+                                                    liveSizeDp = (liveSizeDp * zoomChange).coerceIn(
+                                                        GridThumbnailSize.MIN_DP.toFloat(),
+                                                        GridThumbnailSize.MAX_DP.toFloat(),
+                                                    )
+                                                }
+                                                event.changes.forEach { it.consume() }
+                                            }
+                                        } while (event.changes.any { it.pressed })
+                                        if (zooming) onThumbnailSizeChangeState.value(liveSizeDp.roundToInt())
+                                    }
+                                },
                         ) {
                             itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
                                 PostThumbnail(post = post, onClick = { onPostClick(index) })

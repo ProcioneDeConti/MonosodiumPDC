@@ -10,6 +10,9 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
 object E621Client {
+    // Retrofit needs one fixed base URL to resolve every endpoint's relative path against;
+    // [SiteInterceptor] rewrites the resulting request's host per-call to whichever site (e621 or
+    // e6AI) is actually active, so this doesn't have to be rebuilt when the user switches sites.
     private const val BASE_URL = "https://e621.net/"
 
     private val json = Json {
@@ -19,6 +22,7 @@ object E621Client {
 
     fun create(settings: StateFlow<UserSettings>): E621ApiService {
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(SiteInterceptor(settings))
             .addInterceptor(UserAgentInterceptor(settings))
             .addInterceptor(AuthInterceptor(settings))
             .addInterceptor(RateLimitInterceptor())

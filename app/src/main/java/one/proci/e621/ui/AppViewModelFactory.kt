@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import one.proci.e621.E621Application
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
+import one.proci.e621.ui.screens.feedback.UserFeedbackViewModel
 import one.proci.e621.ui.screens.forum.ForumTopicViewModel
 import one.proci.e621.ui.screens.forum.ForumViewModel
 import one.proci.e621.ui.screens.grid.PostGridViewModel
@@ -11,6 +12,7 @@ import one.proci.e621.ui.screens.messages.MessagesViewModel
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsViewModel
+import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
 
 class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -59,5 +61,21 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 ProfileViewModel(userId, app.userRepository) as T
+        }
+
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for a viewed user's feedback ("records"). */
+    fun userFeedbackViewModelFactory(userId: Long, username: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                UserFeedbackViewModel(userId, username, app.userRepository) as T
+        }
+
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for a viewed user's comments. */
+    fun userCommentsViewModelFactory(userId: Long, username: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                UserCommentsViewModel(userId, username, app.postActionsRepository) as T
         }
 }

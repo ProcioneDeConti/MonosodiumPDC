@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.UserPreferences
+import one.proci.e621.data.util.GridThumbnailSize
 
 data class FavoritesUiState(
     val username: String = "",
@@ -22,6 +23,7 @@ data class FavoritesUiState(
     val endReached: Boolean = false,
     val error: String? = null,
     val blacklistDisabled: Boolean = false,
+    val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
 )
 
 /** Favorites are just posts.json tagged fav:<username> — no separate endpoint needed. */
@@ -55,6 +57,7 @@ class FavoritesViewModel(
             endReached = s.endReached,
             error = s.error,
             blacklistDisabled = blacklistDisabled,
+            gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, FavoritesUiState())
 
@@ -76,6 +79,10 @@ class FavoritesViewModel(
 
     fun setBlacklistDisabled(disabled: Boolean) {
         userPreferences.setBlacklistDisabled(disabled)
+    }
+
+    fun setGridThumbnailSizeDp(dp: Int) {
+        viewModelScope.launch { userPreferences.setGridThumbnailSizeDp(dp) }
     }
 
     /** Patches a single post (after voting/favoriting); doesn't remove it from the list on unfavorite mid-browse. */
@@ -111,6 +118,7 @@ class FavoritesViewModel(
             internalState.update { it.copy(isLoadingMore = true) }
             val settings = userPreferences.settingsState.value
             val blacklistDisabled = userPreferences.blacklistDisabled.value
+            val seenIds = current.rawPosts.mapTo(mutableSetOf()) { it.id }
             val accumulated = mutableListOf<Post>()
             var reachedEnd = false
             var attempts = 0
@@ -123,8 +131,9 @@ class FavoritesViewModel(
                         break
                     }
                     cursor = page.last().id
-                    accumulated += page
-                    if (blacklistDisabled || page.any { !settings.isBlacklisted(it) }) break
+                    val newPosts = page.filter { seenIds.add(it.id) }
+                    accumulated += newPosts
+                    if (blacklistDisabled || newPosts.any { !settings.isBlacklisted(it) }) break
                 }
                 internalState.update {
                     it.copy(rawPosts = it.rawPosts + accumulated, isLoadingMore = false, endReached = reachedEnd)

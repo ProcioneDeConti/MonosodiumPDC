@@ -14,6 +14,7 @@ import one.proci.e621.data.model.PostFlag
 import one.proci.e621.data.model.PostsResponse
 import one.proci.e621.data.model.TagSuggestion
 import one.proci.e621.data.model.UpdateUserRequest
+import one.proci.e621.data.model.UserFeedback
 import one.proci.e621.data.model.UserProfile
 import one.proci.e621.data.model.VoteRequest
 import one.proci.e621.data.model.VoteResponse
@@ -80,9 +81,25 @@ interface E621ApiService {
     @GET("comments.json")
     suspend fun getComments(@Query("search[post_id]") postId: Long): List<Comment>
 
+    /** Public; a given user's comments across all posts, most recent first. */
+    @GET("comments.json")
+    suspend fun getCommentsByCreator(
+        @Query("search[creator_id]") creatorId: Long,
+        @Query("limit") limit: Int = 50,
+        @Query("page") page: String? = null,
+    ): List<Comment>
+
     /** Requires Basic Auth; posting anonymously is rejected server-side. */
     @POST("comments.json")
     suspend fun createComment(@Body body: CreateCommentRequest): Comment
+
+    /** Public; a user's feedback ("records") history - see [UserFeedback]. */
+    @GET("user_feedbacks.json")
+    suspend fun getUserFeedbacks(
+        @Query("search[user_id]") userId: Long,
+        @Query("limit") limit: Int = 50,
+        @Query("page") page: String? = null,
+    ): List<UserFeedback>
 
     /** `name` is already wildcarded (e.g. "fo*") by the caller; e621 resolves aliases server-side. */
     @GET("tags/autocomplete.json")

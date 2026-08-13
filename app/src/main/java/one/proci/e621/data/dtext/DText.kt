@@ -28,6 +28,16 @@ sealed class DInline {
     data class Mention(val name: String) : DInline()
 }
 
+/**
+ * Which site's domain wiki links (`[[page]]`) and relative URLs in DText resolve against - kept
+ * as a small module-level knob (rather than threading a parameter through every parse* function
+ * and every [one.proci.e621.ui.components.DTextView] call site) since it changes only when the
+ * user flips the e6AI toggle in Settings. Updated from [one.proci.e621.E621Application].
+ */
+object DTextLinkConfig {
+    @Volatile var webBaseUrl: String = "https://e621.net"
+}
+
 private val HeadingRegex = Regex("""^h([1-6])\.\s*(.*)$""")
 private val OpenTagRegex = Regex("""\[(b|i|u|s|sup|sub|tn)\]""", RegexOption.IGNORE_CASE)
 private val NamedLinkRegex = Regex(""""([^"\n]+)":(\S+)""")
@@ -228,7 +238,7 @@ private fun parseInline(input: String): List<DInline> {
             wikiLink -> {
                 val page = match.groupValues[1].trim()
                 val display = match.groupValues[2].ifBlank { page }.trim()
-                nodes += DInline.Link(display, "https://e621.net/wiki_pages/show_or_new?title=" + encodeWikiTitle(page))
+                nodes += DInline.Link(display, "${DTextLinkConfig.webBaseUrl}/wiki_pages/show_or_new?title=" + encodeWikiTitle(page))
                 remaining = remaining.substring(match.range.last + 1)
             }
             bareUrl -> {
@@ -245,6 +255,6 @@ private fun parseInline(input: String): List<DInline> {
     return nodes
 }
 
-private fun normalizeUrl(url: String): String = if (url.startsWith("/")) "https://e621.net$url" else url
+private fun normalizeUrl(url: String): String = if (url.startsWith("/")) "${DTextLinkConfig.webBaseUrl}$url" else url
 
 private fun encodeWikiTitle(page: String): String = URLEncoder.encode(page.replace(' ', '_'), "UTF-8")
