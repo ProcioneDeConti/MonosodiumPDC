@@ -148,6 +148,9 @@ fun PostDetailScreen(
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
     site: Site,
+    videoLoopEnabled: Boolean,
+    videoPlaybackSpeed: Float,
+    videoAutoplayEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     if (posts.isEmpty()) return
@@ -197,6 +200,9 @@ fun PostDetailScreen(
                 MediaViewer(
                     post = post,
                     isActive = screenActive && pagerState.currentPage == page,
+                    videoLoopEnabled = videoLoopEnabled,
+                    videoPlaybackSpeed = videoPlaybackSpeed,
+                    videoAutoplayEnabled = videoAutoplayEnabled,
                     onTap = { infoVisible = !infoVisible },
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -3,6 +3,7 @@ package one.proci.e621.data.settings
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.ImageCacheLimits
+import one.proci.e621.data.util.VideoPlaybackSpeeds
 
 private val Context.dataStore by preferencesDataStore(name = "user_settings")
 
@@ -43,6 +45,9 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val EULA_ACCEPTED_HASH = stringPreferencesKey("eula_accepted_hash")
         val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
         val GRID_THUMBNAIL_SIZE_DP = intPreferencesKey("grid_thumbnail_size_dp")
+        val VIDEO_LOOP_ENABLED = booleanPreferencesKey("video_loop_enabled")
+        val VIDEO_PLAYBACK_SPEED = floatPreferencesKey("video_playback_speed")
+        val VIDEO_AUTOPLAY_ENABLED = booleanPreferencesKey("video_autoplay_enabled")
     }
 
     val settingsFlow = dataStore.data.map { prefs ->
@@ -66,6 +71,10 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
                 ?: ImageCacheLimits.DEFAULT_MB,
             gridThumbnailSizeDp = prefs[Keys.GRID_THUMBNAIL_SIZE_DP]?.let { GridThumbnailSize.clamp(it) }
                 ?: GridThumbnailSize.DEFAULT_DP,
+            videoLoopEnabled = prefs[Keys.VIDEO_LOOP_ENABLED] ?: true,
+            videoPlaybackSpeed = prefs[Keys.VIDEO_PLAYBACK_SPEED]?.let { VideoPlaybackSpeeds.clamp(it) }
+                ?: VideoPlaybackSpeeds.DEFAULT_SPEED,
+            videoAutoplayEnabled = prefs[Keys.VIDEO_AUTOPLAY_ENABLED] ?: true,
             isLoaded = true,
         )
     }
@@ -133,6 +142,18 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
 
     suspend fun setGridThumbnailSizeDp(dp: Int) {
         dataStore.edit { prefs -> prefs[Keys.GRID_THUMBNAIL_SIZE_DP] = GridThumbnailSize.clamp(dp) }
+    }
+
+    suspend fun setVideoLoopEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.VIDEO_LOOP_ENABLED] = enabled }
+    }
+
+    suspend fun setVideoPlaybackSpeed(speed: Float) {
+        dataStore.edit { prefs -> prefs[Keys.VIDEO_PLAYBACK_SPEED] = VideoPlaybackSpeeds.clamp(speed) }
+    }
+
+    suspend fun setVideoAutoplayEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.VIDEO_AUTOPLAY_ENABLED] = enabled }
     }
 
     /**

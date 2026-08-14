@@ -4,6 +4,7 @@ import one.proci.e621.data.model.Post
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.ImageCacheLimits
+import one.proci.e621.data.util.VideoPlaybackSpeeds
 
 data class UserSettings(
     /** Which site is currently active - e621 or e6AI (e6ai.net). Each keeps its own separate login, below. */
@@ -24,6 +25,12 @@ data class UserSettings(
     val imageCacheLimitMb: Int = ImageCacheLimits.DEFAULT_MB,
     /** Min adaptive cell width, in dp, for post grid thumbnails - user-adjustable via pinch/spread. See [GridThumbnailSize]. */
     val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
+    /** Default loop-on-end behavior for newly opened videos; a video's own in-player toggle only affects that viewing session. */
+    val videoLoopEnabled: Boolean = true,
+    /** Default playback speed for newly opened videos. See [VideoPlaybackSpeeds]. */
+    val videoPlaybackSpeed: Float = VideoPlaybackSpeeds.DEFAULT_SPEED,
+    /** Whether videos start playing automatically once scrolled into view, vs. requiring a tap. */
+    val videoAutoplayEnabled: Boolean = true,
     /**
      * False only for the placeholder instance DataStore hasn't finished its first real read yet -
      * every value that actually comes out of [UserPreferences.settingsFlow] sets this true. Exists

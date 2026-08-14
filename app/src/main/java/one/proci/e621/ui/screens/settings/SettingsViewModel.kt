@@ -68,6 +68,18 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.setImageCacheLimitMb(mb) }
     }
 
+    fun setVideoLoopEnabled(enabled: Boolean) {
+        viewModelScope.launch { userPreferences.setVideoLoopEnabled(enabled) }
+    }
+
+    fun setVideoPlaybackSpeed(speed: Float) {
+        viewModelScope.launch { userPreferences.setVideoPlaybackSpeed(speed) }
+    }
+
+    fun setVideoAutoplayEnabled(enabled: Boolean) {
+        viewModelScope.launch { userPreferences.setVideoAutoplayEnabled(enabled) }
+    }
+
     /** Pulls the blacklist saved on the user's e621 account and persists it locally. */
     suspend fun importBlacklistFromE621(): Result<String> {
         _isSyncing.value = true

@@ -27,6 +27,10 @@
     <string name="settings_cache_unlimited">Unlimited</string>
     <string name="settings_cache_clear">Clear image cache</string>
     <string name="settings_cache_cleared">Image cache cleared</string>
+    <string name="settings_video">Video</string>
+    <string name="settings_video_autoplay">Autoplay</string>
+    <string name="settings_video_loop">Loop by default</string>
+    <string name="settings_video_speed_value">Default speed: %1$s</string>
     <string name="settings_content">Content</string>
     <string name="settings_rating_safe">Safe</string>
     <string name="settings_rating_questionable">Questionable</string>

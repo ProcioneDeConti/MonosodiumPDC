@@ -77,6 +77,7 @@ import one.proci.e621.R
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.settings.UserSettings
 import one.proci.e621.data.util.ImageCacheLimits
+import one.proci.e621.data.util.VideoPlaybackSpeeds
 import one.proci.e621.ui.screens.eula.EulaReadOnlyDialog
 import one.proci.e621.ui.theme.AccentPresets
 
@@ -98,6 +99,9 @@ fun SettingsScreen(
     onPushBlacklist: suspend (String) -> Result<Unit>,
     onSetAccentColor: (Int?) -> Unit,
     onSetImageCacheLimitMb: (Int) -> Unit,
+    onSetVideoLoopEnabled: (Boolean) -> Unit,
+    onSetVideoPlaybackSpeed: (Float) -> Unit,
+    onSetVideoAutoplayEnabled: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var username by remember(settings.username) { mutableStateOf(settings.username) }
@@ -254,6 +258,29 @@ fun SettingsScreen(
                 }) {
                     Text(stringResource(R.string.settings_cache_clear))
                 }
+            }
+
+            SettingsSection(stringResource(R.string.settings_video)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.settings_video_autoplay), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = settings.videoAutoplayEnabled, onCheckedChange = onSetVideoAutoplayEnabled)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.settings_video_loop), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = settings.videoLoopEnabled, onCheckedChange = onSetVideoLoopEnabled)
+                }
+                VideoSpeedSlider(
+                    currentSpeed = settings.videoPlaybackSpeed,
+                    onSpeedChanged = onSetVideoPlaybackSpeed,
+                )
             }
 
             SettingsSection(stringResource(R.string.settings_content)) {
@@ -464,6 +491,34 @@ private fun CacheLimitSlider(currentMb: Int, onLimitChanged: (Int) -> Unit) {
             },
             valueRange = 0f..ImageCacheLimits.lastIndex.toFloat(),
             steps = steps,
+        )
+    }
+}
+
+private fun formatSpeed(speed: Float): String =
+    if (speed == speed.toLong().toFloat()) "${speed.toLong()}x" else "${speed}x"
+
+@Composable
+private fun VideoSpeedSlider(currentSpeed: Float, onSpeedChanged: (Float) -> Unit) {
+    // Same discrete-index-with-live-local-state approach as CacheLimitSlider: the setting itself
+    // only commits once the user releases the thumb, not on every intermediate drag value.
+    var sliderIndex by remember(currentSpeed) {
+        mutableFloatStateOf(VideoPlaybackSpeeds.indexForSpeed(currentSpeed).toFloat())
+    }
+
+    Column {
+        Text(
+            stringResource(R.string.settings_video_speed_value, formatSpeed(VideoPlaybackSpeeds.speedForIndex(sliderIndex.toInt()))),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Slider(
+            value = sliderIndex,
+            onValueChange = { sliderIndex = it },
+            onValueChangeFinished = {
+                onSpeedChanged(VideoPlaybackSpeeds.speedForIndex(Math.round(sliderIndex)))
+            },
+            valueRange = 0f..VideoPlaybackSpeeds.lastIndex.toFloat(),
+            steps = VideoPlaybackSpeeds.lastIndex - 1,
         )
     }
 }

@@ -242,6 +242,9 @@ fun E621NavGraph() {
                     onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                     onOpenProfile = { id -> navigateToProfile(id) },
                     site = activeSite,
+                    videoLoopEnabled = userSettings.videoLoopEnabled,
+                    videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                    videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
                 )
             } else {
                 val searchViewModel = searchViewModels[searchId]
@@ -261,6 +264,9 @@ fun E621NavGraph() {
                         onExcludeTagFromSearch = { tag -> navigateToSearch("${state.activeQuery} -$tag".trim()) },
                         onOpenProfile = { id -> navigateToProfile(id) },
                         site = activeSite,
+                        videoLoopEnabled = userSettings.videoLoopEnabled,
+                        videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                        videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
                     )
                 }
             }
@@ -281,6 +287,9 @@ fun E621NavGraph() {
                 onPushBlacklist = settingsViewModel::pushBlacklistToE621,
                 onSetAccentColor = settingsViewModel::setAccentColor,
                 onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,
+                onSetVideoLoopEnabled = settingsViewModel::setVideoLoopEnabled,
+                onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,
+                onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
             )
         }
         composable(Routes.MESSAGES) {
@@ -473,6 +482,9 @@ fun E621NavGraph() {
                 onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                 onOpenProfile = { id -> navigateToProfile(id) },
                 site = activeSite,
+                videoLoopEnabled = userSettings.videoLoopEnabled,
+                videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
             )
         }
         composable(

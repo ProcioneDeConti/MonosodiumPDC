@@ -55,6 +55,9 @@ fun PostByIdScreen(
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
     site: Site,
+    videoLoopEnabled: Boolean,
+    videoPlaybackSpeed: Float,
+    videoAutoplayEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var post by remember(postId) { mutableStateOf<Post?>(null) }
@@ -85,6 +88,9 @@ fun PostByIdScreen(
             onExcludeTagFromSearch = onExcludeTagFromSearch,
             onOpenProfile = onOpenProfile,
             site = site,
+            videoLoopEnabled = videoLoopEnabled,
+            videoPlaybackSpeed = videoPlaybackSpeed,
+            videoAutoplayEnabled = videoAutoplayEnabled,
             modifier = modifier,
         )
     } else {
