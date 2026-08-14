@@ -20,6 +20,7 @@ import one.proci.e621.data.api.UserAgentInterceptor
 import one.proci.e621.data.dtext.DTextLinkConfig
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.ForumRepository
+import one.proci.e621.data.repository.HealthCheckRepository
 import one.proci.e621.data.repository.MessagesRepository
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
@@ -42,6 +43,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val messagesRepository by lazy { MessagesRepository(apiService) }
     val forumRepository by lazy { ForumRepository(apiService) }
     val avatarRepository by lazy { AvatarRepository(apiService) }
+    val healthCheckRepository by lazy { HealthCheckRepository(apiService) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
 
     init {

@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -120,11 +121,15 @@ import kotlinx.coroutines.launch
 import one.proci.e621.R
 import one.proci.e621.data.model.TagCategory
 import one.proci.e621.data.model.TagSuggestion
+import one.proci.e621.data.repository.HealthCheckRepository
+import one.proci.e621.data.repository.HealthStatus
 import one.proci.e621.data.repository.TagSuggestionRepository
+import one.proci.e621.data.settings.Site
 import one.proci.e621.data.util.loadGreetings
 import one.proci.e621.ui.components.PostGridBody
 import one.proci.e621.ui.components.RainbowStripeColors
 import one.proci.e621.ui.theme.RatingExplicit
+import one.proci.e621.ui.theme.RatingQuestionable
 import one.proci.e621.ui.theme.RatingSafe
 import one.proci.e621.ui.theme.TagArtist
 import one.proci.e621.ui.theme.TagCharacter
@@ -193,6 +198,7 @@ fun PostGridScreen(
     unreadMessageCount: Int,
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
+    healthCheckRepository: HealthCheckRepository,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -212,6 +218,7 @@ fun PostGridScreen(
                     forumUnread = forumUnread,
                     tagSuggestionRepository = tagSuggestionRepository,
                     snackbarHostState = snackbarHostState,
+                    site = state.site,
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -245,6 +252,8 @@ fun PostGridScreen(
             onOpenSavedSearches = { onOpenSavedSearches(state.activeQuery) },
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
+            site = state.site,
+            healthCheckRepository = healthCheckRepository,
         )
     }
 }
@@ -266,6 +275,8 @@ private fun NavDrawerOverlay(
     onOpenSavedSearches: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
+    site: Site,
+    healthCheckRepository: HealthCheckRepository,
 ) {
     BackHandler(enabled = expanded, onBack = onDismiss)
 
@@ -280,6 +291,18 @@ private fun NavDrawerOverlay(
     // `remember` block reruns synchronously in the same composition pass the drawer appears in,
     // rather than a frame later via LaunchedEffect, which would flash the previous/blank greeting.
     val greeting = remember(expanded) { if (expanded) greetings.randomOrNull() else null }
+
+    var healthStatus by remember { mutableStateOf<HealthStatus>(HealthStatus.Checking) }
+    val healthScope = rememberCoroutineScope()
+    fun recheckHealth() {
+        healthScope.launch {
+            healthStatus = HealthStatus.Checking
+            healthStatus = healthCheckRepository.check()
+        }
+    }
+    // Re-pinged fresh every time the drawer opens (rather than kept running in the background),
+    // so the indicator always reflects a check made just now, against whichever site is active.
+    LaunchedEffect(expanded) { if (expanded) recheckHealth() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
@@ -371,6 +394,9 @@ private fun NavDrawerOverlay(
                         label = stringResource(R.string.action_settings),
                         onClick = dismissAnd(onOpenSettings),
                     )
+                    Spacer(modifier = Modifier.weight(1f))
+                    HorizontalDivider(modifier = Modifier.padding(bottom = 4.dp))
+                    HealthCheckRow(site = site, status = healthStatus, onRecheck = ::recheckHealth)
                 }
             }
         }
@@ -404,6 +430,40 @@ private fun DrawerItem(
     }
 }
 
+/** Tap to re-ping. Green/yellow/red dot mirrors the same rating-color language used elsewhere in the app. */
+@Composable
+private fun HealthCheckRow(site: Site, status: HealthStatus, onRecheck: () -> Unit) {
+    val dotColor = when (status) {
+        is HealthStatus.Checking -> RatingQuestionable
+        is HealthStatus.Ok -> RatingSafe
+        is HealthStatus.Error -> RatingExplicit
+    }
+    val detail = when (status) {
+        is HealthStatus.Checking -> stringResource(R.string.health_checking)
+        is HealthStatus.Ok -> stringResource(R.string.health_ok)
+        is HealthStatus.Error -> status.message
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onRecheck)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(10.dp).background(dotColor, CircleShape))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.health_check_title, site.displayName), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (status is HealthStatus.Error) RatingExplicit else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun SearchTopBar(
@@ -417,6 +477,7 @@ private fun SearchTopBar(
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
     snackbarHostState: SnackbarHostState,
+    site: Site,
 ) {
     // Each search results screen is its own back-stack entry seeded from its own route's query,
     // so `query` never changes out from under an already-composed instance of this bar - it only
@@ -571,6 +632,16 @@ private fun SearchTopBar(
                 .onGloballyPositioned { barBottomY = it.positionInWindow().y.toInt() + it.size.height },
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Hidden while focused, same as the trailing icons below, so the search field gets
+            // the full width once you're actually typing.
+            AnimatedVisibility(
+                visible = !isFocused,
+                enter = expandHorizontally() + fadeIn(),
+                exit = shrinkHorizontally() + fadeOut(),
+            ) {
+                SiteBadge(site = site, modifier = Modifier.padding(end = 8.dp))
+            }
+
             // Always full width (minus whatever trailing icons are showing) - never collapsed to
             // an icon. Focus is only ever requested from a real tap (this Box's own clickable, or
             // the leading icon's), never programmatically from an effect: that was what broke chip
@@ -731,6 +802,23 @@ private fun SearchTopBar(
     if (showEggDialog) {
         EasterEggDialog(onDismiss = { showEggDialog = false })
     }
+}
+
+/**
+ * Which site (e621 or e6AI) is currently active, in the app's accent color - see
+ * [one.proci.e621.data.settings.UserSettings.site]. Purely informational, to the left of the
+ * search bar.
+ */
+@Composable
+private fun SiteBadge(site: Site, modifier: Modifier = Modifier) {
+    Text(
+        text = site.displayName,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        modifier = modifier,
+    )
 }
 
 /** Same fill/outline language as [SearchTagChip], plus the (fuzzified) post count folded right into the chip. */

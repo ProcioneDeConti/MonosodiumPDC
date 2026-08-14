@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostRepository
+import one.proci.e621.data.settings.Site
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.util.GridThumbnailSize
 
@@ -26,6 +27,7 @@ data class PostGridUiState(
     val blacklistDisabled: Boolean = false,
     val username: String = "",
     val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
+    val site: Site = Site.E621,
 )
 
 class PostGridViewModel(
@@ -66,6 +68,7 @@ class PostGridViewModel(
             blacklistDisabled = blacklistDisabled,
             username = settings.username,
             gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
+            site = settings.site,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PostGridUiState())
 

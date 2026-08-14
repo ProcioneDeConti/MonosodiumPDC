@@ -186,6 +186,7 @@ fun E621NavGraph() {
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
+                healthCheckRepository = app.healthCheckRepository,
             )
         }
         composable(

@@ -156,6 +156,9 @@
     <string name="forum_reply_send">Send reply</string>
 
     <string name="saved_searches_title">Saved Searches</string>
+    <string name="health_check_title">%1$s status</string>
+    <string name="health_checking">Checking…</string>
+    <string name="health_ok">Operational</string>
     <string name="saved_search_current">Current search: %1$s</string>
     <string name="saved_search_label_hint">Label</string>
     <string name="saved_search_save_current">Save current search</string>
