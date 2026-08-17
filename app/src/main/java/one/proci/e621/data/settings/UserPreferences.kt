@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import one.proci.e621.data.backup.SettingsBackup
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.ImageCacheLimits
@@ -48,6 +49,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val VIDEO_LOOP_ENABLED = booleanPreferencesKey("video_loop_enabled")
         val VIDEO_PLAYBACK_SPEED = floatPreferencesKey("video_playback_speed")
         val VIDEO_AUTOPLAY_ENABLED = booleanPreferencesKey("video_autoplay_enabled")
+        val DOWNLOAD_LOCATION_URI = stringPreferencesKey("download_location_uri")
     }
 
     val settingsFlow = dataStore.data.map { prefs ->
@@ -75,6 +77,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             videoPlaybackSpeed = prefs[Keys.VIDEO_PLAYBACK_SPEED]?.let { VideoPlaybackSpeeds.clamp(it) }
                 ?: VideoPlaybackSpeeds.DEFAULT_SPEED,
             videoAutoplayEnabled = prefs[Keys.VIDEO_AUTOPLAY_ENABLED] ?: true,
+            downloadLocationUri = prefs[Keys.DOWNLOAD_LOCATION_URI],
             isLoaded = true,
         )
     }
@@ -154,6 +157,45 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
 
     suspend fun setVideoAutoplayEnabled(enabled: Boolean) {
         dataStore.edit { prefs -> prefs[Keys.VIDEO_AUTOPLAY_ENABLED] = enabled }
+    }
+
+    /** Pass null to reset to the default MediaStore Pictures/e621 or Movies/e621 location. */
+    suspend fun setDownloadLocationUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri == null) prefs.remove(Keys.DOWNLOAD_LOCATION_URI) else prefs[Keys.DOWNLOAD_LOCATION_URI] = uri
+        }
+    }
+
+    /** Overwrites every backed-up field in one edit - see Settings > Backup & Restore. */
+    suspend fun applyBackup(backup: SettingsBackup) {
+        dataStore.edit { prefs ->
+            prefs[Keys.USE_E6AI] = backup.useE6Ai
+            prefs[Keys.USERNAME] = backup.e621Username
+            prefs[Keys.API_KEY] = backup.e621ApiKey
+            prefs[Keys.E6AI_USERNAME] = backup.e6aiUsername
+            prefs[Keys.E6AI_API_KEY] = backup.e6aiApiKey
+            prefs[Keys.RATING_SAFE] = Rating.SAFE.name in backup.enabledRatings
+            prefs[Keys.RATING_QUESTIONABLE] = Rating.QUESTIONABLE.name in backup.enabledRatings
+            prefs[Keys.RATING_EXPLICIT] = Rating.EXPLICIT.name in backup.enabledRatings
+            prefs[Keys.ADULT_MODE] = backup.adultModeEnabled
+            prefs[Keys.BLACKLIST] = backup.blacklist
+            if (backup.accentColor == null) prefs.remove(Keys.ACCENT_COLOR) else prefs[Keys.ACCENT_COLOR] = backup.accentColor
+            if (backup.eulaAcceptedHash == null) {
+                prefs.remove(Keys.EULA_ACCEPTED_HASH)
+            } else {
+                prefs[Keys.EULA_ACCEPTED_HASH] = backup.eulaAcceptedHash
+            }
+            prefs[Keys.IMAGE_CACHE_LIMIT_MB] = ImageCacheLimits.clamp(backup.imageCacheLimitMb)
+            prefs[Keys.GRID_THUMBNAIL_SIZE_DP] = GridThumbnailSize.clamp(backup.gridThumbnailSizeDp)
+            prefs[Keys.VIDEO_LOOP_ENABLED] = backup.videoLoopEnabled
+            prefs[Keys.VIDEO_PLAYBACK_SPEED] = VideoPlaybackSpeeds.clamp(backup.videoPlaybackSpeed)
+            prefs[Keys.VIDEO_AUTOPLAY_ENABLED] = backup.videoAutoplayEnabled
+            if (backup.downloadLocationUri == null) {
+                prefs.remove(Keys.DOWNLOAD_LOCATION_URI)
+            } else {
+                prefs[Keys.DOWNLOAD_LOCATION_URI] = backup.downloadLocationUri
+            }
+        }
     }
 
     /**

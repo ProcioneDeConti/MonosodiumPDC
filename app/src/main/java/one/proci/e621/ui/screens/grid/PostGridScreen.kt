@@ -76,6 +76,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -199,6 +200,8 @@ fun PostGridScreen(
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
     healthCheckRepository: HealthCheckRepository,
+    useE6Ai: Boolean,
+    onSetUseE6Ai: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -233,6 +236,7 @@ fun PostGridScreen(
                 onDismissError = onDismissError,
                 onPostClick = onPostClick,
                 blacklistDisabled = state.blacklistDisabled,
+                blacklistedIds = state.blacklistedIds,
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,
@@ -254,6 +258,8 @@ fun PostGridScreen(
             onOpenSettings = onOpenSettings,
             site = state.site,
             healthCheckRepository = healthCheckRepository,
+            useE6Ai = useE6Ai,
+            onSetUseE6Ai = onSetUseE6Ai,
         )
     }
 }
@@ -277,6 +283,8 @@ private fun NavDrawerOverlay(
     onOpenSettings: () -> Unit,
     site: Site,
     healthCheckRepository: HealthCheckRepository,
+    useE6Ai: Boolean,
+    onSetUseE6Ai: (Boolean) -> Unit,
 ) {
     BackHandler(enabled = expanded, onBack = onDismiss)
 
@@ -396,6 +404,7 @@ private fun NavDrawerOverlay(
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     HorizontalDivider(modifier = Modifier.padding(bottom = 4.dp))
+                    SiteSwitchRow(useE6Ai = useE6Ai, onSetUseE6Ai = onSetUseE6Ai)
                     HealthCheckRow(site = site, status = healthStatus, onRecheck = ::recheckHealth)
                 }
             }
@@ -427,6 +436,27 @@ private fun DrawerItem(
         } else if (badgeDot) {
             Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.error, CircleShape))
         }
+    }
+}
+
+@Composable
+private fun SiteSwitchRow(useE6Ai: Boolean, onSetUseE6Ai: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.drawer_use_e6ai), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.drawer_use_e6ai_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = useE6Ai, onCheckedChange = onSetUseE6Ai)
     }
 }
 

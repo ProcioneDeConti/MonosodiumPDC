@@ -32,6 +32,12 @@ data class UserSettings(
     /** Whether videos start playing automatically once scrolled into view, vs. requiring a tap. */
     val videoAutoplayEnabled: Boolean = true,
     /**
+     * SAF tree URI (as a string, via [android.net.Uri.toString]) of the user-chosen folder for
+     * downloaded post media; null means "use the default Pictures/e621 or Movies/e621 MediaStore
+     * location" (see [one.proci.e621.data.download.MediaDownloader]).
+     */
+    val downloadLocationUri: String? = null,
+    /**
      * False only for the placeholder instance DataStore hasn't finished its first real read yet -
      * every value that actually comes out of [UserPreferences.settingsFlow] sets this true. Exists
      * so callers (like the EULA gate) can tell "genuinely not agreed" apart from "don't know yet,"

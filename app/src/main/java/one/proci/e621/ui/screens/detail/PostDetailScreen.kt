@@ -151,6 +151,7 @@ fun PostDetailScreen(
     videoLoopEnabled: Boolean,
     videoPlaybackSpeed: Float,
     videoAutoplayEnabled: Boolean,
+    downloadLocationUri: String?,
     modifier: Modifier = Modifier,
 ) {
     if (posts.isEmpty()) return
@@ -204,6 +205,7 @@ fun PostDetailScreen(
                     videoPlaybackSpeed = videoPlaybackSpeed,
                     videoAutoplayEnabled = videoAutoplayEnabled,
                     onTap = { infoVisible = !infoVisible },
+                    onDismiss = ::handleBack,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -242,6 +244,7 @@ fun PostDetailScreen(
                     onExcludeTagFromSearch = onExcludeTagFromSearch,
                     onOpenComments = { commentsSheetVisible = true },
                     site = site,
+                    downloadLocationUri = downloadLocationUri,
                 )
             }
         }
@@ -311,6 +314,7 @@ private fun InfoPanel(
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenComments: () -> Unit,
     site: Site,
+    downloadLocationUri: String?,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -354,7 +358,7 @@ private fun InfoPanel(
                         isDownloading = true
                         Toast.makeText(context, downloadStartedMessage, Toast.LENGTH_SHORT).show()
                         scope.launch {
-                            val result = MediaDownloader(context).download(url, post.downloadFileName, post.mimeType)
+                            val result = MediaDownloader(context).download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
                             isDownloading = false
                             val message = result.fold(
                                 onSuccess = { downloadSavedMessage },

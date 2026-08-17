@@ -65,6 +65,8 @@ fun PostGridBody(
     onPostClick: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
     blacklistDisabled: Boolean = false,
+    /** Ids in [posts] that would normally be hidden - bordered with a caution stripe while [blacklistDisabled] is showing them anyway. */
+    blacklistedIds: Set<Long> = emptySet(),
     onEnableBlacklist: () -> Unit = {},
     thumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     onThumbnailSizeChange: (Int) -> Unit = {},
@@ -162,7 +164,11 @@ fun PostGridBody(
                                 },
                         ) {
                             itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
-                                PostThumbnail(post = post, onClick = { onPostClick(index) })
+                                PostThumbnail(
+                                    post = post,
+                                    onClick = { onPostClick(index) },
+                                    showCautionBorder = blacklistDisabled && post.id in blacklistedIds,
+                                )
                             }
                             if (isLoadingMore) {
                                 item(span = StaggeredGridItemSpan.FullLine) {

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import one.proci.e621.data.model.Post
 
 /** Renders a post's full media: static images and GIFs via Coil, APNG manually, video via ExoPlayer. */
@@ -16,6 +15,7 @@ fun MediaViewer(
     videoPlaybackSpeed: Float,
     videoAutoplayEnabled: Boolean,
     onTap: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val url = post.playableUrl ?: post.preview.url
@@ -31,11 +31,11 @@ fun MediaViewer(
             onTap = onTap,
             modifier = modifier,
         )
-        post.extension == "apng" -> ZoomableBox(modifier = modifier, onTap = onTap) {
+        post.extension == "apng" -> ZoomableBox(modifier = modifier, onTap = onTap, onDismiss = onDismiss) {
             ApngImage(url = url, modifier = Modifier.fillMaxSize())
         }
-        else -> ZoomableBox(modifier = modifier, onTap = onTap) {
-            AsyncImage(
+        else -> ZoomableBox(modifier = modifier, onTap = onTap, onDismiss = onDismiss) {
+            NetworkImage(
                 model = url,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,

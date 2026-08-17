@@ -46,7 +46,14 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val healthCheckRepository by lazy { HealthCheckRepository(apiService) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
 
-    init {
+    // Deliberately in onCreate(), not init{}: init{} runs during the Application's own
+    // construction, before the framework calls attachBaseContext() - these coroutines run on
+    // applicationScope's background dispatcher, and if one gets scheduled fast enough on a cold
+    // start, it can reach userPreferences (which reads this.applicationContext) while that's
+    // still null, crashing with an NPE. onCreate() is guaranteed to run after attachBaseContext().
+    override fun onCreate() {
+        super.onCreate()
+
         applicationScope.launch {
             userPreferences.settingsState
                 .map { it.site.webBaseUrl }

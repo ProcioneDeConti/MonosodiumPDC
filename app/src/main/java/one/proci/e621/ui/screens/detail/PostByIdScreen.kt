@@ -58,6 +58,7 @@ fun PostByIdScreen(
     videoLoopEnabled: Boolean,
     videoPlaybackSpeed: Float,
     videoAutoplayEnabled: Boolean,
+    downloadLocationUri: String?,
     modifier: Modifier = Modifier,
 ) {
     var post by remember(postId) { mutableStateOf<Post?>(null) }
@@ -91,6 +92,7 @@ fun PostByIdScreen(
             videoLoopEnabled = videoLoopEnabled,
             videoPlaybackSpeed = videoPlaybackSpeed,
             videoAutoplayEnabled = videoAutoplayEnabled,
+            downloadLocationUri = downloadLocationUri,
             modifier = modifier,
         )
     } else {

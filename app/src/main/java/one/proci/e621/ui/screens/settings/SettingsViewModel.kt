@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import one.proci.e621.data.backup.SettingsBackupException
+import one.proci.e621.data.backup.SettingsBackupManager
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.repository.UserRepository
 import one.proci.e621.data.settings.UserPreferences
@@ -45,10 +47,6 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.setAdultModeEnabled(enabled) }
     }
 
-    fun setUseE6Ai(enabled: Boolean) {
-        viewModelScope.launch { userPreferences.setUseE6Ai(enabled) }
-    }
-
     fun setRatingEnabled(rating: Rating, enabled: Boolean) {
         val current = settings.value.enabledRatings
         val updated = if (enabled) current + rating else current - rating
@@ -78,6 +76,20 @@ class SettingsViewModel(
 
     fun setVideoAutoplayEnabled(enabled: Boolean) {
         viewModelScope.launch { userPreferences.setVideoAutoplayEnabled(enabled) }
+    }
+
+    fun setDownloadLocationUri(uri: String?) {
+        viewModelScope.launch { userPreferences.setDownloadLocationUri(uri) }
+    }
+
+    /** Pass null/blank [password] to export unencrypted. */
+    fun exportBackupJson(password: String?): String = SettingsBackupManager.export(settings.value, password)
+
+    /** Whether the picked file needs a password before [importBackup] can read it. Throws [SettingsBackupException] if it's not a backup file at all. */
+    fun isBackupEncrypted(fileContents: String): Boolean = SettingsBackupManager.isEncrypted(fileContents)
+
+    suspend fun importBackup(fileContents: String, password: String?): Result<Unit> = runCatching {
+        userPreferences.applyBackup(SettingsBackupManager.import(fileContents, password))
     }
 
     /** Pulls the blacklist saved on the user's e621 account and persists it locally. */

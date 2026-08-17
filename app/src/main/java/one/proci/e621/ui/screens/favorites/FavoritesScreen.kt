@@ -85,6 +85,7 @@ fun FavoritesScreen(
                 onDismissError = onDismissError,
                 onPostClick = onPostClick,
                 blacklistDisabled = state.blacklistDisabled,
+                blacklistedIds = state.blacklistedIds,
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,

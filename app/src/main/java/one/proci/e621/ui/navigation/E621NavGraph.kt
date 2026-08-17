@@ -4,12 +4,15 @@ import android.net.Uri
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -158,6 +161,19 @@ fun E621NavGraph() {
             val searchViewModel: PostGridViewModel =
                 viewModel(viewModelStoreOwner = backStackEntry, factory = searchFactory)
             SideEffect { searchViewModels[id] = searchViewModel }
+            // searchViewModels is remembered at the graph root, so nothing else ever drops an
+            // entry - without this, every search/tag-hop leaks its PostGridViewModel (and its
+            // full post list) for the rest of the process's life. ON_DESTROY (not just leaving
+            // composition) is the right signal: this entry keeps living on the back stack, and
+            // this composable keeps leaving/re-entering composition, whenever Detail is pushed on
+            // top of it - only a real pop should evict it.
+            DisposableEffect(backStackEntry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_DESTROY) searchViewModels.remove(id)
+                }
+                backStackEntry.lifecycle.addObserver(observer)
+                onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+            }
             val state by searchViewModel.uiState.collectAsStateWithLifecycle()
             val notifications by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { notificationsViewModel.refresh() }
@@ -187,6 +203,16 @@ fun E621NavGraph() {
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
                 healthCheckRepository = app.healthCheckRepository,
+                useE6Ai = userSettings.useE6Ai,
+                onSetUseE6Ai = { enabled ->
+                    // Awaited (not fire-and-forget) before refreshing - SiteInterceptor reads the
+                    // settings StateFlow synchronously per-request, so refreshing before the
+                    // DataStore write actually lands would still fetch from the old site.
+                    coroutineScope.launch {
+                        app.userPreferences.setUseE6Ai(enabled)
+                        searchViewModel.refresh()
+                    }
+                },
             )
         }
         composable(
@@ -245,6 +271,7 @@ fun E621NavGraph() {
                     videoLoopEnabled = userSettings.videoLoopEnabled,
                     videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                     videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                    downloadLocationUri = userSettings.downloadLocationUri,
                 )
             } else {
                 val searchViewModel = searchViewModels[searchId]
@@ -267,6 +294,7 @@ fun E621NavGraph() {
                         videoLoopEnabled = userSettings.videoLoopEnabled,
                         videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                         videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                        downloadLocationUri = userSettings.downloadLocationUri,
                     )
                 }
             }
@@ -280,7 +308,6 @@ fun E621NavGraph() {
                 onBack = { navController.popBackStack() },
                 onSaveAccount = settingsViewModel::saveAccount,
                 onSetAdultModeEnabled = settingsViewModel::setAdultModeEnabled,
-                onSetUseE6Ai = settingsViewModel::setUseE6Ai,
                 onSetRatingEnabled = settingsViewModel::setRatingEnabled,
                 onSaveBlacklist = settingsViewModel::saveBlacklist,
                 onImportBlacklist = settingsViewModel::importBlacklistFromE621,
@@ -290,6 +317,10 @@ fun E621NavGraph() {
                 onSetVideoLoopEnabled = settingsViewModel::setVideoLoopEnabled,
                 onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,
                 onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
+                onSetDownloadLocationUri = settingsViewModel::setDownloadLocationUri,
+                onExportBackupJson = settingsViewModel::exportBackupJson,
+                onIsBackupEncrypted = settingsViewModel::isBackupEncrypted,
+                onImportBackup = settingsViewModel::importBackup,
             )
         }
         composable(Routes.MESSAGES) {
@@ -485,6 +516,7 @@ fun E621NavGraph() {
                 videoLoopEnabled = userSettings.videoLoopEnabled,
                 videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                 videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                downloadLocationUri = userSettings.downloadLocationUri,
             )
         }
         composable(

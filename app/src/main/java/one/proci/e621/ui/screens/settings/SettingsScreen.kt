@@ -1,5 +1,9 @@
 package one.proci.e621.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +46,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +75,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import coil3.SingletonImageLoader
 import coil3.annotation.DelicateCoilApi
 import kotlinx.coroutines.launch
@@ -92,7 +99,6 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSaveAccount: suspend (username: String, apiKey: String) -> AccountSaveOutcome,
     onSetAdultModeEnabled: (Boolean) -> Unit,
-    onSetUseE6Ai: (Boolean) -> Unit,
     onSetRatingEnabled: (Rating, Boolean) -> Unit,
     onSaveBlacklist: (String) -> Unit,
     onImportBlacklist: suspend () -> Result<String>,
@@ -102,6 +108,10 @@ fun SettingsScreen(
     onSetVideoLoopEnabled: (Boolean) -> Unit,
     onSetVideoPlaybackSpeed: (Float) -> Unit,
     onSetVideoAutoplayEnabled: (Boolean) -> Unit,
+    onSetDownloadLocationUri: (String?) -> Unit,
+    onExportBackupJson: (password: String?) -> String,
+    onIsBackupEncrypted: (fileContents: String) -> Boolean,
+    onImportBackup: suspend (fileContents: String, password: String?) -> Result<Unit>,
     modifier: Modifier = Modifier,
 ) {
     var username by remember(settings.username) { mutableStateOf(settings.username) }
@@ -119,6 +129,58 @@ fun SettingsScreen(
     val pushedMessage = stringResource(R.string.settings_blacklist_pushed, settings.site.displayName)
     val syncFailedTemplate = stringResource(R.string.settings_blacklist_sync_failed)
     val cacheClearedMessage = stringResource(R.string.settings_cache_cleared)
+
+    var showExportDialog by remember { mutableStateOf(false) }
+    var pendingExportPassword by remember { mutableStateOf<String?>(null) }
+    var pendingImportContent by remember { mutableStateOf<String?>(null) }
+    val exportedMessage = stringResource(R.string.settings_backup_exported)
+    val exportFailedTemplate = stringResource(R.string.settings_backup_export_failed)
+    val importedSettingsMessage = stringResource(R.string.settings_backup_imported)
+    val importFailedTemplate = stringResource(R.string.settings_backup_import_failed)
+    val invalidFileMessage = stringResource(R.string.settings_backup_invalid_file)
+
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val password = pendingExportPassword
+        pendingExportPassword = null
+        if (uri != null) {
+            scope.launch {
+                runCatching {
+                    val payload = onExportBackupJson(password?.ifEmpty { null })
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
+                        ?: error("Could not open output stream")
+                }.fold(
+                    onSuccess = { snackbarHostState.showSnackbar(exportedMessage) },
+                    onFailure = { e -> snackbarHostState.showSnackbar(String.format(exportFailedTemplate, e.message ?: e.toString())) },
+                )
+            }
+        }
+    }
+
+    val importPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val content = runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                        ?: error("Could not open input stream")
+                }.getOrElse { e ->
+                    snackbarHostState.showSnackbar(String.format(importFailedTemplate, e.message ?: e.toString()))
+                    return@launch
+                }
+                val encrypted = runCatching { onIsBackupEncrypted(content) }.getOrElse {
+                    snackbarHostState.showSnackbar(invalidFileMessage)
+                    return@launch
+                }
+                if (encrypted) {
+                    pendingImportContent = content
+                } else {
+                    onImportBackup(content, null).fold(
+                        onSuccess = { snackbarHostState.showSnackbar(importedSettingsMessage) },
+                        onFailure = { e -> snackbarHostState.showSnackbar(String.format(importFailedTemplate, e.message ?: e.toString())) },
+                    )
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -147,16 +209,6 @@ fun SettingsScreen(
                 Text(
                     stringResource(R.string.settings_adult_mode_disclaimer),
                     style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            SettingsSection(stringResource(R.string.settings_site), titleTrailing = {
-                Switch(checked = settings.useE6Ai, onCheckedChange = onSetUseE6Ai)
-            }) {
-                Text(
-                    stringResource(R.string.settings_site_hint),
-                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -257,6 +309,49 @@ fun SettingsScreen(
                     scope.launch { snackbarHostState.showSnackbar(cacheClearedMessage) }
                 }) {
                     Text(stringResource(R.string.settings_cache_clear))
+                }
+            }
+
+            SettingsSection(stringResource(R.string.settings_downloads)) {
+                Text(
+                    stringResource(R.string.settings_downloads_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                val downloadLocationUri = settings.downloadLocationUri
+                val defaultLocationLabel = stringResource(R.string.settings_downloads_default_location)
+                val downloadFolderLabel = remember(downloadLocationUri) {
+                    downloadLocationUri
+                        ?.let { uriString -> DocumentFile.fromTreeUri(context, Uri.parse(uriString))?.name }
+                        ?: defaultLocationLabel
+                }
+                Text(
+                    stringResource(R.string.settings_downloads_current_location, downloadFolderLabel),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+
+                val folderPickerLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocumentTree(),
+                ) { uri ->
+                    if (uri != null) {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                        onSetDownloadLocationUri(uri.toString())
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { folderPickerLauncher.launch(null) }) {
+                        Text(stringResource(R.string.settings_downloads_choose_folder))
+                    }
+                    if (downloadLocationUri != null) {
+                        OutlinedButton(onClick = { onSetDownloadLocationUri(null) }) {
+                            Text(stringResource(R.string.settings_downloads_reset))
+                        }
+                    }
                 }
             }
 
@@ -370,6 +465,22 @@ fun SettingsScreen(
                 }
             }
 
+            SettingsSection(stringResource(R.string.settings_backup)) {
+                Text(
+                    stringResource(R.string.settings_backup_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { showExportDialog = true }) {
+                        Text(stringResource(R.string.settings_backup_export))
+                    }
+                    OutlinedButton(onClick = { importPickerLauncher.launch(arrayOf("application/json", "*/*")) }) {
+                        Text(stringResource(R.string.settings_backup_import))
+                    }
+                }
+            }
+
             SettingsSection(stringResource(R.string.settings_legal)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -387,6 +498,165 @@ fun SettingsScreen(
     if (showEulaDialog) {
         EulaReadOnlyDialog(onDismiss = { showEulaDialog = false })
     }
+
+    if (showExportDialog) {
+        ExportBackupDialog(
+            onDismiss = { showExportDialog = false },
+            onConfirm = { password ->
+                pendingExportPassword = password
+                showExportDialog = false
+                exportLauncher.launch("e621_backup.json")
+            },
+        )
+    }
+
+    val importContent = pendingImportContent
+    if (importContent != null) {
+        ImportBackupPasswordDialog(
+            onDismiss = { pendingImportContent = null },
+            // Returns an error message to show inline (dialog stays open) on failure, or null on
+            // success (dialog dismisses) - the success snackbar is shown from here, not returned.
+            onSubmit = { password ->
+                onImportBackup(importContent, password).fold(
+                    onSuccess = {
+                        pendingImportContent = null
+                        snackbarHostState.showSnackbar(importedSettingsMessage)
+                        null
+                    },
+                    onFailure = { e -> e.message ?: e.toString() },
+                )
+            },
+        )
+    }
+}
+
+/**
+ * Password is optional (blank = export unencrypted, with the account's API key in plain text -
+ * [warningVisible] below makes sure that trade-off is seen, not just defaulted into).
+ */
+@Composable
+private fun ExportBackupDialog(onDismiss: () -> Unit, onConfirm: (password: String?) -> Unit) {
+    var encrypt by remember { mutableStateOf(true) }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    val mismatch = encrypt && password.isNotEmpty() && confirmPassword.isNotEmpty() && password != confirmPassword
+    val canConfirm = if (encrypt) password.isNotEmpty() && password == confirmPassword else true
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_backup_export)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = encrypt, onCheckedChange = { encrypt = it })
+                    Text(stringResource(R.string.settings_backup_encrypt_checkbox), style = MaterialTheme.typography.bodyMedium)
+                }
+                if (encrypt) {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.settings_backup_password)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text(stringResource(R.string.settings_backup_confirm_password)) },
+                        singleLine = true,
+                        isError = mismatch,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (mismatch) {
+                        Text(
+                            stringResource(R.string.settings_backup_password_mismatch),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(
+                            Icons.Filled.WarningAmber,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            stringResource(R.string.settings_backup_plaintext_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = canConfirm, onClick = { onConfirm(if (encrypt) password else null) }) {
+                Text(stringResource(R.string.settings_backup_export))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) }
+        },
+    )
+}
+
+/** Retries in place on a wrong password (rather than dismissing) - re-picking the file just to try again would be needlessly punishing. */
+@Composable
+private fun ImportBackupPasswordDialog(onDismiss: () -> Unit, onSubmit: suspend (password: String) -> String?) {
+    var password by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var submitting by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun submit() {
+        if (password.isEmpty() || submitting) return
+        submitting = true
+        scope.launch {
+            error = onSubmit(password)
+            submitting = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_backup_import_password_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; error = null },
+                    label = { Text(stringResource(R.string.settings_backup_password)) },
+                    singleLine = true,
+                    isError = error != null,
+                    enabled = !submitting,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (error != null) {
+                    Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = {
+            if (submitting) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                TextButton(enabled = password.isNotEmpty(), onClick = ::submit) {
+                    Text(stringResource(R.string.settings_backup_unlock))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) }
+        },
+    )
 }
 
 @Composable

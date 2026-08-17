@@ -1,6 +1,7 @@
 package one.proci.e621.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,15 +19,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.util.formatCount
 import one.proci.e621.ui.theme.FavoriteGold
@@ -34,22 +38,37 @@ import one.proci.e621.ui.theme.RatingExplicit
 import one.proci.e621.ui.theme.RatingQuestionable
 import one.proci.e621.ui.theme.RatingSafe
 
+/**
+ * Diagonal red/white repeating stripe, like caution tape - painted only into a thin border ring
+ * (see [PostThumbnail]'s `showCautionBorder`), not the whole thumbnail, so it reads as "temporarily
+ * unhidden" rather than a loud warning. [TileMode.Repeated] tiles this short diagonal segment
+ * across the whole border regardless of the thumbnail's actual size.
+ */
+private val CautionStripeBrush = Brush.linearGradient(
+    colorStops = arrayOf(0.0f to Color.Red, 0.5f to Color.Red, 0.5f to Color.White, 1.0f to Color.White),
+    start = Offset.Zero,
+    end = Offset(16f, 16f),
+    tileMode = TileMode.Repeated,
+)
+
 @Composable
-fun PostThumbnail(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PostThumbnail(post: Post, onClick: () -> Unit, showCautionBorder: Boolean = false, modifier: Modifier = Modifier) {
     val aspect = if (post.preview.width > 0 && post.preview.height > 0) {
         post.preview.width.toFloat() / post.preview.height.toFloat()
     } else {
         1f
     }
+    val shape = remember { RoundedCornerShape(7.dp) }
 
     Box(
         modifier = modifier
             .aspectRatio(aspect.coerceIn(0.5f, 2f))
-            .clip(RoundedCornerShape(7.dp))
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .then(if (showCautionBorder) Modifier.border(2.dp, CautionStripeBrush, shape) else Modifier),
     ) {
-        AsyncImage(
+        NetworkImage(
             model = post.preview.url,
             contentDescription = null,
             contentScale = ContentScale.Crop,

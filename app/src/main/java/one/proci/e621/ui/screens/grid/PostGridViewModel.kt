@@ -20,6 +20,8 @@ data class PostGridUiState(
     val query: String = "",
     val activeQuery: String = "",
     val posts: List<Post> = emptyList(),
+    /** Ids within [posts] that match the blacklist - only non-empty while [blacklistDisabled] is showing them anyway; see PostThumbnail's caution-stripe border. */
+    val blacklistedIds: Set<Long> = emptySet(),
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val endReached: Boolean = false,
@@ -57,10 +59,12 @@ class PostGridViewModel(
         userPreferences.settingsState,
         userPreferences.blacklistDisabled,
     ) { s, settings, blacklistDisabled ->
+        val blacklistedIds = s.rawPosts.filter(settings::isBlacklisted).mapTo(mutableSetOf()) { it.id }
         PostGridUiState(
             query = s.query,
             activeQuery = s.activeQuery,
-            posts = if (blacklistDisabled) s.rawPosts else s.rawPosts.filterNot(settings::isBlacklisted),
+            posts = if (blacklistDisabled) s.rawPosts else s.rawPosts.filterNot { it.id in blacklistedIds },
+            blacklistedIds = blacklistedIds,
             isRefreshing = s.isRefreshing,
             isLoadingMore = s.isLoadingMore,
             endReached = s.endReached,
