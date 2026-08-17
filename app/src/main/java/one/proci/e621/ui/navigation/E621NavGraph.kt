@@ -85,7 +85,10 @@ private const val SOURCE_FAVORITES = "favorites"
 private const val NO_SEARCH_ID = -1
 
 @Composable
-fun E621NavGraph() {
+fun E621NavGraph(
+    pendingDeepLinkPostId: Long? = null,
+    onDeepLinkConsumed: () -> Unit = {},
+) {
     val context = LocalContext.current
     val app = context.applicationContext as E621Application
     val factory = remember { AppViewModelFactory(app) }
@@ -117,6 +120,16 @@ fun E621NavGraph() {
     val nextSearchId = remember { AtomicInteger(0) }
     val searchViewModels = remember { mutableMapOf<Int, PostGridViewModel>() }
     val startRoute = remember { Routes.search(nextSearchId.incrementAndGet(), "") }
+
+    // Handles a /posts/{id} link (e621.net, e926.net, e6ai.net) that launched or resumed the
+    // app - see MainActivity.postIdFromIntent. Consuming it immediately (rather than waiting on
+    // the navigate call to settle) means a config change before the nav transition finishes can't
+    // fire it a second time.
+    LaunchedEffect(pendingDeepLinkPostId) {
+        val postId = pendingDeepLinkPostId ?: return@LaunchedEffect
+        onDeepLinkConsumed()
+        navController.navigate(Routes.postDetail(postId))
+    }
 
     fun addTagToBlacklist(tag: String) {
         coroutineScope.launch {

@@ -19,12 +19,30 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.E621"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- App Links for e621/e926/e6ai. autoVerify only takes effect if those sites ever
+                 host a matching /.well-known/assetlinks.json (we don't control that third-party
+                 server), so users may still need to enable this manually via Settings > Apps >
+                 e621 > Open by default. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="e621.net" />
+                <data android:host="www.e621.net" />
+                <data android:host="e926.net" />
+                <data android:host="www.e926.net" />
+                <data android:host="e6ai.net" />
+                <data android:host="www.e6ai.net" />
             </intent-filter>
         </activity>
 
