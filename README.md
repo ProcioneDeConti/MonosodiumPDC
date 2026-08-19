@@ -24,7 +24,7 @@ This is a personal project, not affiliated with or endorsed by e621 or e6AI. It 
 
 ## Requirements
 
-- Android 14 (API 34) or newer
+- Android 9 (API 28) or newer
 - An e621 and/or e6AI account (optional, and separate from each other) - required for posting, voting, favorites, messages, and forum replies; browsing works without one
 
 ## Building

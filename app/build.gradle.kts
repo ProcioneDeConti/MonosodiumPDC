@@ -28,10 +28,10 @@ android {
 
     defaultConfig {
         applicationId = "one.proci.e621"
-        minSdk = 34
+        minSdk = 28
         targetSdk = 37
-        versionCode = 73
-        versionName = "2.6.3"
+        versionCode = 74
+        versionName = "2.6.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

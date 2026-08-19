@@ -209,9 +209,11 @@
         entries in each array - drop the oldest pair once there are more than 10.
     -->
     <string-array name="whats_new_versions">
+        <item>2.6.4</item>
         <item>2.6.3</item>
     </string-array>
     <string-array name="whats_new_entries">
+        <item>• Lowered the minimum required Android version from 14 down to 9 - this app now runs on far more devices, so feel free to share it with friends on older phones.</item>
         <item>• See what\'s changed after every update, right here - reopen anytime from Settings &gt; Updates.\n• Manually check whether a newer version is available, from Settings &gt; Updates.\n• General stability and compatibility improvements.</item>
     </string-array>
 

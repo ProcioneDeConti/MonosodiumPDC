@@ -2,6 +2,7 @@ package one.proci.e621
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -50,7 +51,15 @@ class MainActivity : ComponentActivity() {
             // otherwise look identical (a null lastSeenVersionCode) and would wrongly skip the
             // "What's New" dialog for upgraders.
             val isFreshInstall = remember {
-                val info = packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                // PackageInfoFlags (the non-deprecated overload) needs API 33; minSdk is 28, so
+                // this falls back to the older int-flags overload below that - still functional,
+                // just deprecated.
+                val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.getPackageInfo(packageName, 0)
+                }
                 info.firstInstallTime == info.lastUpdateTime
             }
             E621Theme(accentColor = settings.accentColor?.let { Color(it) }) {
