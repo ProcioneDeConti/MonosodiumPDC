@@ -44,6 +44,8 @@ data class UserSettings(
      * DataStore yet (guard with [isLoaded]).
      */
     val lastSeenVersionCode: Int? = null,
+    /** Whether Android's Auto Backup may back this app's data up to the user's Google account. Defaults to true (the platform's own default) so existing users see no behavior change until they visit Settings. */
+    val cloudBackupEnabled: Boolean = true,
     /**
      * False only for the placeholder instance DataStore hasn't finished its first real read yet -
      * every value that actually comes out of [UserPreferences.settingsFlow] sets this true. Exists

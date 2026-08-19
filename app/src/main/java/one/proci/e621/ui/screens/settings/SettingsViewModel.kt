@@ -100,6 +100,10 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.setDownloadLocationUri(uri) }
     }
 
+    fun setCloudBackupEnabled(enabled: Boolean) {
+        viewModelScope.launch { userPreferences.setCloudBackupEnabled(enabled) }
+    }
+
     /** Pass null/blank [password] to export unencrypted. */
     fun exportBackupJson(password: String?): String = SettingsBackupManager.export(settings.value, password)
 

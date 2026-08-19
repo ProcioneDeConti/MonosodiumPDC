@@ -336,6 +336,7 @@ fun E621NavGraph(
                 onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,
                 onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
                 onSetDownloadLocationUri = settingsViewModel::setDownloadLocationUri,
+                onSetCloudBackupEnabled = settingsViewModel::setCloudBackupEnabled,
                 onExportBackupJson = settingsViewModel::exportBackupJson,
                 onIsBackupEncrypted = settingsViewModel::isBackupEncrypted,
                 onImportBackup = settingsViewModel::importBackup,

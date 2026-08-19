@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import one.proci.e621.data.backup.SettingsBackup
@@ -51,6 +52,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val VIDEO_AUTOPLAY_ENABLED = booleanPreferencesKey("video_autoplay_enabled")
         val DOWNLOAD_LOCATION_URI = stringPreferencesKey("download_location_uri")
         val LAST_SEEN_VERSION_CODE = intPreferencesKey("last_seen_version_code")
+        val CLOUD_BACKUP_ENABLED = booleanPreferencesKey("cloud_backup_enabled")
     }
 
     val settingsFlow = dataStore.data.map { prefs ->
@@ -80,6 +82,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             videoAutoplayEnabled = prefs[Keys.VIDEO_AUTOPLAY_ENABLED] ?: true,
             downloadLocationUri = prefs[Keys.DOWNLOAD_LOCATION_URI],
             lastSeenVersionCode = prefs[Keys.LAST_SEEN_VERSION_CODE],
+            cloudBackupEnabled = prefs[Keys.CLOUD_BACKUP_ENABLED] ?: true,
             isLoaded = true,
         )
     }
@@ -173,6 +176,10 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         dataStore.edit { prefs -> prefs[Keys.LAST_SEEN_VERSION_CODE] = versionCode }
     }
 
+    suspend fun setCloudBackupEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.CLOUD_BACKUP_ENABLED] = enabled }
+    }
+
     /** Overwrites every backed-up field in one edit - see Settings > Backup & Restore. */
     suspend fun applyBackup(backup: SettingsBackup) {
         dataStore.edit { prefs ->
@@ -215,5 +222,18 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
 
     fun setBlacklistDisabled(disabled: Boolean) {
         _blacklistDisabled.value = disabled
+    }
+
+    companion object {
+        /**
+         * A standalone, [Context]-only read for [one.proci.e621.data.backup.AppBackupAgent],
+         * which cannot reliably reach [one.proci.e621.E621Application]'s own [UserPreferences]
+         * instance - the OS can spin up a backup-only process where `applicationContext` is a
+         * bare [android.app.Application], not the manifest's custom subclass, since the backup
+         * agent runs before/without the app's own `Application.onCreate()`. Reads the same
+         * DataStore file directly instead, fresh from disk.
+         */
+        suspend fun isCloudBackupEnabled(context: Context): Boolean =
+            context.applicationContext.dataStore.data.map { it[Keys.CLOUD_BACKUP_ENABLED] ?: true }.first()
     }
 }

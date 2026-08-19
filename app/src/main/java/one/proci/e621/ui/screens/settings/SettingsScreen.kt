@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.settings
 
+import android.app.KeyguardManager
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -127,6 +128,7 @@ fun SettingsScreen(
     onSetVideoPlaybackSpeed: (Float) -> Unit,
     onSetVideoAutoplayEnabled: (Boolean) -> Unit,
     onSetDownloadLocationUri: (String?) -> Unit,
+    onSetCloudBackupEnabled: (Boolean) -> Unit,
     onExportBackupJson: (password: String?) -> String,
     onIsBackupEncrypted: (fileContents: String) -> Boolean,
     onImportBackup: suspend (fileContents: String, password: String?) -> Result<Unit>,
@@ -157,6 +159,11 @@ fun SettingsScreen(
     val importedSettingsMessage = stringResource(R.string.settings_backup_imported)
     val importFailedTemplate = stringResource(R.string.settings_backup_import_failed)
     val invalidFileMessage = stringResource(R.string.settings_backup_invalid_file)
+    // Snapshotted once rather than observed live - if the user sets a lock screen while this
+    // screen happens to be open, the warning updating a beat late is a non-issue.
+    val isDeviceSecure = remember {
+        context.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val password = pendingExportPassword
@@ -497,6 +504,29 @@ fun SettingsScreen(
                     OutlinedButton(onClick = { importPickerLauncher.launch(arrayOf("application/json", "*/*")) }) {
                         Text(stringResource(R.string.settings_backup_import))
                     }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_cloud_backup), style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            stringResource(R.string.settings_cloud_backup_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = settings.cloudBackupEnabled, onCheckedChange = onSetCloudBackupEnabled)
+                }
+                if (settings.cloudBackupEnabled && !isDeviceSecure) {
+                    Text(
+                        stringResource(R.string.settings_cloud_backup_no_lock_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
 
