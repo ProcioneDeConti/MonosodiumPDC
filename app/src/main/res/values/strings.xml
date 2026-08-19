@@ -198,6 +198,11 @@
     <string name="eula_agreed_label">User has agreed to EULA</string>
     <string name="eula_read_again">Read EULA Again</string>
 
+    <string name="settings_about">About</string>
+    <string name="settings_whats_new">What\'s New</string>
+    <string name="whats_new_title">What\'s New in v%1$s</string>
+    <string name="whats_new_body">• Added this \"What\'s New\" dialog - it pops up once after an update, and you can reopen it anytime from Settings.\n• Updated core libraries (coroutines, serialization, video player) for stability and compatibility.</string>
+
     <string name="profile_title">Profile</string>
     <string name="profile_load_failed">Couldn\'t load profile: %1$s</string>
     <string name="profile_joined">Joined %1$s</string>

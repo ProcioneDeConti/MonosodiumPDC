@@ -86,6 +86,7 @@ import one.proci.e621.data.settings.UserSettings
 import one.proci.e621.data.util.ImageCacheLimits
 import one.proci.e621.data.util.VideoPlaybackSpeeds
 import one.proci.e621.ui.screens.eula.EulaReadOnlyDialog
+import one.proci.e621.ui.screens.whatsnew.WhatsNewDialog
 import one.proci.e621.ui.theme.AccentPresets
 
 /** Fixed regardless of the user's accent color - a beta badge should always read as gold, not blend in. */
@@ -118,6 +119,7 @@ fun SettingsScreen(
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
     var blacklist by remember(settings.blacklist) { mutableStateOf(settings.blacklist) }
     var showEulaDialog by remember { mutableStateOf(false) }
+    var showWhatsNewDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -491,12 +493,22 @@ fun SettingsScreen(
                 }
             }
 
+            SettingsSection(stringResource(R.string.settings_about)) {
+                OutlinedButton(onClick = { showWhatsNewDialog = true }) {
+                    Text(stringResource(R.string.settings_whats_new))
+                }
+            }
+
             CreditsFooter()
         }
     }
 
     if (showEulaDialog) {
         EulaReadOnlyDialog(onDismiss = { showEulaDialog = false })
+    }
+
+    if (showWhatsNewDialog) {
+        WhatsNewDialog(onDismiss = { showWhatsNewDialog = false })
     }
 
     if (showExportDialog) {

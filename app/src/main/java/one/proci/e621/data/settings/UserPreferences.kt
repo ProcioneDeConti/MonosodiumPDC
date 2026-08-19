@@ -50,6 +50,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val VIDEO_PLAYBACK_SPEED = floatPreferencesKey("video_playback_speed")
         val VIDEO_AUTOPLAY_ENABLED = booleanPreferencesKey("video_autoplay_enabled")
         val DOWNLOAD_LOCATION_URI = stringPreferencesKey("download_location_uri")
+        val LAST_SEEN_VERSION_CODE = intPreferencesKey("last_seen_version_code")
     }
 
     val settingsFlow = dataStore.data.map { prefs ->
@@ -78,6 +79,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
                 ?: VideoPlaybackSpeeds.DEFAULT_SPEED,
             videoAutoplayEnabled = prefs[Keys.VIDEO_AUTOPLAY_ENABLED] ?: true,
             downloadLocationUri = prefs[Keys.DOWNLOAD_LOCATION_URI],
+            lastSeenVersionCode = prefs[Keys.LAST_SEEN_VERSION_CODE],
             isLoaded = true,
         )
     }
@@ -164,6 +166,11 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         dataStore.edit { prefs ->
             if (uri == null) prefs.remove(Keys.DOWNLOAD_LOCATION_URI) else prefs[Keys.DOWNLOAD_LOCATION_URI] = uri
         }
+    }
+
+    /** Pass the app's current versionCode once it's been seen (EULA gate passed) - see [UserSettings.lastSeenVersionCode]. */
+    suspend fun setLastSeenVersionCode(versionCode: Int) {
+        dataStore.edit { prefs -> prefs[Keys.LAST_SEEN_VERSION_CODE] = versionCode }
     }
 
     /** Overwrites every backed-up field in one edit - see Settings > Backup & Restore. */

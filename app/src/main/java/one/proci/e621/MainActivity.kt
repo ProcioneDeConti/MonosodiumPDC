@@ -1,12 +1,14 @@
 package one.proci.e621
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import one.proci.e621.BuildConfig
 import one.proci.e621.data.util.eulaHash
 import one.proci.e621.data.util.loadEulaText
 import one.proci.e621.ui.navigation.E621NavGraph
 import one.proci.e621.ui.screens.eula.EulaScreen
+import one.proci.e621.ui.screens.whatsnew.WhatsNewDialog
 import one.proci.e621.ui.theme.E621Theme
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +44,15 @@ class MainActivity : ComponentActivity() {
             // fresh process picks up the new text and, since its hash won't match whatever was
             // last accepted, re-prompts automatically.
             val currentEulaHash = remember { eulaHash(loadEulaText(this)) }
+            // True only when this process's install has never been updated - i.e. firstInstallTime
+            // and lastUpdateTime are the same instant. Used to tell "brand new install" apart from
+            // "existing user upgrading from a build that predates lastSeenVersionCode," which both
+            // otherwise look identical (a null lastSeenVersionCode) and would wrongly skip the
+            // "What's New" dialog for upgraders.
+            val isFreshInstall = remember {
+                val info = packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                info.firstInstallTime == info.lastUpdateTime
+            }
             E621Theme(accentColor = settings.accentColor?.let { Color(it) }) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when {
@@ -49,10 +62,31 @@ class MainActivity : ComponentActivity() {
                         // agreed," flashing the EULA screen for a frame on every launch even for
                         // an already-agreed user, before the real value arrived and swapped it out.
                         !settings.isLoaded -> Unit
-                        settings.eulaAcceptedHash == currentEulaHash -> E621NavGraph(
-                            pendingDeepLinkPostId = pendingDeepLinkPostId,
-                            onDeepLinkConsumed = { pendingDeepLinkPostId = null },
-                        )
+                        settings.eulaAcceptedHash == currentEulaHash -> {
+                            var showWhatsNew by remember { mutableStateOf(false) }
+                            // Runs once per EULA-passed session (key is a constant), not on every
+                            // recomposition - a genuinely fresh install just records the current
+                            // versionCode as the baseline (see isFreshInstall above) rather than
+                            // showing a dialog for changes it never saw.
+                            LaunchedEffect(Unit) {
+                                val lastSeen = settings.lastSeenVersionCode
+                                when {
+                                    lastSeen == null && isFreshInstall ->
+                                        app.userPreferences.setLastSeenVersionCode(BuildConfig.VERSION_CODE)
+                                    lastSeen == null || lastSeen < BuildConfig.VERSION_CODE -> showWhatsNew = true
+                                }
+                            }
+                            E621NavGraph(
+                                pendingDeepLinkPostId = pendingDeepLinkPostId,
+                                onDeepLinkConsumed = { pendingDeepLinkPostId = null },
+                            )
+                            if (showWhatsNew) {
+                                WhatsNewDialog(onDismiss = {
+                                    showWhatsNew = false
+                                    scope.launch { app.userPreferences.setLastSeenVersionCode(BuildConfig.VERSION_CODE) }
+                                })
+                            }
+                        }
                         else -> EulaScreen(
                             onAgree = { scope.launch { app.userPreferences.setEulaAccepted(currentEulaHash) } },
                             onDisagree = { finishAffinity() },

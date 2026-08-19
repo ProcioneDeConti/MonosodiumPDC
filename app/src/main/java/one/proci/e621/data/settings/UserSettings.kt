@@ -38,6 +38,13 @@ data class UserSettings(
      */
     val downloadLocationUri: String? = null,
     /**
+     * The app's versionCode as of the last time the "What's New" dialog was shown or dismissed
+     * (or auto-recorded on first install, so first-time users don't see it). Null means never
+     * recorded yet - either a brand-new install or, like [eulaAcceptedHash], not loaded from
+     * DataStore yet (guard with [isLoaded]).
+     */
+    val lastSeenVersionCode: Int? = null,
+    /**
      * False only for the placeholder instance DataStore hasn't finished its first real read yet -
      * every value that actually comes out of [UserPreferences.settingsFlow] sets this true. Exists
      * so callers (like the EULA gate) can tell "genuinely not agreed" apart from "don't know yet,"
