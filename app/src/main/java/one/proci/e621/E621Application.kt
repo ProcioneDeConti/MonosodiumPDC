@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import one.proci.e621.data.api.E621Client
+import one.proci.e621.data.api.GitHubClient
 import one.proci.e621.data.api.UserAgentInterceptor
 import one.proci.e621.data.dtext.DTextLinkConfig
 import one.proci.e621.data.repository.AvatarRepository
@@ -25,6 +26,7 @@ import one.proci.e621.data.repository.MessagesRepository
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.repository.TagSuggestionRepository
+import one.proci.e621.data.repository.UpdateCheckRepository
 import one.proci.e621.data.repository.UserRepository
 import one.proci.e621.data.settings.SavedSearchStore
 import one.proci.e621.data.settings.UserPreferences
@@ -44,6 +46,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val forumRepository by lazy { ForumRepository(apiService) }
     val avatarRepository by lazy { AvatarRepository(apiService) }
     val healthCheckRepository by lazy { HealthCheckRepository(apiService) }
+    val updateCheckRepository by lazy { UpdateCheckRepository(GitHubClient.create()) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
 
     // Deliberately in onCreate(), not init{}: init{} runs during the Application's own

@@ -27,9 +27,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -82,6 +88,8 @@ import kotlinx.coroutines.launch
 import one.proci.e621.BuildConfig
 import one.proci.e621.R
 import one.proci.e621.data.model.Rating
+import one.proci.e621.data.repository.RateLimitInfo
+import one.proci.e621.data.repository.UpdateCheckStatus
 import one.proci.e621.data.settings.UserSettings
 import one.proci.e621.data.util.ImageCacheLimits
 import one.proci.e621.data.util.VideoPlaybackSpeeds
@@ -92,11 +100,20 @@ import one.proci.e621.ui.theme.AccentPresets
 /** Fixed regardless of the user's accent color - a beta badge should always read as gold, not blend in. */
 private val BetaGold = Color(0xFFFFD700)
 
+// Fixed update-status shield colors, same reasoning as BetaGold above - these are status
+// indicators (like a traffic light), not decorative UI, so they shouldn't shift with the accent color.
+private val UpdateStatusGreen = Color(0xFF4CAF50)
+private val UpdateStatusAmber = Color(0xFFFFC107)
+private val UpdateStatusPurple = Color(0xFF9C27B0)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settings: UserSettings,
     isSyncing: Boolean,
+    updateCheckStatus: UpdateCheckStatus,
+    rateLimitInfo: RateLimitInfo?,
+    onCheckForUpdate: () -> Unit,
     onBack: () -> Unit,
     onSaveAccount: suspend (username: String, apiKey: String) -> AccountSaveOutcome,
     onSetAdultModeEnabled: (Boolean) -> Unit,
@@ -493,10 +510,61 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection(stringResource(R.string.settings_about)) {
+            SettingsSection(stringResource(R.string.settings_updates)) {
                 OutlinedButton(onClick = { showWhatsNewDialog = true }) {
                     Text(stringResource(R.string.settings_whats_new))
                 }
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    UpdateStatusShield(updateCheckStatus)
+                    OutlinedButton(onClick = onCheckForUpdate, enabled = updateCheckStatus !is UpdateCheckStatus.Checking) {
+                        Text(stringResource(R.string.settings_check_updates))
+                    }
+                }
+
+                when (val status = updateCheckStatus) {
+                    is UpdateCheckStatus.Checking -> Text(
+                        stringResource(R.string.update_status_checking),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    is UpdateCheckStatus.UpToDate -> Text(
+                        stringResource(R.string.update_status_up_to_date, status.currentVersion),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    is UpdateCheckStatus.Error -> Text(
+                        status.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    is UpdateCheckStatus.UpdateAvailable -> Text(
+                        stringResource(R.string.update_status_available, status.latestVersion),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = UpdateStatusPurple,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier.clickable { uriHandler.openUri(status.releaseUrl) },
+                    )
+                    UpdateCheckStatus.Idle -> Unit
+                }
+
+                rateLimitInfo?.let { info ->
+                    Text(
+                        text = stringResource(
+                            if (info.fromServer) R.string.update_checks_remaining else R.string.update_checks_remaining_estimated,
+                            info.remaining,
+                            info.limit,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Text(
+                    stringResource(R.string.settings_check_updates_hint),
+                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             CreditsFooter()
@@ -669,6 +737,40 @@ private fun ImportBackupPasswordDialog(onDismiss: () -> Unit, onSubmit: suspend 
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) }
         },
     )
+}
+
+/**
+ * Green/yellow/red/purple traffic-light-style indicator for [UpdateCheckStatus], each with an
+ * inner glyph (check/clock/x/plus) so the state doesn't rely on color alone. Purple additionally
+ * gets a gold outline (layering the outlined glyph, slightly larger, behind the filled one) to
+ * read as distinctly "special" against the other three flat-colored states.
+ */
+@Composable
+private fun UpdateStatusShield(status: UpdateCheckStatus, modifier: Modifier = Modifier) {
+    Box(contentAlignment = Alignment.Center, modifier = modifier.size(28.dp)) {
+        when (status) {
+            UpdateCheckStatus.Idle -> {
+                Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+            }
+            UpdateCheckStatus.Checking -> {
+                Icon(Icons.Filled.Shield, contentDescription = null, tint = UpdateStatusAmber, modifier = Modifier.size(24.dp))
+                Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+            }
+            is UpdateCheckStatus.UpToDate -> {
+                Icon(Icons.Filled.Shield, contentDescription = null, tint = UpdateStatusGreen, modifier = Modifier.size(24.dp))
+                Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+            }
+            is UpdateCheckStatus.Error -> {
+                Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
+                Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+            }
+            is UpdateCheckStatus.UpdateAvailable -> {
+                Icon(Icons.Outlined.Shield, contentDescription = null, tint = BetaGold, modifier = Modifier.size(28.dp))
+                Icon(Icons.Filled.Shield, contentDescription = null, tint = UpdateStatusPurple, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+            }
+        }
+    }
 }
 
 @Composable

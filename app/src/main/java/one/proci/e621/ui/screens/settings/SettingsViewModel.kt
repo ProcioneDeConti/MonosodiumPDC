@@ -6,9 +6,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import one.proci.e621.BuildConfig
 import one.proci.e621.data.backup.SettingsBackupException
 import one.proci.e621.data.backup.SettingsBackupManager
 import one.proci.e621.data.model.Rating
+import one.proci.e621.data.repository.RateLimitInfo
+import one.proci.e621.data.repository.UpdateCheckRepository
+import one.proci.e621.data.repository.UpdateCheckStatus
 import one.proci.e621.data.repository.UserRepository
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.settings.UserSettings
@@ -24,12 +28,26 @@ sealed class AccountSaveOutcome {
 class SettingsViewModel(
     private val userPreferences: UserPreferences,
     private val userRepository: UserRepository,
+    private val updateCheckRepository: UpdateCheckRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<UserSettings> = userPreferences.settingsState
 
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _updateCheckStatus = MutableStateFlow<UpdateCheckStatus>(UpdateCheckStatus.Idle)
+    val updateCheckStatus: StateFlow<UpdateCheckStatus> = _updateCheckStatus.asStateFlow()
+    val rateLimitInfo: StateFlow<RateLimitInfo?> = updateCheckRepository.rateLimitInfo
+
+    /** User-triggered only (Settings > Updates) - never called automatically, see [UpdateCheckRepository]. */
+    fun checkForUpdate() {
+        if (_updateCheckStatus.value is UpdateCheckStatus.Checking) return
+        viewModelScope.launch {
+            _updateCheckStatus.value = UpdateCheckStatus.Checking
+            _updateCheckStatus.value = updateCheckRepository.check(BuildConfig.VERSION_NAME)
+        }
+    }
 
     /** Persists the given credentials, then verifies them against e621 unless they're blank (signing out). */
     suspend fun saveAccount(username: String, apiKey: String): AccountSaveOutcome {

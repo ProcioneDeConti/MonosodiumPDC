@@ -198,10 +198,30 @@
     <string name="eula_agreed_label">User has agreed to EULA</string>
     <string name="eula_read_again">Read EULA Again</string>
 
-    <string name="settings_about">About</string>
+    <string name="settings_updates">Updates</string>
     <string name="settings_whats_new">What\'s New</string>
-    <string name="whats_new_title">What\'s New in v%1$s</string>
-    <string name="whats_new_body">• Added this \"What\'s New\" dialog - it pops up once after an update, and you can reopen it anytime from Settings.\n• Updated core libraries (coroutines, serialization, video player) for stability and compatibility.</string>
+    <string name="whats_new_title">What\'s New</string>
+    <!--
+        Curated release history for the What's New dialog - NOT one entry per versionCode/every
+        bump (see feedback_whats_new_freshness memory). Add a new item to the FRONT of both arrays
+        (same index in each) only for a user-meaningful change; trivial internal/wording-only
+        bumps get folded into the next real entry instead of getting their own. Keep at most 10
+        entries in each array - drop the oldest pair once there are more than 10.
+    -->
+    <string-array name="whats_new_versions">
+        <item>2.6.3</item>
+    </string-array>
+    <string-array name="whats_new_entries">
+        <item>• See what\'s changed after every update, right here - reopen anytime from Settings &gt; Updates.\n• Manually check whether a newer version is available, from Settings &gt; Updates.\n• General stability and compatibility improvements.</item>
+    </string-array>
+
+    <string name="settings_check_updates">Check for Updates</string>
+    <string name="settings_check_updates_hint">Checks GitHub for a newer release. Tapping this repeatedly may exhaust your ability to check for updates for up to an hour: a GitHub restriction.</string>
+    <string name="update_status_checking">Checking…</string>
+    <string name="update_status_up_to_date">You\'re up to date (v%1$s)</string>
+    <string name="update_status_available">Update available: v%1$s - tap to view</string>
+    <string name="update_checks_remaining">%1$d of %2$d update checks remaining this hour</string>
+    <string name="update_checks_remaining_estimated">~%1$d of %2$d update checks remaining this hour (estimated)</string>
 
     <string name="profile_title">Profile</string>
     <string name="profile_load_failed">Couldn\'t load profile: %1$s</string>

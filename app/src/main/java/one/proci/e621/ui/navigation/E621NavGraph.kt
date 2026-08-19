@@ -315,9 +315,14 @@ fun E621NavGraph(
         composable(Routes.SETTINGS) {
             val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
             val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
+            val updateCheckStatus by settingsViewModel.updateCheckStatus.collectAsStateWithLifecycle()
+            val rateLimitInfo by settingsViewModel.rateLimitInfo.collectAsStateWithLifecycle()
             SettingsScreen(
                 settings = settings,
                 isSyncing = isSyncing,
+                updateCheckStatus = updateCheckStatus,
+                rateLimitInfo = rateLimitInfo,
+                onCheckForUpdate = settingsViewModel::checkForUpdate,
                 onBack = { navController.popBackStack() },
                 onSaveAccount = settingsViewModel::saveAccount,
                 onSetAdultModeEnabled = settingsViewModel::setAdultModeEnabled,

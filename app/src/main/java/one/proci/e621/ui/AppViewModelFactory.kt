@@ -22,7 +22,7 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
         modelClass.isAssignableFrom(FavoritesViewModel::class.java) ->
             FavoritesViewModel(app.postRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
-            SettingsViewModel(app.userPreferences, app.userRepository) as T
+            SettingsViewModel(app.userPreferences, app.userRepository, app.updateCheckRepository) as T
         modelClass.isAssignableFrom(MessagesViewModel::class.java) ->
             MessagesViewModel(app.messagesRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(ForumViewModel::class.java) ->
