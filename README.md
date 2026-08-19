@@ -9,6 +9,7 @@ This is a personal project, not affiliated with or endorsed by e621 or e6AI. It 
 - **e621 and e6AI, one app** - switch between e621 and e6AI (e621's AI-generated content sister site) with a single toggle in the hamburger menu. Each site keeps its own separate login, switching refreshes your current search immediately, and a small badge next to the search bar always shows which one you're browsing.
 - **Browsing & search** - tag-chip search bar with live autocomplete suggestions (category-colored, include/exclude state shown at a glance), saved searches, and a rainbow-themed pull-to-refresh indicator. Pinch or spread the grid to resize thumbnails, from dense to large - handy on tablets and other big screens. A small, unobtrusive loading bar shows on any image still fetching over a slow connection.
 - **Post viewer** - full-screen swipeable viewer for images, GIFs, APNGs, and video (via Media3/ExoPlayer, with custom loop/speed/gesture controls), with voting, favoriting, tag browsing (add to blacklist, search, exclude from search), comments, and a detailed info sheet (score, dimensions, MD5, status, sources, etc. - tap any value to copy it). Swipe down on an image to dismiss the viewer.
+- **App Links** - tapping a link to e621.net, e926.net, or e6ai.net opens this app directly instead of a browser, and `/posts/{id}` links jump straight to that post.
 - **Blacklist** - client-side blacklist filtering with a quick disable/re-enable toggle, plus import/export against your account's saved blacklist. Posts temporarily unhidden by the disable toggle get a thin caution-stripe border so it's obvious they'd normally be filtered.
 - **Favorites**
 - **Messages (Dmail)** - read, reply, and compose private messages.
@@ -18,6 +19,7 @@ This is a personal project, not affiliated with or endorsed by e621 or e6AI. It 
 - **Downloads** - save a post's original file with one tap, into the device's shared Pictures/Movies folders by default or a folder of your choice (Settings > Downloads).
 - **Cache management** - an adjustable on-disk image/thumbnail cache limit (or unlimited), with current usage shown and a one-tap clear.
 - **Backup & Restore** (Settings) - export your account, blacklist, and preferences to a file, optionally protected with a password (AES-256-GCM, PBKDF2-derived key - the file is useless without it), and restore from one on a new device or after a reinstall.
+- **Updates** (Settings) - a "What's New" dialog pops up automatically after each update with a short changelog, reopenable anytime; a manual "Check for Updates" button checks GitHub for a newer release on demand, with a status shield (checking/up to date/error/update available, tap to open its release page) and a live count of update checks left this hour.
 - **Accent color theming**, a consistent rounded-corner visual language throughout, DText (e621's markup language) rendering, and a first-launch EULA gate.
 
 ## Requirements
