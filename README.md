@@ -47,4 +47,4 @@ Using the compiled app itself is additionally governed by the End User License A
 
 ## Disclaimer
 
-Transparency is important. This app is a personal project. **<u>Parts of this app, including some of the third-party tools, libraries, and dependencies we rely on behind the scenes, were written with the assistance of AI tools.</u>** If this bothers you, please do not install, use, or otherwise disseminate its content. I have not, nor will I ever claim I am a developer: competent or otherwise. I use AI to do what I otherwise may not have been able to do on my own.
+Transparency is important. This app is a personal project. <ins>**Parts of this app, including some of the third-party tools, libraries, and dependencies we rely on behind the scenes, were written with the assistance of AI tools.**</ins> If this bothers you, please do not install, use, or otherwise disseminate its content. I have not, nor will I ever claim I am a developer: competent or otherwise. I use AI to do what I otherwise may not have been able to do on my own.
