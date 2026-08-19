@@ -44,3 +44,7 @@ Kotlin, Jetpack Compose (Material 3), Navigation Compose, Retrofit + OkHttp + ko
 The source code in this repository is available under the terms in [LICENSE](LICENSE) - free to use, modify, and redistribute, provided the original copyright and attribution notices are kept intact.
 
 Using the compiled app itself is additionally governed by the End User License Agreement bundled with it (`app/src/main/res/raw/eula.txt`), shown on first launch.
+
+## Disclaimer
+
+Transparency is important. This app is a personal project. Parts of this app, including some of the third-party tools, libraries, and dependencies we rely on behind the scenes, were written with the assistance of AI tools. If this bothers you, please do not install, use, or otherwise disseminate its content. I have not, nor will I ever claim I am a developer: competent or otherwise. I use AI to do what I otherwise may not have been able to do on my own.
