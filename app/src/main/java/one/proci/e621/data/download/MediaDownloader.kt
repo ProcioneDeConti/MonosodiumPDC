@@ -15,7 +15,7 @@ import java.io.IOException
  * Saves a post's original media file either into a user-chosen folder (SAF tree, see
  * [one.proci.e621.data.settings.UserSettings.downloadLocationUri]) or, by default, into the
  * device's shared Pictures/Movies collections via MediaStore. The MediaStore path needs no
- * storage permission: scoped storage (mandatory since API 29, and this app's minSdk is 34) lets
+ * storage permission: scoped storage (mandatory since API 29, and this app's minSdk is 28) lets
  * any app insert new files it owns into those collections directly. The SAF path needs only the
  * persistable URI permission granted when the user picked the folder (see the folder picker in
  * Settings > Downloads) - no manifest permission either.
@@ -55,9 +55,8 @@ class MediaDownloader(private val context: Context) {
         try {
             MediaHttpClient.instance.newCall(buildRequest(url)).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Download failed (HTTP ${response.code})")
-                val body = response.body ?: throw IOException("Empty response body")
                 resolver.openOutputStream(uri)?.use { output ->
-                    body.byteStream().use { input -> input.copyTo(output) }
+                    response.body.byteStream().use { input -> input.copyTo(output) }
                 } ?: throw IOException("Could not open output stream")
             }
         } catch (e: Exception) {
@@ -81,9 +80,8 @@ class MediaDownloader(private val context: Context) {
         try {
             MediaHttpClient.instance.newCall(buildRequest(url)).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Download failed (HTTP ${response.code})")
-                val body = response.body ?: throw IOException("Empty response body")
                 context.contentResolver.openOutputStream(file.uri)?.use { output ->
-                    body.byteStream().use { input -> input.copyTo(output) }
+                    response.body.byteStream().use { input -> input.copyTo(output) }
                 } ?: throw IOException("Could not open output stream")
             }
         } catch (e: Exception) {

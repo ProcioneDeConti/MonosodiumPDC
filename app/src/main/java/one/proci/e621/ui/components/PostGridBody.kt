@@ -84,6 +84,7 @@ fun PostGridBody(
     var liveSizeDp by remember { mutableFloatStateOf(thumbnailSizeDp.toFloat()) }
     LaunchedEffect(thumbnailSizeDp) { liveSizeDp = thumbnailSizeDp.toFloat() }
     val onThumbnailSizeChangeState = rememberUpdatedState(onThumbnailSizeChange)
+    val onPostClickState = rememberUpdatedState(onPostClick)
 
     LaunchedEffect(error, posts.isEmpty()) {
         if (error != null && posts.isNotEmpty()) {
@@ -164,9 +165,14 @@ fun PostGridBody(
                                 },
                         ) {
                             itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
+                                // Hoisted via remember(index) rather than allocated inline: an
+                                // inline `{ onPostClick(index) }` here is a fresh closure every
+                                // recomposition, which alone would make this item non-skippable
+                                // regardless of Post's own stability.
+                                val onClick = remember(index) { { onPostClickState.value(index) } }
                                 PostThumbnail(
                                     post = post,
-                                    onClick = { onPostClick(index) },
+                                    onClick = onClick,
                                     showCautionBorder = blacklistDisabled && post.id in blacklistedIds,
                                 )
                             }

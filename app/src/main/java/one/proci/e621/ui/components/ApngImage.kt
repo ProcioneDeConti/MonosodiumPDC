@@ -57,10 +57,10 @@ fun ApngImage(url: String, modifier: Modifier = Modifier) {
                 val bytes = cached ?: run {
                     val request = Request.Builder().url(url).build()
                     MediaHttpClient.instance.newCall(request).execute().use { response ->
-                        response.body?.bytes()
-                    }?.also { ApngByteCache.put(url, it) }
+                        response.body.bytes()
+                    }.also { ApngByteCache.put(url, it) }
                 }
-                bytes?.let { ApngDrawable.decode(ByteArrayInputStream(it)) }
+                ApngDrawable.decode(ByteArrayInputStream(bytes))
             }.getOrNull()
         }
         if (decoded != null) drawable = decoded else failed = true

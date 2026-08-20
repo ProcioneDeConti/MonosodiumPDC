@@ -5,12 +5,10 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
+import one.proci.e621.data.api.MediaHttpClient
 import java.io.File
 import java.io.IOException
-
-private val shareHttpClient by lazy { OkHttpClient() }
 
 /** Downloads a post's media into the app's cache and launches the system share sheet for it. */
 class MediaSharer(private val context: Context) {
@@ -21,14 +19,10 @@ class MediaSharer(private val context: Context) {
                 val dir = File(context.cacheDir, "shared").apply { mkdirs() }
                 val file = File(dir, fileName)
 
-                val request = Request.Builder()
-                    .url(url)
-                    .header("User-Agent", "e621ForAndroid/1.0")
-                    .build()
-                shareHttpClient.newCall(request).execute().use { response ->
+                val request = Request.Builder().url(url).build()
+                MediaHttpClient.instance.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw IOException("Download failed (HTTP ${response.code})")
-                    val body = response.body ?: throw IOException("Empty response body")
-                    file.outputStream().use { output -> body.byteStream().use { input -> input.copyTo(output) } }
+                    file.outputStream().use { output -> response.body.byteStream().use { input -> input.copyTo(output) } }
                 }
 
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

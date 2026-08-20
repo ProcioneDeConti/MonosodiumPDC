@@ -4,6 +4,15 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Scoped storage (which lets MediaDownloader insert into MediaStore without this permission)
+         only applies on API 29+ devices; minSdk is 28 (Android 9), where the classic storage model
+         still gates MediaStore.insert() on WRITE_EXTERNAL_STORAGE. maxSdkVersion so it's simply
+         not requested/granted on the API 29+ devices most users are actually on. Still needs a
+         runtime permission request added on the download path for it to take effect on API 23-28 -
+         a bare manifest declaration alone doesn't grant a dangerous permission on those versions. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:name=".E621Application"

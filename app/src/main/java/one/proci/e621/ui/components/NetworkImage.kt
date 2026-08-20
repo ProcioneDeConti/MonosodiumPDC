@@ -32,12 +32,13 @@ fun NetworkImage(
     contentScale: ContentScale = ContentScale.Fit,
 ) {
     var loading by remember(model) { mutableStateOf(false) }
+    val onState = remember { { state: AsyncImagePainter.State -> loading = state is AsyncImagePainter.State.Loading } }
     Box(modifier = modifier) {
         AsyncImage(
             model = model,
             contentDescription = contentDescription,
             contentScale = contentScale,
-            onState = { state -> loading = state is AsyncImagePainter.State.Loading },
+            onState = onState,
             modifier = Modifier.fillMaxSize(),
         )
         if (loading) {

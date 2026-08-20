@@ -1,5 +1,6 @@
 package one.proci.e621.data.model
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -8,6 +9,12 @@ data class PostsResponse(
     val posts: List<Post> = emptyList(),
 )
 
+// Compose can't infer this is immutable on its own - the Compose compiler treats every `List`
+// field as unstable regardless of element type, which would make every composable taking a Post
+// (PostThumbnail, the grid's item content, PostDetailScreen) non-skippable. Safe to promise: this
+// is a deserialized data class whose list fields are never mutated in place after construction
+// (see data/repository - posts are only ever replaced wholesale via `.copy()`, not mutated).
+@Immutable
 @Serializable
 data class Post(
     val id: Long,
@@ -46,15 +53,20 @@ data class Post(
 
     val allTags: List<String> get() = categorizedTags.map { it.name }
 
+    // `by lazy` rather than a plain `get() =`: this concatenates 7 lists, and both `allTags` below
+    // and the detail screen's tag-category grouping re-read it on every recomposition triggered by
+    // this same Post (e.g. a vote/favorite click) - computed once per instance instead, since Post
+    // is never mutated after construction (see the @Immutable note above).
     /** Tags paired with their e621 category, for category-colored tag chips in the detail view. */
-    val categorizedTags: List<CategorizedTag>
-        get() = tags.artist.map { CategorizedTag(it, TagCategory.ARTIST) } +
+    val categorizedTags: List<CategorizedTag> by lazy {
+        tags.artist.map { CategorizedTag(it, TagCategory.ARTIST) } +
             tags.copyright.map { CategorizedTag(it, TagCategory.COPYRIGHT) } +
             tags.character.map { CategorizedTag(it, TagCategory.CHARACTER) } +
             tags.species.map { CategorizedTag(it, TagCategory.SPECIES) } +
             tags.general.map { CategorizedTag(it, TagCategory.GENERAL) } +
             tags.lore.map { CategorizedTag(it, TagCategory.LORE) } +
             tags.meta.map { CategorizedTag(it, TagCategory.META) }
+    }
 
     /** Filename used when saving the original media to the device. */
     val downloadFileName: String get() = "e621_$id.$extension"

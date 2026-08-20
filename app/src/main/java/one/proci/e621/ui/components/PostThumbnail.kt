@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +52,8 @@ private val CautionStripeBrush = Brush.linearGradient(
     tileMode = TileMode.Repeated,
 )
 
+private val ThumbnailShape = RoundedCornerShape(7.dp)
+
 @Composable
 fun PostThumbnail(post: Post, onClick: () -> Unit, showCautionBorder: Boolean = false, modifier: Modifier = Modifier) {
     val aspect = if (post.preview.width > 0 && post.preview.height > 0) {
@@ -60,7 +61,7 @@ fun PostThumbnail(post: Post, onClick: () -> Unit, showCautionBorder: Boolean = 
     } else {
         1f
     }
-    val shape = remember { RoundedCornerShape(7.dp) }
+    val shape = ThumbnailShape
 
     Box(
         modifier = modifier
