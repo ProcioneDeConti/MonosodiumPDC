@@ -7,11 +7,9 @@ import android.provider.MediaStore
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
+import one.proci.e621.data.api.MediaHttpClient
 import java.io.IOException
-
-private val downloadHttpClient by lazy { OkHttpClient() }
 
 /**
  * Saves a post's original media file either into a user-chosen folder (SAF tree, see
@@ -55,7 +53,7 @@ class MediaDownloader(private val context: Context) {
         val uri = resolver.insert(collection, values) ?: throw IOException("Could not create media entry")
 
         try {
-            downloadHttpClient.newCall(buildRequest(url)).execute().use { response ->
+            MediaHttpClient.instance.newCall(buildRequest(url)).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Download failed (HTTP ${response.code})")
                 val body = response.body ?: throw IOException("Empty response body")
                 resolver.openOutputStream(uri)?.use { output ->
@@ -81,7 +79,7 @@ class MediaDownloader(private val context: Context) {
             ?: throw IOException("Could not create file in chosen download folder")
 
         try {
-            downloadHttpClient.newCall(buildRequest(url)).execute().use { response ->
+            MediaHttpClient.instance.newCall(buildRequest(url)).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Download failed (HTTP ${response.code})")
                 val body = response.body ?: throw IOException("Empty response body")
                 context.contentResolver.openOutputStream(file.uri)?.use { output ->
@@ -98,6 +96,5 @@ class MediaDownloader(private val context: Context) {
 
     private fun buildRequest(url: String) = Request.Builder()
         .url(url)
-        .header("User-Agent", "e621ForAndroid/1.0")
         .build()
 }

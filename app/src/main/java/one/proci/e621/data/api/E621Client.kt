@@ -22,6 +22,8 @@ object E621Client {
 
     fun create(settings: StateFlow<UserSettings>): E621ApiService {
         val okHttpClient = OkHttpClient.Builder()
+            .dispatcher(SharedHttp.dispatcher)
+            .connectionPool(SharedHttp.connectionPool)
             .addInterceptor(SiteInterceptor(settings))
             .addInterceptor(UserAgentInterceptor(settings))
             .addInterceptor(AuthInterceptor(settings))

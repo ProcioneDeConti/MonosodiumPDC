@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import one.proci.e621.data.model.ForumPost
 import one.proci.e621.data.repository.ForumRepository
 import one.proci.e621.data.settings.UserPreferences
+import one.proci.e621.data.util.CursorPager
 
 data class ForumTopicUiState(
     val title: String = "",
@@ -32,33 +33,35 @@ class ForumTopicViewModel(
     private val userPreferences: UserPreferences,
 ) : ViewModel() {
 
-    private data class InternalState(
+    private data class ExtraState(
         val title: String,
         val isLocked: Boolean = false,
-        val posts: List<ForumPost> = emptyList(),
-        val isRefreshing: Boolean = false,
-        val isLoadingMore: Boolean = false,
-        val endReached: Boolean = false,
-        val error: String? = null,
         val isReplying: Boolean = false,
     )
 
-    private val internalState = MutableStateFlow(InternalState(title = initialTitle))
+    private val pager = CursorPager<ForumPost>(
+        scope = viewModelScope,
+        idOf = { it.id },
+        fetchInitial = { repository.fetchPosts(topicId) },
+        fetchMore = { cursor -> repository.fetchPosts(topicId, beforeId = cursor) },
+    )
+    private val extraState = MutableStateFlow(ExtraState(title = initialTitle))
 
     val uiState: StateFlow<ForumTopicUiState> = combine(
-        internalState,
+        pager.state,
+        extraState,
         userPreferences.settingsState,
-    ) { s, settings ->
+    ) { s, extra, settings ->
         ForumTopicUiState(
-            title = s.title,
-            isLocked = s.isLocked,
+            title = extra.title,
+            isLocked = extra.isLocked,
             isAuthenticated = settings.isAuthenticated,
-            posts = s.posts,
+            posts = s.items,
             isRefreshing = s.isRefreshing,
             isLoadingMore = s.isLoadingMore,
             endReached = s.endReached,
             error = s.error,
-            isReplying = s.isReplying,
+            isReplying = extra.isReplying,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumTopicUiState(title = initialTitle))
 
@@ -66,52 +69,30 @@ class ForumTopicViewModel(
         refresh()
         viewModelScope.launch {
             runCatching { repository.fetchTopic(topicId) }
-                .onSuccess { topic -> internalState.update { it.copy(title = topic.title, isLocked = topic.isLocked) } }
+                .onSuccess { topic -> extraState.update { it.copy(title = topic.title, isLocked = topic.isLocked) } }
         }
     }
 
-    fun refresh() {
-        internalState.update { it.copy(isRefreshing = true, error = null, posts = emptyList(), endReached = false) }
-        viewModelScope.launch {
-            runCatching { repository.fetchPosts(topicId) }
-                .onSuccess { raw -> internalState.update { it.copy(posts = raw, isRefreshing = false, endReached = raw.isEmpty()) } }
-                .onFailure { e -> internalState.update { it.copy(isRefreshing = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun refresh() = pager.refresh()
 
-    fun loadMore() {
-        val current = internalState.value
-        if (current.isLoadingMore || current.isRefreshing || current.endReached) return
-        val cursor = current.posts.lastOrNull()?.id ?: return
-        viewModelScope.launch {
-            internalState.update { it.copy(isLoadingMore = true) }
-            runCatching { repository.fetchPosts(topicId, beforeId = cursor) }
-                .onSuccess { page ->
-                    internalState.update { it.copy(posts = it.posts + page, isLoadingMore = false, endReached = page.isEmpty()) }
-                }
-                .onFailure { e -> internalState.update { it.copy(isLoadingMore = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun loadMore() = pager.loadMore()
 
     fun reply(body: String, onDone: (Boolean) -> Unit) {
-        if (body.isBlank() || internalState.value.isReplying) return
-        internalState.update { it.copy(isReplying = true) }
+        if (body.isBlank() || extraState.value.isReplying) return
+        extraState.update { it.copy(isReplying = true) }
         viewModelScope.launch {
             runCatching { repository.reply(topicId, body) }
                 .onSuccess { created ->
-                    internalState.update { it.copy(posts = it.posts + created, isReplying = false) }
+                    pager.updateItems { it + created }
+                    extraState.update { it.copy(isReplying = false) }
                     onDone(true)
                 }
                 .onFailure {
-                    internalState.update { it.copy(isReplying = false) }
+                    extraState.update { it.copy(isReplying = false) }
                     onDone(false)
                 }
         }
     }
 
-    fun dismissError() {
-        internalState.update { it.copy(error = null) }
-    }
+    fun dismissError() = pager.dismissError()
 }
-
-private fun Throwable.messageOrDefault(): String = message?.takeIf { it.isNotBlank() } ?: "Something went wrong"

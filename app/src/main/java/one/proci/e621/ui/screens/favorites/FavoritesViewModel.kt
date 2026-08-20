@@ -14,6 +14,8 @@ import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.util.GridThumbnailSize
+import one.proci.e621.data.util.accumulatePostsUntilVisibleOrEnd
+import one.proci.e621.data.util.messageOrDefault
 
 data class FavoritesUiState(
     val username: String = "",
@@ -123,21 +125,15 @@ class FavoritesViewModel(
             val settings = userPreferences.settingsState.value
             val blacklistDisabled = userPreferences.blacklistDisabled.value
             val seenIds = current.rawPosts.mapTo(mutableSetOf()) { it.id }
-            val accumulated = mutableListOf<Post>()
-            var reachedEnd = false
-            var attempts = 0
             try {
-                while (attempts < 5) {
-                    attempts++
+                val (accumulated, reachedEnd) = accumulatePostsUntilVisibleOrEnd(
+                    seenIds = seenIds,
+                    blacklistDisabled = blacklistDisabled,
+                    isBlacklisted = settings::isBlacklisted,
+                ) {
                     val page = repository.fetchPosts(tags = "fav:$username", beforeId = cursor)
-                    if (page.isEmpty()) {
-                        reachedEnd = true
-                        break
-                    }
-                    cursor = page.last().id
-                    val newPosts = page.filter { seenIds.add(it.id) }
-                    accumulated += newPosts
-                    if (blacklistDisabled || newPosts.any { !settings.isBlacklisted(it) }) break
+                    if (page.isNotEmpty()) cursor = page.last().id
+                    page
                 }
                 internalState.update {
                     it.copy(rawPosts = it.rawPosts + accumulated, isLoadingMore = false, endReached = reachedEnd)
@@ -152,5 +148,3 @@ class FavoritesViewModel(
         internalState.update { it.copy(error = null) }
     }
 }
-
-private fun Throwable.messageOrDefault(): String = message?.takeIf { it.isNotBlank() } ?: "Something went wrong"

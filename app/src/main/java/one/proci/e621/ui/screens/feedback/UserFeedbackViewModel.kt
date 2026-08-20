@@ -2,13 +2,13 @@ package one.proci.e621.ui.screens.feedback
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import one.proci.e621.data.model.UserFeedback
 import one.proci.e621.data.repository.UserRepository
+import one.proci.e621.data.util.CursorPager
 
 data class UserFeedbackUiState(
     val username: String = "",
@@ -26,39 +26,33 @@ class UserFeedbackViewModel(
     private val userRepository: UserRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UserFeedbackUiState(username = initialUsername))
-    val uiState: StateFlow<UserFeedbackUiState> = _uiState.asStateFlow()
+    private val pager = CursorPager<UserFeedback>(
+        scope = viewModelScope,
+        idOf = { it.id },
+        fetchInitial = { userRepository.fetchFeedbacks(userId) },
+        fetchMore = { cursor -> userRepository.fetchFeedbacks(userId, beforeId = cursor) },
+    )
+
+    val uiState: StateFlow<UserFeedbackUiState> = pager.state
+        .map { s ->
+            UserFeedbackUiState(
+                username = initialUsername,
+                feedbacks = s.items,
+                isRefreshing = s.isRefreshing,
+                isLoadingMore = s.isLoadingMore,
+                endReached = s.endReached,
+                error = s.error,
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, UserFeedbackUiState(username = initialUsername))
 
     init {
         refresh()
     }
 
-    fun refresh() {
-        _uiState.update { it.copy(isRefreshing = true, error = null, feedbacks = emptyList(), endReached = false) }
-        viewModelScope.launch {
-            runCatching { userRepository.fetchFeedbacks(userId) }
-                .onSuccess { raw -> _uiState.update { it.copy(feedbacks = raw, isRefreshing = false, endReached = raw.isEmpty()) } }
-                .onFailure { e -> _uiState.update { it.copy(isRefreshing = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun refresh() = pager.refresh()
 
-    fun loadMore() {
-        val current = _uiState.value
-        if (current.isLoadingMore || current.isRefreshing || current.endReached) return
-        val cursor = current.feedbacks.lastOrNull()?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingMore = true) }
-            runCatching { userRepository.fetchFeedbacks(userId, beforeId = cursor) }
-                .onSuccess { page ->
-                    _uiState.update { it.copy(feedbacks = it.feedbacks + page, isLoadingMore = false, endReached = page.isEmpty()) }
-                }
-                .onFailure { e -> _uiState.update { it.copy(isLoadingMore = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun loadMore() = pager.loadMore()
 
-    fun dismissError() {
-        _uiState.update { it.copy(error = null) }
-    }
+    fun dismissError() = pager.dismissError()
 }
-
-private fun Throwable.messageOrDefault(): String = message?.takeIf { it.isNotBlank() } ?: "Something went wrong"

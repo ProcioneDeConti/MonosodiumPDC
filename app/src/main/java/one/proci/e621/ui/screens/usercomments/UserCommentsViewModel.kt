@@ -2,13 +2,13 @@ package one.proci.e621.ui.screens.usercomments
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import one.proci.e621.data.model.Comment
 import one.proci.e621.data.repository.PostActionsRepository
+import one.proci.e621.data.util.CursorPager
 
 data class UserCommentsUiState(
     val username: String = "",
@@ -26,39 +26,33 @@ class UserCommentsViewModel(
     private val postActionsRepository: PostActionsRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UserCommentsUiState(username = initialUsername))
-    val uiState: StateFlow<UserCommentsUiState> = _uiState.asStateFlow()
+    private val pager = CursorPager<Comment>(
+        scope = viewModelScope,
+        idOf = { it.id },
+        fetchInitial = { postActionsRepository.fetchCommentsByUser(userId) },
+        fetchMore = { cursor -> postActionsRepository.fetchCommentsByUser(userId, beforeId = cursor) },
+    )
+
+    val uiState: StateFlow<UserCommentsUiState> = pager.state
+        .map { s ->
+            UserCommentsUiState(
+                username = initialUsername,
+                comments = s.items,
+                isRefreshing = s.isRefreshing,
+                isLoadingMore = s.isLoadingMore,
+                endReached = s.endReached,
+                error = s.error,
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, UserCommentsUiState(username = initialUsername))
 
     init {
         refresh()
     }
 
-    fun refresh() {
-        _uiState.update { it.copy(isRefreshing = true, error = null, comments = emptyList(), endReached = false) }
-        viewModelScope.launch {
-            runCatching { postActionsRepository.fetchCommentsByUser(userId) }
-                .onSuccess { raw -> _uiState.update { it.copy(comments = raw, isRefreshing = false, endReached = raw.isEmpty()) } }
-                .onFailure { e -> _uiState.update { it.copy(isRefreshing = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun refresh() = pager.refresh()
 
-    fun loadMore() {
-        val current = _uiState.value
-        if (current.isLoadingMore || current.isRefreshing || current.endReached) return
-        val cursor = current.comments.lastOrNull()?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingMore = true) }
-            runCatching { postActionsRepository.fetchCommentsByUser(userId, beforeId = cursor) }
-                .onSuccess { page ->
-                    _uiState.update { it.copy(comments = it.comments + page, isLoadingMore = false, endReached = page.isEmpty()) }
-                }
-                .onFailure { e -> _uiState.update { it.copy(isLoadingMore = false, error = e.messageOrDefault()) } }
-        }
-    }
+    fun loadMore() = pager.loadMore()
 
-    fun dismissError() {
-        _uiState.update { it.copy(error = null) }
-    }
+    fun dismissError() = pager.dismissError()
 }
-
-private fun Throwable.messageOrDefault(): String = message?.takeIf { it.isNotBlank() } ?: "Something went wrong"

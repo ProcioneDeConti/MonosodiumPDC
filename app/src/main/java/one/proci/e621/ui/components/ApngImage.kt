@@ -18,11 +18,30 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.linecorp.apng.ApngDrawable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
+import one.proci.e621.data.api.MediaHttpClient
+import java.io.ByteArrayInputStream
 
 // Android's ImageDecoder doesn't animate APNG, so it's decoded manually with com.linecorp:apng.
-private val apngHttpClient by lazy { OkHttpClient() }
+
+/**
+ * Small bounded cache of raw (still-encoded) APNG bytes, keyed by URL - so revisiting the same
+ * APNG (e.g. swiping back to a previous pager page) skips the network fetch. Caches the encoded
+ * bytes rather than the decoded [ApngDrawable] itself: the drawable is a stateful, single-owner
+ * Android Drawable (start/stop, a Callback tied to one View) that isn't safe to hand out to two
+ * composables at once, so each mount still decodes its own instance from these bytes.
+ */
+private object ApngByteCache {
+    private const val MAX_ENTRIES = 4
+    private val map = object : LinkedHashMap<String, ByteArray>(MAX_ENTRIES, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ByteArray>) = size > MAX_ENTRIES
+    }
+
+    @Synchronized fun get(url: String): ByteArray? = map[url]
+    @Synchronized fun put(url: String, bytes: ByteArray) {
+        map[url] = bytes
+    }
+}
 
 @Composable
 fun ApngImage(url: String, modifier: Modifier = Modifier) {
@@ -34,10 +53,14 @@ fun ApngImage(url: String, modifier: Modifier = Modifier) {
         failed = false
         val decoded = withContext(Dispatchers.IO) {
             runCatching {
-                val request = Request.Builder().url(url).header("User-Agent", "e621ForAndroid/1.0").build()
-                apngHttpClient.newCall(request).execute().use { response ->
-                    response.body?.byteStream()?.let { ApngDrawable.decode(it) }
+                val cached = ApngByteCache.get(url)
+                val bytes = cached ?: run {
+                    val request = Request.Builder().url(url).build()
+                    MediaHttpClient.instance.newCall(request).execute().use { response ->
+                        response.body?.bytes()
+                    }?.also { ApngByteCache.put(url, it) }
                 }
+                bytes?.let { ApngDrawable.decode(ByteArrayInputStream(it)) }
             }.getOrNull()
         }
         if (decoded != null) drawable = decoded else failed = true

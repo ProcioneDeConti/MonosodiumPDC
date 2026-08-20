@@ -7,6 +7,7 @@ import coil3.annotation.DelicateCoilApi
 import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.gif.AnimatedImageDecoder
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -17,6 +18,8 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import one.proci.e621.data.api.E621Client
 import one.proci.e621.data.api.GitHubClient
+import one.proci.e621.data.api.MediaUserAgent
+import one.proci.e621.data.api.SharedHttp
 import one.proci.e621.data.api.UserAgentInterceptor
 import one.proci.e621.data.dtext.DTextLinkConfig
 import one.proci.e621.data.repository.AvatarRepository
@@ -64,6 +67,16 @@ class E621Application : Application(), SingletonImageLoader.Factory {
                 .collect { DTextLinkConfig.webBaseUrl = it }
         }
 
+        // Keeps MediaHttpClient's requests (APNG frame decoding, manual downloads - see its own
+        // doc) tagged with the same compliant, per-account User-Agent as everything else, without
+        // threading UserPreferences through those non-DI'd call sites.
+        applicationScope.launch {
+            userPreferences.settingsState
+                .map { it.userAgent }
+                .distinctUntilChanged()
+                .collect { MediaUserAgent.current = it }
+        }
+
         // The Settings screen lets the user resize the image disk cache at runtime. Coil only
         // reads the limit when it (re)builds its singleton ImageLoader, so force a rebuild - on
         // the next image load - whenever the stored limit actually changes. `drop(1)` skips the
@@ -81,6 +94,8 @@ class E621Application : Application(), SingletonImageLoader.Factory {
 
     override fun newImageLoader(context: coil3.PlatformContext): ImageLoader {
         val imageOkHttpClient = OkHttpClient.Builder()
+            .dispatcher(SharedHttp.dispatcher)
+            .connectionPool(SharedHttp.connectionPool)
             .addInterceptor(UserAgentInterceptor(userPreferences.settingsState))
             .build()
 
@@ -89,10 +104,18 @@ class E621Application : Application(), SingletonImageLoader.Factory {
         return ImageLoader.Builder(context)
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { imageOkHttpClient }))
-                // Animates GIFs via the platform ImageDecoder (minSdk 34 covers the API 28+
-                // requirement). APNG isn't supported here and is handled separately in the
-                // media viewer via com.linecorp:apng.
+                // Animates GIFs via the platform ImageDecoder (minSdk 28 covers this - see
+                // AnimatedImageDecoder's own requirement). APNG isn't supported here and is
+                // handled separately in the media viewer via com.linecorp:apng.
                 add(AnimatedImageDecoder.Factory())
+            }
+            .memoryCache {
+                // Coil3's default is ~25% of the app's memory class with no explicit cap, which
+                // is generous on the low-RAM devices this app now targets (minSdk 28). Cap it
+                // relative to available memory instead so grid-scrolling can't balloon RSS.
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.15)
+                    .build()
             }
             .diskCache {
                 DiskCache.Builder()

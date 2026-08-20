@@ -15,6 +15,8 @@ import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.Site
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.util.GridThumbnailSize
+import one.proci.e621.data.util.accumulatePostsUntilVisibleOrEnd
+import one.proci.e621.data.util.messageOrDefault
 
 data class PostGridUiState(
     val query: String = "",
@@ -140,26 +142,22 @@ class PostGridViewModel(
             val settings = userPreferences.settingsState.value
             val blacklistDisabled = userPreferences.blacklistDisabled.value
             val seenIds = current.rawPosts.mapTo(mutableSetOf()) { it.id }
-            val accumulated = mutableListOf<Post>()
-            var reachedEnd = false
-            var attempts = 0
             try {
-                while (attempts < 5) {
-                    attempts++
+                val (accumulated, reachedEnd) = accumulatePostsUntilVisibleOrEnd(
+                    seenIds = seenIds,
+                    blacklistDisabled = blacklistDisabled,
+                    isBlacklisted = settings::isBlacklisted,
+                ) {
                     val page = if (useCustomOrder) {
                         repository.fetchPosts(tags = current.activeQuery, pageNumber = pageNumber)
                     } else {
                         repository.fetchPosts(tags = current.activeQuery, beforeId = cursor)
                     }
-                    if (page.isEmpty()) {
-                        reachedEnd = true
-                        break
+                    if (page.isNotEmpty()) {
+                        pageNumber++
+                        cursor = page.last().id
                     }
-                    pageNumber++
-                    cursor = page.last().id
-                    val newPosts = page.filter { seenIds.add(it.id) }
-                    accumulated += newPosts
-                    if (blacklistDisabled || newPosts.any { !settings.isBlacklisted(it) }) break
+                    page
                 }
                 internalState.update {
                     it.copy(
@@ -179,5 +177,3 @@ class PostGridViewModel(
         internalState.update { it.copy(error = null) }
     }
 }
-
-private fun Throwable.messageOrDefault(): String = message?.takeIf { it.isNotBlank() } ?: "Something went wrong"
