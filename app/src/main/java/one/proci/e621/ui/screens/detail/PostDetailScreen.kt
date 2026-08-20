@@ -1,9 +1,14 @@
 package one.proci.e621.ui.screens.detail
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -96,6 +101,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import one.proci.e621.R
 import one.proci.e621.data.download.MediaDownloader
@@ -323,7 +329,46 @@ private fun InfoPanel(
     val downloadStartedMessage = stringResource(R.string.download_started)
     val downloadSavedMessage = stringResource(R.string.download_saved)
     val downloadFailedTemplate = stringResource(R.string.download_failed)
+    val downloadPermissionDeniedMessage = stringResource(R.string.download_permission_denied)
     val shareFailedTemplate = stringResource(R.string.share_failed)
+
+    fun startDownload(url: String) {
+        isDownloading = true
+        Toast.makeText(context, downloadStartedMessage, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            val result = MediaDownloader(context).download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
+            isDownloading = false
+            val message = result.fold(
+                onSuccess = { downloadSavedMessage },
+                onFailure = { e -> String.format(downloadFailedTemplate, e.message ?: e.toString()) },
+            )
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Only the default MediaStore download path (no user-chosen SAF folder) needs this: scoped
+    // storage lets that path skip WRITE_EXTERNAL_STORAGE from API 29 on, but not on API 23-28,
+    // where it's still a dangerous permission that must be requested at runtime, not just declared
+    // in the manifest (see AndroidManifest.xml's maxSdkVersion=28 declaration). The SAF path is
+    // already permission-free at every version via the folder's persisted URI grant.
+    var pendingDownloadUrl by remember(post.id) { mutableStateOf<String?>(null) }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val url = pendingDownloadUrl
+        pendingDownloadUrl = null
+        if (url == null) return@rememberLauncherForActivityResult
+        if (granted) {
+            startDownload(url)
+        } else {
+            Toast.makeText(context, downloadPermissionDeniedMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun downloadNeedsRuntimePermission() =
+        downloadLocationUri == null &&
+            Build.VERSION.SDK_INT in Build.VERSION_CODES.M..Build.VERSION_CODES.P &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
 
     Column(
         modifier = Modifier
@@ -355,16 +400,11 @@ private fun InfoPanel(
                     label = stringResource(R.string.download),
                     onClick = {
                         val url = post.playableUrl ?: return@TextAction
-                        isDownloading = true
-                        Toast.makeText(context, downloadStartedMessage, Toast.LENGTH_SHORT).show()
-                        scope.launch {
-                            val result = MediaDownloader(context).download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
-                            isDownloading = false
-                            val message = result.fold(
-                                onSuccess = { downloadSavedMessage },
-                                onFailure = { e -> String.format(downloadFailedTemplate, e.message ?: e.toString()) },
-                            )
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        if (downloadNeedsRuntimePermission()) {
+                            pendingDownloadUrl = url
+                            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else {
+                            startDownload(url)
                         }
                     },
                 )
