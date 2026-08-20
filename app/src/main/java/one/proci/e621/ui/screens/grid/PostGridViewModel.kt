@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.grid
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -18,6 +19,10 @@ import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.accumulatePostsUntilVisibleOrEnd
 import one.proci.e621.data.util.messageOrDefault
 
+// Without this, Compose infers this unstable (List<Post>/Set<Long> fields), making every
+// composable reading uiState non-skippable - even a settings-screen edit unrelated to the grid
+// re-emits a structurally-equal PostGridUiState that would otherwise still force recomposition.
+@Immutable
 data class PostGridUiState(
     val query: String = "",
     val activeQuery: String = "",
