@@ -39,13 +39,15 @@ import one.proci.e621.ui.theme.RatingQuestionable
 import one.proci.e621.ui.theme.RatingSafe
 
 /**
- * Diagonal red/white repeating stripe, like caution tape - painted only into a thin border ring
- * (see [PostThumbnail]'s `showCautionBorder`), not the whole thumbnail, so it reads as "temporarily
- * unhidden" rather than a loud warning. [TileMode.Repeated] tiles this short diagonal segment
- * across the whole border regardless of the thumbnail's actual size.
+ * Diagonal golden-yellow/dark-grey repeating stripe, like caution tape - painted only into a thin
+ * border ring (see [PostThumbnail]'s `showCautionBorder`), not the whole thumbnail, so it reads as
+ * "temporarily unhidden" rather than a loud warning. [TileMode.Repeated] tiles this short diagonal
+ * segment across the whole border regardless of the thumbnail's actual size.
  */
+private val CautionYellow = Color(0xFFFFC107)
+private val CautionDarkGrey = Color(0xFF2B2B2B)
 private val CautionStripeBrush = Brush.linearGradient(
-    colorStops = arrayOf(0.0f to Color.Red, 0.5f to Color.Red, 0.5f to Color.White, 1.0f to Color.White),
+    colorStops = arrayOf(0.0f to CautionYellow, 0.5f to CautionYellow, 0.5f to CautionDarkGrey, 1.0f to CautionDarkGrey),
     start = Offset.Zero,
     end = Offset(16f, 16f),
     tileMode = TileMode.Repeated,
