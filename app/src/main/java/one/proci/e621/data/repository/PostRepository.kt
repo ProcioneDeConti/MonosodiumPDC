@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.StateFlow
 import one.proci.e621.data.api.E621ApiService
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.settings.UserSettings
+import one.proci.e621.data.util.PERMANENTLY_HIDDEN_TAG
 
 class PostRepository(
     private val api: E621ApiService,
@@ -24,7 +25,10 @@ class PostRepository(
         limit: Int = 50,
     ): List<Post> {
         val ratingFilter = settings.value.ratingTagFilter()
-        val combinedTags = listOfNotNull(tags.trim().ifBlank { null }, ratingFilter)
+        // Excluded unconditionally (server-side) for every caller - not part of the user's own
+        // editable/disable-able blacklist, so it's unaffected by blacklistDisabled and never
+        // shown in the blacklist UI. See PERMANENTLY_HIDDEN_TAG.
+        val combinedTags = listOfNotNull(tags.trim().ifBlank { null }, ratingFilter, "-$PERMANENTLY_HIDDEN_TAG")
             .joinToString(" ")
             .ifBlank { null }
         val page = beforeId?.let { "b$it" } ?: pageNumber?.toString()
