@@ -22,10 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,21 +33,6 @@ import one.proci.e621.ui.theme.FavoriteGold
 import one.proci.e621.ui.theme.RatingExplicit
 import one.proci.e621.ui.theme.RatingQuestionable
 import one.proci.e621.ui.theme.RatingSafe
-
-/**
- * Diagonal golden-yellow/dark-grey repeating stripe, like caution tape - painted only into a thin
- * border ring (see [PostThumbnail]'s `showCautionBorder`), not the whole thumbnail, so it reads as
- * "temporarily unhidden" rather than a loud warning. [TileMode.Repeated] tiles this short diagonal
- * segment across the whole border regardless of the thumbnail's actual size.
- */
-private val CautionYellow = Color(0xFFFFC107)
-private val CautionDarkGrey = Color(0xFF2B2B2B)
-private val CautionStripeBrush = Brush.linearGradient(
-    colorStops = arrayOf(0.0f to CautionYellow, 0.5f to CautionYellow, 0.5f to CautionDarkGrey, 1.0f to CautionDarkGrey),
-    start = Offset.Zero,
-    end = Offset(16f, 16f),
-    tileMode = TileMode.Repeated,
-)
 
 private val ThumbnailShape = RoundedCornerShape(7.dp)
 

@@ -100,11 +100,21 @@ data class UserSettings(
             .toList()
     }
 
-    fun isBlacklisted(post: Post): Boolean {
-        if (blacklistEntries.isEmpty()) return false
+    private fun matchingBlacklistEntries(post: Post): List<List<String>> {
+        if (blacklistEntries.isEmpty()) return emptyList()
         val postTags = HashSet<String>(post.allTags.size + 1)
         post.allTags.mapTo(postTags) { it.lowercase() }
         Rating.entries.firstOrNull { it.letter == post.rating }?.let { postTags += it.tag }
-        return blacklistEntries.any { entry -> entry.all { it in postTags } }
+        return blacklistEntries.filter { entry -> entry.all { it in postTags } }
     }
+
+    fun isBlacklisted(post: Post): Boolean = matchingBlacklistEntries(post).isNotEmpty()
+
+    /**
+     * Lowercased tags (the union of every matching blacklist line's terms) responsible for [post]
+     * matching the blacklist - empty if it doesn't match. May include a rating pseudo-tag (e.g.
+     * "rating:explicit") if that's what a line matched on. Used to highlight which of a post's tag
+     * chips are the reason it was hidden, on a post shown anyway via [one.proci.e621.data.settings.UserPreferences.blacklistDisabled].
+     */
+    fun matchingBlacklistTags(post: Post): Set<String> = matchingBlacklistEntries(post).flatten().toSet()
 }

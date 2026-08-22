@@ -285,6 +285,9 @@ fun E621NavGraph(
                     videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                     videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
                     downloadLocationUri = userSettings.downloadLocationUri,
+                    matchingBlacklistTags = { post ->
+                        if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                    },
                 )
             } else {
                 val searchViewModel = searchViewModels[searchId]
@@ -308,6 +311,9 @@ fun E621NavGraph(
                         videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                         videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
                         downloadLocationUri = userSettings.downloadLocationUri,
+                        matchingBlacklistTags = { post ->
+                            if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                        },
                     )
                 }
             }

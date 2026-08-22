@@ -114,6 +114,7 @@ import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.settings.Site
 import one.proci.e621.data.util.formatCount
+import one.proci.e621.ui.components.CautionStripeBrush
 import one.proci.e621.ui.components.DTextView
 import one.proci.e621.ui.components.MediaViewer
 import one.proci.e621.ui.components.UserAvatar
@@ -158,6 +159,13 @@ fun PostDetailScreen(
     videoPlaybackSpeed: Float,
     videoAutoplayEnabled: Boolean,
     downloadLocationUri: String?,
+    /**
+     * Lowercased tags responsible for a post matching the blacklist - only meaningful (non-empty)
+     * for a post being shown despite matching, i.e. while blacklistDisabled; see
+     * [one.proci.e621.data.settings.UserSettings.matchingBlacklistTags]. Recomputed per page as
+     * the pager swipes between posts, so each one's own matching tags (if any) get highlighted.
+     */
+    matchingBlacklistTags: (Post) -> Set<String> = { emptySet() },
     modifier: Modifier = Modifier,
 ) {
     if (posts.isEmpty()) return
@@ -251,6 +259,7 @@ fun PostDetailScreen(
                     onOpenComments = { commentsSheetVisible = true },
                     site = site,
                     downloadLocationUri = downloadLocationUri,
+                    highlightedTags = matchingBlacklistTags(currentPost),
                 )
             }
         }
@@ -321,6 +330,7 @@ private fun InfoPanel(
     onOpenComments: () -> Unit,
     site: Site,
     downloadLocationUri: String?,
+    highlightedTags: Set<String>,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -460,6 +470,7 @@ private fun InfoPanel(
                 onSearch = onSearchTag,
                 onAddToSearch = onAddTagToSearch,
                 onExcludeFromSearch = onExcludeTagFromSearch,
+                highlightedTags = highlightedTags,
             )
         }
     }
@@ -1171,6 +1182,7 @@ private fun TagSections(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    highlightedTags: Set<String>,
 ) {
     val grouped = tags.groupBy { it.category }
     Column {
@@ -1184,6 +1196,7 @@ private fun TagSections(
                     onSearch = onSearch,
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
+                    highlightedTags = highlightedTags,
                 )
             }
         }
@@ -1199,6 +1212,7 @@ private fun TagSection(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    highlightedTags: Set<String>,
 ) {
     val headerColor = when (category) {
         TagCategory.ARTIST -> TagArtist
@@ -1235,6 +1249,7 @@ private fun TagSection(
                     onSearch = onSearch,
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
+                    isBlacklistMatch = tag.name.lowercase() in highlightedTags,
                 )
             }
         }
@@ -1248,6 +1263,7 @@ private fun TagChip(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    isBlacklistMatch: Boolean = false,
 ) {
     val (background, content) = when (tag.category) {
         TagCategory.ARTIST -> TagArtist to Color.Black
@@ -1266,12 +1282,15 @@ private fun TagChip(
             modifier = Modifier
                 .background(background, shape)
                 .then(
-                    // sound_warning is easy to miss among a wall of tags, so it also gets a border
-                    // on top of its normal category color.
-                    if (tag.name == "sound_warning") {
-                        Modifier.border(1.5.dp, Color.White, shape)
-                    } else {
-                        Modifier
+                    // Caution-tape border (same as PostThumbnail's "temporarily unhidden" grid
+                    // indicator) takes priority - it's telling you *why* this post bypassed the
+                    // blacklist, which matters more than the sound_warning callout below.
+                    when {
+                        isBlacklistMatch -> Modifier.border(2.dp, CautionStripeBrush, shape)
+                        // sound_warning is easy to miss among a wall of tags, so it also gets a
+                        // border on top of its normal category color.
+                        tag.name == "sound_warning" -> Modifier.border(1.5.dp, Color.White, shape)
+                        else -> Modifier
                     },
                 )
                 .clickable { menuExpanded = true }
