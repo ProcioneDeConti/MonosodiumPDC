@@ -45,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -74,6 +75,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
@@ -123,6 +125,7 @@ fun SettingsScreen(
     onSaveBlacklist: (String) -> Unit,
     onImportBlacklist: suspend () -> Result<String>,
     onPushBlacklist: suspend (String) -> Result<Unit>,
+    onTestBlacklist: suspend (postRef: String, blacklistText: String) -> Result<BlacklistTestResult>,
     onSetAccentColor: (Int?) -> Unit,
     onSetThemePreference: (ThemePreference) -> Unit,
     onSetImageCacheLimitMb: (Int) -> Unit,
@@ -499,6 +502,9 @@ fun SettingsScreen(
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                BlacklistTester(blacklistText = blacklist, onTest = onTestBlacklist)
             }
 
             SettingsSection(stringResource(R.string.settings_backup)) {
@@ -956,6 +962,73 @@ private fun RatingRow(label: String, checked: Boolean, enabled: Boolean = true, 
             style = MaterialTheme.typography.bodyLarge,
             color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun BlacklistTester(
+    blacklistText: String,
+    onTest: suspend (String, String) -> Result<BlacklistTestResult>,
+) {
+    val scope = rememberCoroutineScope()
+    var input by remember { mutableStateOf("") }
+    var testing by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<BlacklistTestResult?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    Text(
+        stringResource(R.string.settings_blacklist_tester_hint),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = input,
+            onValueChange = { input = it },
+            placeholder = { Text(stringResource(R.string.settings_blacklist_tester_placeholder)) },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        Button(
+            enabled = input.isNotBlank() && !testing,
+            onClick = {
+                testing = true
+                error = null
+                result = null
+                scope.launch {
+                    onTest(input, blacklistText).fold(
+                        onSuccess = { result = it },
+                        onFailure = { e -> error = e.message ?: e.toString() },
+                    )
+                    testing = false
+                }
+            },
+        ) {
+            if (testing) CircularProgressIndicator(Modifier.size(18.dp)) else Text(stringResource(R.string.settings_blacklist_tester_run))
+        }
+    }
+    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+    result?.let { r ->
+        val bg = if (r.hidden) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(7.dp))
+                .background(bg)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                stringResource(
+                    if (r.hidden) R.string.settings_blacklist_tester_hidden else R.string.settings_blacklist_tester_visible,
+                    r.postId,
+                ),
+                fontWeight = FontWeight.Bold,
+            )
+            r.matchedLines.forEach { line ->
+                Text("• $line", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+            }
+        }
     }
 }
 

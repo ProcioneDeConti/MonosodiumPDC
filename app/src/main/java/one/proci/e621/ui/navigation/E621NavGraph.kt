@@ -461,6 +461,7 @@ fun E621NavGraph(
                 onSaveBlacklist = settingsViewModel::saveBlacklist,
                 onImportBlacklist = settingsViewModel::importBlacklistFromE621,
                 onPushBlacklist = settingsViewModel::pushBlacklistToE621,
+                onTestBlacklist = settingsViewModel::testBlacklist,
                 onSetAccentColor = settingsViewModel::setAccentColor,
                 onSetThemePreference = settingsViewModel::setThemePreference,
                 onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,

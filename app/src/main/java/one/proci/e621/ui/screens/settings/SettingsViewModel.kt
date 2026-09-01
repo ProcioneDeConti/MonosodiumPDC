@@ -11,6 +11,7 @@ import one.proci.e621.data.backup.SettingsBackupException
 import one.proci.e621.data.backup.SettingsBackupManager
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.repository.RateLimitInfo
+import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.repository.UpdateCheckRepository
 import one.proci.e621.data.repository.UpdateCheckStatus
 import one.proci.e621.data.repository.UserRepository
@@ -26,10 +27,20 @@ sealed class AccountSaveOutcome {
     data class AuthFailed(val message: String) : AccountSaveOutcome()
 }
 
+/** Result of the Settings blacklist tester - which blacklist lines a given post matches. */
+data class BlacklistTestResult(
+    val postId: Long,
+    val thumbnailUrl: String?,
+    val matchedLines: List<String>,
+) {
+    val hidden: Boolean get() = matchedLines.isNotEmpty()
+}
+
 class SettingsViewModel(
     private val userPreferences: UserPreferences,
     private val userRepository: UserRepository,
     private val updateCheckRepository: UpdateCheckRepository,
+    private val postRepository: PostRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<UserSettings> = userPreferences.settingsState
@@ -130,6 +141,21 @@ class SettingsViewModel(
             Result.failure(e)
         } finally {
             _isSyncing.value = false
+        }
+    }
+
+    /**
+     * Tests [postRef] (a post id or a /posts/<id> URL) against [blacklistText] as-typed (not
+     * necessarily the saved blacklist), so the tester reflects unsaved edits.
+     */
+    suspend fun testBlacklist(postRef: String, blacklistText: String): Result<BlacklistTestResult> {
+        val id = Regex("\\d+").find(postRef.trim())?.value?.toLongOrNull()
+            ?: return Result.failure(IllegalArgumentException("Enter a post id or link"))
+        return runCatching {
+            val post = postRepository.fetchPosts(tags = "id:$id", limit = 1).firstOrNull()
+                ?: error("Post #$id not found")
+            val testSettings = settings.value.copy(blacklist = blacklistText)
+            BlacklistTestResult(id, post.preview.url, testSettings.matchingBlacklistLines(post))
         }
     }
 

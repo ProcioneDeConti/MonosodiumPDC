@@ -119,4 +119,8 @@ data class UserSettings(
      * chips are the reason it was hidden, on a post shown anyway via [one.proci.e621.data.settings.UserPreferences.blacklistDisabled].
      */
     fun matchingBlacklistTags(post: Post): Set<String> = matchingBlacklistEntries(post).flatten().toSet()
+
+    /** Blacklist lines (as written) that this post matches - for the Settings blacklist tester. */
+    fun matchingBlacklistLines(post: Post): List<String> =
+        matchingBlacklistEntries(post).map { it.joinToString(" ") }
 }

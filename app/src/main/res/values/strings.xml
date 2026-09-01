@@ -11,6 +11,11 @@
     <string name="settings_api_key_get_link">Get your API key from %1$s</string>
     <string name="settings_api_key_warning">Your API key works like a password to your account. Never share it, post it, or include it in a screenshot.</string>
     <string name="settings_appearance">Appearance</string>
+    <string name="settings_blacklist_tester_hint">Test a post against the blacklist above (as typed).</string>
+    <string name="settings_blacklist_tester_placeholder">Post id or link</string>
+    <string name="settings_blacklist_tester_run">Test</string>
+    <string name="settings_blacklist_tester_hidden">Post #%1$d is hidden. Matching lines:</string>
+    <string name="settings_blacklist_tester_visible">Post #%1$d is not hidden by this blacklist.</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>

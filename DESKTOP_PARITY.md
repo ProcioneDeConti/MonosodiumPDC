@@ -210,8 +210,11 @@ cosmetic / polish.
   snapshot. *(Android 2.13.0: `ThemePreference` enum, `theme_preference` DataStore key,
   `SettingsBackup.themePreference`, a System/Light/Dark segmented selector in Settings > Appearance;
   `MainActivity` derives `darkTheme` from it.)*
-- [ ] **P2 · Blacklist tester** — paste/pick a post and see which blacklist entries match it,
-  live. Desktop: `BlacklistTester` in the blacklist settings section (1.14.48).
+- [x] **P2 · Blacklist tester** — paste/pick a post and see which blacklist entries match it,
+  live. Desktop: `BlacklistTester` in the blacklist settings section (1.14.48). *(Android 2.20.0:
+  a tester in Settings > Blacklist - enter a post id/link, it fetches the post and reports whether
+  it's hidden + which blacklist lines matched, testing the text as-typed (unsaved edits included)
+  via `UserSettings.matchingBlacklistLines`.)*
 - [ ] **P3 · Backup coverage audit** — desktop found several times that its backup wasn't
   actually covering everything it should (`PROGRESS.md` 1.14 "wasn't actually backing up
   everything"). Cross-check the Android `SettingsBackup` field list against current
@@ -304,3 +307,4 @@ capability). Listed so we don't keep rediscovering them.
   period steppers, drawer entry.
 - 2026-09-01 · 2.19.0 · P2 Related tags · defensive related_tag.json parse + a Related tags dialog
   from the tag-chip menu.
+- 2026-09-01 · 2.20.0 · P2 Blacklist tester · Settings > Blacklist tester (post id -> matched lines).
