@@ -162,6 +162,14 @@
     <string name="add_to_set_new">New set from this post</string>
     <string name="add_to_set_added">Added to %1$s</string>
     <string name="add_to_set_failed">Couldn\'t add to set: %1$s</string>
+    <string name="add_to_collection_action">Add to collection</string>
+    <string name="collections_title">Collections</string>
+    <string name="collections_create">New collection</string>
+    <string name="collections_empty">No collections yet. These are stored on this device only.</string>
+    <string name="collections_row_count">%1$d posts</string>
+    <string name="collections_field_name">Name</string>
+    <string name="collections_delete_title">Delete collection?</string>
+    <string name="collections_delete_body">Delete the collection \"%1$s\"? This only affects this device.</string>
     <string name="relationship_parent">Parent #%1$d</string>
     <plurals name="relationship_children">
         <item quantity="one">%1$d child</item>

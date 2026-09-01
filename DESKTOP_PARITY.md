@@ -129,8 +129,12 @@ cosmetic / polish.
   list + create dialog with shortname validation + delete), `PostSetContentViewModel`/`Screen`
   (fixed list like pools) + `post_set/{id}` route + `SOURCE_POST_SET` detail branch. Remove-from-set
   wired in the content VM.)*
-- [ ] **P2 · Local collections** — purely client-side post collections (no e621 account, no
+- [x] **P2 · Local collections** — purely client-side post collections (no e621 account, no
   API). Desktop stores them in their own local store. Distinct from post sets and favorites.
+  *(Android 2.24.0: `LocalCollection` model + `LocalCollectionStore` (own DataStore JSON, like
+  `SavedSearchStore`); `LocalCollectionsScreen` (drawer entry, list/create/delete),
+  `LocalCollectionContentViewModel`/`Screen` (id: fetch + re-sort, 320 cap) + `local_collection/{id}`
+  and `collection_detail/{id}/{index}` routes; "Add to collection" picker in the viewer.)*
 - [ ] **P2 · Artist pages** — `ArtistPanel`: an artist's wiki/DText + their posts, opened from
   an artist tag. Desktop: `components/Artist/ArtistPanel.tsx`.
 - [ ] **P2 · Wiki browser** — `WikiPanel`: search + browse wiki pages standalone (not just the
@@ -323,3 +327,5 @@ capability). Listed so we don't keep rediscovering them.
   on the search + favorites grids.
 - 2026-09-01 · 2.23.0 · P2 Multi-select + bulk actions · select mode + bottom bar (bulk
   favorite/unfavorite/download, sequential, N/total progress) on the search + favorites grids.
+- 2026-09-01 · 2.24.0 · P2 Local collections · on-device post collections (store + screens +
+  routes + viewer picker).

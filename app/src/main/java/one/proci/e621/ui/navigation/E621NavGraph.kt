@@ -41,6 +41,10 @@ import one.proci.e621.ui.screens.messages.MessageComposeScreen
 import one.proci.e621.ui.screens.messages.MessageDetailScreen
 import one.proci.e621.ui.screens.messages.MessagesScreen
 import one.proci.e621.ui.screens.messages.MessagesViewModel
+import one.proci.e621.ui.screens.collections.LocalCollectionContentScreen
+import one.proci.e621.ui.screens.collections.LocalCollectionContentViewModel
+import one.proci.e621.ui.screens.collections.LocalCollectionsScreen
+import one.proci.e621.ui.screens.collections.LocalCollectionsViewModel
 import one.proci.e621.ui.screens.pool.PoolScreen
 import one.proci.e621.ui.screens.pool.PoolViewModel
 import one.proci.e621.ui.screens.popular.PopularScreen
@@ -74,6 +78,9 @@ private object Routes {
     const val POOL = "pool/{poolId}"
     const val POST_SETS = "post_sets"
     const val POPULAR = "popular"
+    const val COLLECTIONS = "local_collections"
+    const val COLLECTION_CONTENT = "local_collection/{collectionId}"
+    const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
     const val POST_SET_CONTENT = "post_set/{setId}"
     const val USER_FEEDBACK = "user_feedback/{id}/{username}"
     const val USER_COMMENTS = "user_comments/{id}/{username}"
@@ -90,6 +97,8 @@ private object Routes {
     fun postDetail(postId: Long) = "post_detail/$postId"
     fun pool(poolId: Long) = "pool/$poolId"
     fun postSetContent(setId: Long) = "post_set/$setId"
+    fun collectionContent(id: String) = "local_collection/$id"
+    fun collectionDetail(id: String, index: Int) = "collection_detail/$id/$index"
     fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
     fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
 }
@@ -128,6 +137,7 @@ fun E621NavGraph(
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
     val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
     val popularViewModel: PopularViewModel = viewModel(factory = factory)
+    val localCollectionsViewModel: LocalCollectionsViewModel = viewModel(factory = factory)
 
     // Every search results screen (whether from the search bar or a post's tag menu) gets its own
     // small integer id and its own PostGridViewModel, registered here by id as each one composes.
@@ -140,6 +150,7 @@ fun E621NavGraph(
     val searchViewModels = remember { mutableMapOf<Int, PostGridViewModel>() }
     val poolViewModels = remember { mutableMapOf<Long, PoolViewModel>() }
     val postSetContentViewModels = remember { mutableMapOf<Long, PostSetContentViewModel>() }
+    val collectionContentViewModels = remember { mutableMapOf<String, LocalCollectionContentViewModel>() }
     val startRoute = remember { Routes.search(nextSearchId.incrementAndGet(), "") }
 
     // Handles a /posts/{id} link (e621.net, e926.net, e6ai.net) that launched or resumed the
@@ -175,6 +186,10 @@ fun E621NavGraph(
 
     fun navigateToPostSetContent(setId: Long) {
         navController.navigate(Routes.postSetContent(setId))
+    }
+
+    fun navigateToCollectionContent(id: String) {
+        navController.navigate(Routes.collectionContent(id))
     }
 
     // Start destination is a search for everything (empty query) - the app's "home page". Every
@@ -240,6 +255,7 @@ fun E621NavGraph(
                 onOpenSavedSearches = { currentQuery -> navController.navigate(Routes.savedSearches(currentQuery)) },
                 onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
                 onOpenPopular = { navController.navigate(Routes.POPULAR) },
+                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -316,6 +332,7 @@ fun E621NavGraph(
                         onPostUpdated = popularViewModel::updatePost,
                         postActionsRepository = app.postActionsRepository,
                         postSetRepository = app.postSetRepository,
+                        localCollectionStore = app.localCollectionStore,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -343,6 +360,7 @@ fun E621NavGraph(
                         onPostUpdated = favoritesViewModel::updatePost,
                         postActionsRepository = app.postActionsRepository,
                         postSetRepository = app.postSetRepository,
+                        localCollectionStore = app.localCollectionStore,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -372,6 +390,7 @@ fun E621NavGraph(
                             onPostUpdated = setViewModel::updatePost,
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
+                            localCollectionStore = app.localCollectionStore,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -402,6 +421,7 @@ fun E621NavGraph(
                             onPostUpdated = poolViewModel::updatePost,
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
+                            localCollectionStore = app.localCollectionStore,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -432,6 +452,7 @@ fun E621NavGraph(
                             onPostUpdated = searchViewModel::updatePost,
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
+                            localCollectionStore = app.localCollectionStore,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -668,6 +689,7 @@ fun E621NavGraph(
                 postRepository = app.postRepository,
                 postActionsRepository = app.postActionsRepository,
                 postSetRepository = app.postSetRepository,
+                localCollectionStore = app.localCollectionStore,
                 avatarRepository = app.avatarRepository,
                 onBack = { navController.popBackStack() },
                 onAddTagToBlacklist = ::addTagToBlacklist,
@@ -725,6 +747,86 @@ fun E621NavGraph(
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
             )
+        }
+        composable(Routes.COLLECTIONS) {
+            val collections by localCollectionsViewModel.collections.collectAsStateWithLifecycle()
+            LocalCollectionsScreen(
+                collections = collections,
+                onBack = { navController.popBackStack() },
+                onOpen = ::navigateToCollectionContent,
+                onCreate = localCollectionsViewModel::create,
+                onDelete = localCollectionsViewModel::delete,
+            )
+        }
+        composable(
+            route = Routes.COLLECTION_CONTENT,
+            arguments = listOf(navArgument("collectionId") { type = NavType.StringType }),
+            popEnterTransition = {
+                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+            },
+        ) { backStackEntry ->
+            val collectionId = backStackEntry.arguments?.getString("collectionId").orEmpty()
+            val collectionFactory = remember(backStackEntry) { factory.localCollectionContentViewModelFactory(collectionId) }
+            val collectionViewModel: LocalCollectionContentViewModel =
+                viewModel(viewModelStoreOwner = backStackEntry, factory = collectionFactory)
+            SideEffect { collectionContentViewModels[collectionId] = collectionViewModel }
+            DisposableEffect(backStackEntry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_DESTROY) collectionContentViewModels.remove(collectionId)
+                }
+                backStackEntry.lifecycle.addObserver(observer)
+                onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+            }
+            val state by collectionViewModel.uiState.collectAsStateWithLifecycle()
+            LocalCollectionContentScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = collectionViewModel::refresh,
+                onPostClick = { index -> navController.navigate(Routes.collectionDetail(collectionId, index)) },
+                onSetBlacklistDisabled = collectionViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = collectionViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(
+            route = Routes.COLLECTION_DETAIL,
+            arguments = listOf(
+                navArgument("collectionId") { type = NavType.StringType },
+                navArgument("index") { type = NavType.IntType },
+            ),
+            exitTransition = { ExitTransition.None },
+            popExitTransition = { ExitTransition.None },
+        ) { backStackEntry ->
+            val collectionId = backStackEntry.arguments?.getString("collectionId").orEmpty()
+            val index = backStackEntry.arguments?.getInt("index") ?: 0
+            val vm = collectionContentViewModels[collectionId]
+            if (vm != null) {
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                PostDetailScreen(
+                    posts = state.posts,
+                    initialIndex = index,
+                    onBack = { navController.popBackStack() },
+                    onLoadMore = {},
+                    onPostUpdated = vm::updatePost,
+                    postActionsRepository = app.postActionsRepository,
+                    postSetRepository = app.postSetRepository,
+                    localCollectionStore = app.localCollectionStore,
+                    avatarRepository = app.avatarRepository,
+                    onAddTagToBlacklist = ::addTagToBlacklist,
+                    onSearchTag = ::navigateToSearch,
+                    onAddTagToSearch = ::navigateToSearch,
+                    onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
+                    onOpenProfile = { id -> navigateToProfile(id) },
+                    onOpenPool = ::navigateToPool,
+                    site = activeSite,
+                    videoLoopEnabled = userSettings.videoLoopEnabled,
+                    videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                    videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                    downloadLocationUri = userSettings.downloadLocationUri,
+                    matchingBlacklistTags = { post ->
+                        if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                    },
+                )
+            }
         }
         composable(Routes.POST_SETS) {
             val state by postSetsViewModel.uiState.collectAsStateWithLifecycle()

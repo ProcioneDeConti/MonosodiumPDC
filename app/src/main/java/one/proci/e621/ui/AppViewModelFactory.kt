@@ -3,6 +3,8 @@ package one.proci.e621.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import one.proci.e621.E621Application
+import one.proci.e621.ui.screens.collections.LocalCollectionContentViewModel
+import one.proci.e621.ui.screens.collections.LocalCollectionsViewModel
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
 import one.proci.e621.ui.screens.feedback.UserFeedbackViewModel
 import one.proci.e621.ui.screens.forum.ForumTopicViewModel
@@ -39,6 +41,8 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             PostSetsViewModel(app.postSetRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(PopularViewModel::class.java) ->
             PopularViewModel(app.popularRepository, app.userPreferences) as T
+        modelClass.isAssignableFrom(LocalCollectionsViewModel::class.java) ->
+            LocalCollectionsViewModel(app.localCollectionStore) as T
         else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 
@@ -69,6 +73,14 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 PoolViewModel(poolId, app.poolRepository, app.userPreferences) as T
+        }
+
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for one on-device collection's posts. */
+    fun localCollectionContentViewModelFactory(collectionId: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                LocalCollectionContentViewModel(collectionId, app.localCollectionStore, app.postRepository, app.userPreferences) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory], for one post set's fixed post list. */

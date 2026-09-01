@@ -34,6 +34,7 @@ import one.proci.e621.data.repository.PostSetRepository
 import one.proci.e621.data.repository.TagSuggestionRepository
 import one.proci.e621.data.repository.UpdateCheckRepository
 import one.proci.e621.data.repository.UserRepository
+import one.proci.e621.data.settings.LocalCollectionStore
 import one.proci.e621.data.settings.SavedSearchStore
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.util.ImageCacheLimits
@@ -57,6 +58,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val healthCheckRepository by lazy { HealthCheckRepository(apiService) }
     val updateCheckRepository by lazy { UpdateCheckRepository(GitHubClient.create()) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
+    val localCollectionStore by lazy { LocalCollectionStore(this) }
 
     // Deliberately in onCreate(), not init{}: init{} runs during the Application's own
     // construction, before the framework calls attachBaseContext() - these coroutines run on

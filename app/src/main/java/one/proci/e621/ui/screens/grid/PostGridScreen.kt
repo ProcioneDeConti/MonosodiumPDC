@@ -54,6 +54,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
@@ -207,6 +208,7 @@ fun PostGridScreen(
     onOpenSavedSearches: (currentQuery: String) -> Unit,
     onOpenPostSets: () -> Unit,
     onOpenPopular: () -> Unit,
+    onOpenCollections: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -308,6 +310,7 @@ fun PostGridScreen(
             onOpenSavedSearches = { onOpenSavedSearches(state.activeQuery) },
             onOpenPostSets = onOpenPostSets,
             onOpenPopular = onOpenPopular,
+            onOpenCollections = onOpenCollections,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -335,6 +338,7 @@ private fun NavDrawerOverlay(
     onOpenSavedSearches: () -> Unit,
     onOpenPostSets: () -> Unit,
     onOpenPopular: () -> Unit,
+    onOpenCollections: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -451,6 +455,11 @@ private fun NavDrawerOverlay(
                         icon = Icons.Filled.TrendingUp,
                         label = stringResource(R.string.popular_title),
                         onClick = dismissAnd(onOpenPopular),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.Collections,
+                        label = stringResource(R.string.collections_title),
+                        onClick = dismissAnd(onOpenCollections),
                     )
                     DrawerItem(
                         icon = Icons.Filled.Bookmark,

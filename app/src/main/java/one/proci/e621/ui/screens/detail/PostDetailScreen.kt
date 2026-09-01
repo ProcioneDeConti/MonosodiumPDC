@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DataObject
@@ -87,6 +88,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -156,6 +158,7 @@ fun PostDetailScreen(
     onPostUpdated: (Post) -> Unit,
     postActionsRepository: PostActionsRepository,
     postSetRepository: one.proci.e621.data.repository.PostSetRepository? = null,
+    localCollectionStore: one.proci.e621.data.settings.LocalCollectionStore? = null,
     avatarRepository: AvatarRepository,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -280,6 +283,7 @@ fun PostDetailScreen(
             post = currentPost,
             postActionsRepository = postActionsRepository,
             postSetRepository = postSetRepository,
+            localCollectionStore = localCollectionStore,
             onDismiss = { infoSheetVisible = false },
             onOpenComments = {
                 infoSheetVisible = false
@@ -687,6 +691,7 @@ private fun PostInfoSheet(
     post: Post,
     postActionsRepository: PostActionsRepository,
     postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
+    localCollectionStore: one.proci.e621.data.settings.LocalCollectionStore?,
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
     onSearch: (String) -> Unit,
@@ -708,6 +713,7 @@ private fun PostInfoSheet(
     val flagSentMessage = stringResource(R.string.post_flag_sent)
     val flagFailedTemplate = stringResource(R.string.post_flag_failed)
     var showAddToSetDialog by remember(post.id) { mutableStateOf(false) }
+    var showAddToCollectionDialog by remember(post.id) { mutableStateOf(false) }
 
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
@@ -799,6 +805,13 @@ private fun PostInfoSheet(
                         icon = Icons.Filled.PlaylistAdd,
                         label = stringResource(R.string.add_to_set_action),
                         onClick = { showAddToSetDialog = true },
+                    )
+                }
+                if (localCollectionStore != null) {
+                    PillAction(
+                        icon = Icons.Filled.Collections,
+                        label = stringResource(R.string.add_to_collection_action),
+                        onClick = { showAddToCollectionDialog = true },
                     )
                 }
             }
@@ -949,6 +962,84 @@ private fun PostInfoSheet(
             onDismiss = { showAddToSetDialog = false },
         )
     }
+
+    if (showAddToCollectionDialog && localCollectionStore != null) {
+        AddToCollectionDialog(
+            postId = post.id,
+            store = localCollectionStore,
+            onDismiss = { showAddToCollectionDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun AddToCollectionDialog(
+    postId: Long,
+    store: one.proci.e621.data.settings.LocalCollectionStore,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val collections by store.collectionsFlow.collectAsState(initial = emptyList())
+    var newName by remember { mutableStateOf("") }
+    val addedTemplate = stringResource(R.string.add_to_set_added)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.add_to_collection_action)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                if (collections.isEmpty()) {
+                    Text(
+                        stringResource(R.string.collections_empty),
+                        color = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                collections.forEach { collection ->
+                    val alreadyIn = postId in collection.postIds
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !alreadyIn) {
+                                scope.launch {
+                                    store.addPost(collection.id, postId)
+                                    Toast.makeText(context, String.format(addedTemplate, collection.name), Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(collection.name, modifier = Modifier.weight(1f))
+                        if (alreadyIn) Icon(Icons.Filled.Star, contentDescription = null, tint = FavoriteGold, modifier = Modifier.size(18.dp))
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(R.string.add_to_set_new)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(
+                            enabled = newName.isNotBlank(),
+                            onClick = {
+                                val name = newName.trim()
+                                newName = ""
+                                scope.launch {
+                                    val created = store.create(name)
+                                    store.addPost(created.id, postId)
+                                    Toast.makeText(context, String.format(addedTemplate, name), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        ) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_to_set_new)) }
+                    },
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) } },
+    )
 }
 
 @Composable
