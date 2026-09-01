@@ -802,12 +802,20 @@ private fun PostInfoSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(stringResource(R.string.info_description), style = MaterialTheme.typography.titleSmall, color = Color.White)
-            Text(
-                post.description.ifBlank { stringResource(R.string.info_no_description) },
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.padding(top = 6.dp),
-            )
+            if (post.description.isBlank()) {
+                Text(
+                    stringResource(R.string.info_no_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            } else {
+                DTextView(
+                    text = post.description,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.85f)),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
         }
         }
     }

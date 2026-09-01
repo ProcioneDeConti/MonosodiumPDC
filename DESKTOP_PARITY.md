@@ -36,9 +36,10 @@ cosmetic / polish.
   (`GET notes.json?search[post_id]=`), `ZoomableImage.tsx`'s `NoteOverlay`. `has_notes` is
   already on the Android `Post` model, unused. Positioning: note coords are against the
   *original* image size — scale by rendered/natural ratio, don't recompute the zoom transform.
-- [ ] **P2 · Post description as DText** — Android renders `post.description` as plain `Text`
+- [x] **P2 · Post description as DText** — Android renders `post.description` as plain `Text`
   (`PostDetailScreen.kt` info sheet). Desktop renders it through `DText`. `DTextView` already
-  exists in this app; just swap it in.
+  exists in this app; just swap it in. *(Android 2.9.3: swapped in `DTextView` in the info sheet;
+  the empty-description fallback stays plain `Text` since `DTextView` no-ops on blank input.)*
 - [ ] **P2 · Parent/child relationships** — Android shows nothing. Desktop `InfoPanel` has a
   Relationships row: "Parent #X" chip → search `~id:X ~parent:X`, "N children" chip → search
   `parent:<id>`. The `relationships` object
@@ -240,3 +241,5 @@ capability). Listed so we don't keep rediscovering them.
   `PostGridViewModel` (numbered pages + id de-dupe); added the page-750 hard cap to match desktop.
 - 2026-09-01 · 2.9.2 · P2 Meta operators silently replaced · `TagSuggestionRepository.suggest()`
   now short-circuits any prefix with a `:`; submit already used the literal token.
+- 2026-09-01 · 2.9.3 · P2 Post description as DText · info sheet now renders `post.description`
+  through `DTextView`.
