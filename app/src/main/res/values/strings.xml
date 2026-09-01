@@ -124,6 +124,13 @@
     <string name="pool_title">Pool</string>
     <string name="pool_truncated">Showing the first 320 posts of this pool.</string>
     <string name="post_sets_title">Post sets</string>
+    <string name="popular_title">Popular</string>
+    <string name="popular_scale_day">Day</string>
+    <string name="popular_scale_week">Week</string>
+    <string name="popular_scale_month">Month</string>
+    <string name="popular_previous">Previous period</string>
+    <string name="popular_next">Next period</string>
+    <string name="popular_now">Now</string>
     <string name="post_sets_create">New set</string>
     <string name="post_sets_empty">You don\'t have any post sets yet.</string>
     <string name="post_sets_needs_account">Sign in to use post sets.</string>

@@ -43,6 +43,8 @@ import one.proci.e621.ui.screens.messages.MessagesScreen
 import one.proci.e621.ui.screens.messages.MessagesViewModel
 import one.proci.e621.ui.screens.pool.PoolScreen
 import one.proci.e621.ui.screens.pool.PoolViewModel
+import one.proci.e621.ui.screens.popular.PopularScreen
+import one.proci.e621.ui.screens.popular.PopularViewModel
 import one.proci.e621.ui.screens.sets.PostSetContentViewModel
 import one.proci.e621.ui.screens.sets.PostSetContentScreen
 import one.proci.e621.ui.screens.sets.PostSetsScreen
@@ -71,6 +73,7 @@ private object Routes {
     const val POST_DETAIL = "post_detail/{postId}"
     const val POOL = "pool/{poolId}"
     const val POST_SETS = "post_sets"
+    const val POPULAR = "popular"
     const val POST_SET_CONTENT = "post_set/{setId}"
     const val USER_FEEDBACK = "user_feedback/{id}/{username}"
     const val USER_COMMENTS = "user_comments/{id}/{username}"
@@ -95,6 +98,7 @@ private const val SOURCE_SEARCH = "search"
 private const val SOURCE_FAVORITES = "favorites"
 private const val SOURCE_POOL = "pool"
 private const val SOURCE_POST_SET = "post_set"
+private const val SOURCE_POPULAR = "popular"
 private const val NO_SEARCH_ID = -1
 
 @Composable
@@ -123,6 +127,7 @@ fun E621NavGraph(
     val savedSearchesViewModel: SavedSearchesViewModel = viewModel(factory = factory)
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
     val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
+    val popularViewModel: PopularViewModel = viewModel(factory = factory)
 
     // Every search results screen (whether from the search bar or a post's tag menu) gets its own
     // small integer id and its own PostGridViewModel, registered here by id as each one composes.
@@ -234,6 +239,7 @@ fun E621NavGraph(
                 onOpenForum = { navController.navigate(Routes.FORUM) },
                 onOpenSavedSearches = { currentQuery -> navController.navigate(Routes.savedSearches(currentQuery)) },
                 onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
+                onOpenPopular = { navController.navigate(Routes.POPULAR) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -291,6 +297,33 @@ fun E621NavGraph(
             val searchId = backStackEntry.arguments?.getInt("searchId") ?: NO_SEARCH_ID
             val index = backStackEntry.arguments?.getInt("index") ?: 0
             when {
+                source == SOURCE_POPULAR -> {
+                    val state by popularViewModel.uiState.collectAsStateWithLifecycle()
+                    PostDetailScreen(
+                        posts = state.posts,
+                        initialIndex = index,
+                        onBack = { navController.popBackStack() },
+                        onLoadMore = {},
+                        onPostUpdated = popularViewModel::updatePost,
+                        postActionsRepository = app.postActionsRepository,
+                        postSetRepository = app.postSetRepository,
+                        avatarRepository = app.avatarRepository,
+                        onAddTagToBlacklist = ::addTagToBlacklist,
+                        onSearchTag = ::navigateToSearch,
+                        onAddTagToSearch = ::navigateToSearch,
+                        onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
+                        onOpenProfile = { id -> navigateToProfile(id) },
+                        onOpenPool = ::navigateToPool,
+                        site = activeSite,
+                        videoLoopEnabled = userSettings.videoLoopEnabled,
+                        videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                        videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                        downloadLocationUri = userSettings.downloadLocationUri,
+                        matchingBlacklistTags = { post ->
+                            if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                        },
+                    )
+                }
                 source == SOURCE_FAVORITES -> {
                     val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
                     PostDetailScreen(
@@ -666,6 +699,21 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POOL, poolId.toInt(), index)) },
                 onSetBlacklistDisabled = poolViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = poolViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(Routes.POPULAR) {
+            val state by popularViewModel.uiState.collectAsStateWithLifecycle()
+            PopularScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onSetScale = popularViewModel::setScale,
+                onPrevious = popularViewModel::previousPeriod,
+                onNext = popularViewModel::nextPeriod,
+                onNow = popularViewModel::goToNow,
+                onRefresh = popularViewModel::refresh,
+                onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
+                onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
             )
         }
         composable(Routes.POST_SETS) {

@@ -104,9 +104,12 @@ cosmetic / polish.
   (fetch by `id:` + re-sort against `post_ids`, 320 cap with a "first 320" banner), `PoolViewModel`
   (fixed list, blacklist-aware like the grid), `PoolScreen` reusing `PostGridBody`, `pool/{id}` route
   + a `SOURCE_POOL` branch in the detail viewer. Rating filter deliberately not applied to a pool.)*
-- [ ] **P2 · Popular posts browser** — `popular.json?date=&scale=` (public). Day/Week/Month
+- [x] **P2 · Popular posts browser** — `popular.json?date=&scale=` (public). Day/Week/Month
   segmented control + prev/next period steppers + "Now" shortcut. Desktop: `PopularPanel`,
   `get_popular_posts`, `lib/popular.ts` for the date math. Fixed non-paginated list like pools.
+  *(Android 2.18.0: `getPopular` + `PopularRepository` (`PopularScale` owns the date math),
+  `PopularViewModel`/`PopularScreen` (Day/Week/Month segmented + `<`/`>` steppers clamped at today
+  + Now), `popular` route + drawer entry + `SOURCE_POPULAR` detail branch.)*
 - [x] **P2 · Random post / shuffle** — a button that re-runs the *current* search with
   `order:random` mixed in (drop any existing `order:*` first). Re-submitting must actually
   re-roll (e621 re-randomises per request — don't no-op on the unchanged query). Optional:
@@ -294,3 +297,5 @@ capability). Listed so we don't keep rediscovering them.
   route, SOURCE_POOL detail branch; info-sheet pool chips.
 - 2026-09-01 · 2.17.0 · P2 Post sets + P2 add-to-set · full post_sets API + list/create/delete
   screen (drawer) + set content grid + "Add to set" picker in the viewer.
+- 2026-09-01 · 2.18.0 · P2 Popular posts browser · popular.json + Day/Week/Month screen with
+  period steppers, drawer entry.

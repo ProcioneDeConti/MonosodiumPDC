@@ -63,6 +63,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Badge
@@ -205,6 +206,7 @@ fun PostGridScreen(
     onOpenForum: () -> Unit,
     onOpenSavedSearches: (currentQuery: String) -> Unit,
     onOpenPostSets: () -> Unit,
+    onOpenPopular: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -268,6 +270,7 @@ fun PostGridScreen(
             onOpenFavorites = onOpenFavorites,
             onOpenSavedSearches = { onOpenSavedSearches(state.activeQuery) },
             onOpenPostSets = onOpenPostSets,
+            onOpenPopular = onOpenPopular,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -294,6 +297,7 @@ private fun NavDrawerOverlay(
     onOpenFavorites: () -> Unit,
     onOpenSavedSearches: () -> Unit,
     onOpenPostSets: () -> Unit,
+    onOpenPopular: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -405,6 +409,11 @@ private fun NavDrawerOverlay(
                         icon = Icons.Filled.Favorite,
                         label = stringResource(R.string.favorites),
                         onClick = dismissAnd(onOpenFavorites),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.TrendingUp,
+                        label = stringResource(R.string.popular_title),
+                        onClick = dismissAnd(onOpenPopular),
                     )
                     DrawerItem(
                         icon = Icons.Filled.Bookmark,

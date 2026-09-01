@@ -43,6 +43,16 @@ interface E621ApiService {
         @Query("page") page: String? = null,
     ): PostsResponse
 
+    /**
+     * Public. Most-favorited posts for a period. [date] is `YYYY-MM-DD`; [scale] is
+     * `day` / `week` / `month`. Returns the same shape as posts.json, already ranked.
+     */
+    @GET("popular.json")
+    suspend fun getPopular(
+        @Query("date") date: String,
+        @Query("scale") scale: String,
+    ): PostsResponse
+
     /** Requires Basic Auth; returns the authenticated user's own profile, including blacklisted_tags. */
     @GET("users/me.json")
     suspend fun getCurrentUser(): UserProfile

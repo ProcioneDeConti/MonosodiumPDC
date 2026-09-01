@@ -10,6 +10,7 @@ import one.proci.e621.ui.screens.forum.ForumViewModel
 import one.proci.e621.ui.screens.grid.PostGridViewModel
 import one.proci.e621.ui.screens.messages.MessagesViewModel
 import one.proci.e621.ui.screens.pool.PoolViewModel
+import one.proci.e621.ui.screens.popular.PopularViewModel
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.sets.PostSetContentViewModel
 import one.proci.e621.ui.screens.sets.PostSetsViewModel
@@ -36,6 +37,8 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             NotificationsViewModel(app.userRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(PostSetsViewModel::class.java) ->
             PostSetsViewModel(app.postSetRepository, app.userPreferences) as T
+        modelClass.isAssignableFrom(PopularViewModel::class.java) ->
+            PopularViewModel(app.popularRepository, app.userPreferences) as T
         else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 
