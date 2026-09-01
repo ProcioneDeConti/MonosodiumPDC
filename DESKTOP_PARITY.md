@@ -40,11 +40,13 @@ cosmetic / polish.
   (`PostDetailScreen.kt` info sheet). Desktop renders it through `DText`. `DTextView` already
   exists in this app; just swap it in. *(Android 2.9.3: swapped in `DTextView` in the info sheet;
   the empty-description fallback stays plain `Text` since `DTextView` no-ops on blank input.)*
-- [ ] **P2 · Parent/child relationships** — Android shows nothing. Desktop `InfoPanel` has a
+- [x] **P2 · Parent/child relationships** — Android shows nothing. Desktop `InfoPanel` has a
   Relationships row: "Parent #X" chip → search `~id:X ~parent:X`, "N children" chip → search
   `parent:<id>`. The `relationships` object
   (`parent_id`/`has_children`/`has_active_children`/`children`) needs adding to the Android
-  `Post` model (it's in the JSON already).
+  `Post` model (it's in the JSON already). *(Android 2.10.0: added `PostRelationships` to the model;
+  `RelationshipsRow` in the viewer info sheet renders Parent / N-children chips that run the search
+  and close the sheet.)*
 - [ ] **P2 · Pools as interactive chips + pool browser** — Android shows `#123, #456` as plain
   text. Desktop makes them chips that open a `PoolPanel` (see Pools item under Browsing).
 - [ ] **P2 · Comment voting** — Android comments are view/post only. Desktop votes on comments
@@ -243,3 +245,5 @@ capability). Listed so we don't keep rediscovering them.
   now short-circuits any prefix with a `:`; submit already used the literal token.
 - 2026-09-01 · 2.9.3 · P2 Post description as DText · info sheet now renders `post.description`
   through `DTextView`.
+- 2026-09-01 · 2.10.0 · P2 Parent/child relationships · `PostRelationships` model + Relationships
+  row (Parent #X / N children chips) in the viewer info sheet.

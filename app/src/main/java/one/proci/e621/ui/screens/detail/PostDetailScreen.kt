@@ -95,6 +95,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -273,6 +274,10 @@ fun PostDetailScreen(
             onOpenComments = {
                 infoSheetVisible = false
                 commentsSheetVisible = true
+            },
+            onSearch = { query ->
+                infoSheetVisible = false
+                onSearchTag(query)
             },
             site = site,
         )
@@ -668,6 +673,7 @@ private fun PostInfoSheet(
     postActionsRepository: PostActionsRepository,
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
+    onSearch: (String) -> Unit,
     site: Site,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -779,6 +785,7 @@ private fun PostInfoSheet(
             if (post.flags.flagged) {
                 FlagReasonBox(postId = post.id, postActionsRepository = postActionsRepository)
             }
+            RelationshipsRow(post = post, onSearch = onSearch)
             if (post.pools.isNotEmpty()) {
                 InfoRow(stringResource(R.string.info_pools), post.pools.joinToString(", ") { "#$it" })
             }
@@ -1094,6 +1101,58 @@ private fun StatusInfoRow(post: Post) {
         ) {
             Text(label, color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+/**
+ * Parent / children navigation, mirroring desktop's InfoPanel Relationships row. "Parent #X"
+ * searches `~id:X ~parent:X` (the parent post plus all its siblings); "N children" searches
+ * `parent:<this id>`. Nothing renders when the post has no parent and no children.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RelationshipsRow(post: Post, onSearch: (String) -> Unit) {
+    val rel = post.relationships
+    if (rel.parentId == null && !rel.hasChildren) return
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+        Text(
+            stringResource(R.string.info_relationships),
+            color = Color.White.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        FlowRow(
+            modifier = Modifier.padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            rel.parentId?.let { parentId ->
+                RelationshipChip(stringResource(R.string.relationship_parent, parentId)) {
+                    onSearch("~id:$parentId ~parent:$parentId")
+                }
+            }
+            if (rel.hasChildren) {
+                val count = rel.children.size
+                val label = if (count > 0) {
+                    pluralStringResource(R.plurals.relationship_children, count, count)
+                } else {
+                    stringResource(R.string.info_relationships)
+                }
+                RelationshipChip(label) { onSearch("parent:${post.id}") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelationshipChip(label: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 

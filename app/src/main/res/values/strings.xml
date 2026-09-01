@@ -115,6 +115,12 @@
     <string name="info_no_description">No description.</string>
     <string name="info_sources">Sources</string>
     <string name="info_pools">Pools</string>
+    <string name="info_relationships">Relationships</string>
+    <string name="relationship_parent">Parent #%1$d</string>
+    <plurals name="relationship_children">
+        <item quantity="one">%1$d child</item>
+        <item quantity="other">%1$d children</item>
+    </plurals>
     <string name="info_status">Status</string>
     <string name="info_comments">Comments</string>
     <string name="info_favorites">Favorites</string>

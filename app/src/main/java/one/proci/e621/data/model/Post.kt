@@ -35,6 +35,7 @@ data class Post(
     @SerialName("is_favorited") val isFavorited: Boolean = false,
     @SerialName("has_notes") val hasNotes: Boolean = false,
     val duration: Double? = null,
+    val relationships: PostRelationships = PostRelationships(),
     val flags: PostFlags = PostFlags(),
     /** The authenticated user's own vote: 1 up, -1 down, 0 none. Always 0 when not signed in. */
     @SerialName("vote_by") val voteBy: Int = 0,
@@ -124,6 +125,14 @@ data class PostTags(
     val invalid: List<String> = emptyList(),
     val lore: List<String> = emptyList(),
     val meta: List<String> = emptyList(),
+)
+
+@Serializable
+data class PostRelationships(
+    @SerialName("parent_id") val parentId: Long? = null,
+    @SerialName("has_children") val hasChildren: Boolean = false,
+    @SerialName("has_active_children") val hasActiveChildren: Boolean = false,
+    val children: List<Long> = emptyList(),
 )
 
 @Serializable
