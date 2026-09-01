@@ -256,3 +256,5 @@ capability). Listed so we don't keep rediscovering them.
   row (Parent #X / N children chips) in the viewer info sheet.
 - 2026-09-01 · 2.11.0 · P2 Comment voting + edit/delete + reporting · one CommentRow rework:
   vote up/down, own-comment edit/delete (gated on users/me.json id), report others' comments.
+- 2026-09-01 · 2.11.1 · P2 Post reporting/flag · reportPost → tickets.json (qtype:post) + a
+  "Report post" action with a reason dialog in the viewer info sheet.

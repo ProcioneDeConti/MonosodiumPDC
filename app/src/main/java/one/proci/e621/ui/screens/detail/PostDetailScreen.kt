@@ -689,6 +689,11 @@ private fun PostInfoSheet(
     var jsonLoading by remember { mutableStateOf(false) }
     var jsonError by remember { mutableStateOf<String?>(null) }
     val jsonFailedTemplate = stringResource(R.string.raw_json_failed)
+    var showFlagDialog by remember(post.id) { mutableStateOf(false) }
+    var flagReasonDraft by remember(post.id) { mutableStateOf("") }
+    var flagging by remember(post.id) { mutableStateOf(false) }
+    val flagSentMessage = stringResource(R.string.post_flag_sent)
+    val flagFailedTemplate = stringResource(R.string.post_flag_failed)
 
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
@@ -769,6 +774,11 @@ private fun PostInfoSheet(
                     icon = Icons.AutoMirrored.Filled.Comment,
                     label = stringResource(R.string.action_comments),
                     onClick = onOpenComments,
+                )
+                PillAction(
+                    icon = Icons.Filled.Flag,
+                    label = stringResource(R.string.post_flag_action),
+                    onClick = { showFlagDialog = true },
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -851,6 +861,46 @@ private fun PostInfoSheet(
                             fontSize = 12.sp,
                         )
                     }
+                }
+            },
+        )
+    }
+
+    if (showFlagDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!flagging) showFlagDialog = false },
+            title = { Text(stringResource(R.string.post_flag_title)) },
+            text = {
+                OutlinedTextField(
+                    value = flagReasonDraft,
+                    onValueChange = { flagReasonDraft = it },
+                    placeholder = { Text(stringResource(R.string.post_flag_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 4,
+                    enabled = !flagging,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = flagReasonDraft.isNotBlank() && !flagging,
+                    onClick = {
+                        flagging = true
+                        scope.launch {
+                            val result = runCatching { postActionsRepository.reportPost(post.id, flagReasonDraft.trim()) }
+                            flagging = false
+                            showFlagDialog = false
+                            val message = result.fold(
+                                onSuccess = { flagSentMessage },
+                                onFailure = { e -> String.format(flagFailedTemplate, e.message ?: e.toString()) },
+                            )
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                ) { Text(stringResource(R.string.post_flag_send)) }
+            },
+            dismissButton = {
+                TextButton(enabled = !flagging, onClick = { showFlagDialog = false }) {
+                    Text(stringResource(R.string.comment_action_cancel))
                 }
             },
         )
