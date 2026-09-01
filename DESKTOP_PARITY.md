@@ -8,7 +8,7 @@ counterpart but has since had a large Phase 3 / Phase 4 / post-1.14 run of featu
 never ported back. This doc is the checklist for closing that gap.
 
 - **Desktop version at last sync:** 1.14.88
-- **Android version at last sync:** 2.9.0 (versionCode 83)
+- **Android version at last sync:** 2.29.0 (versionCode 108) — full P1+P2 parity pass 2026-09-01
 - **Source of truth for desktop behaviour:** `PROGRESS.md` at the desktop repo root (full
   milestone / feature history) and the architecture map in the desktop `CLAUDE.md`. When an item
   below says "desktop: `X`", that's the file/component to read there for the reference behaviour.
@@ -212,10 +212,15 @@ cosmetic / polish.
   fields to `UserProfile` (all optional - absent on older e621ng); a Contribution section shows the
   recomputed 0-10 upload level + karma progress bar + uploads/edits tiles + approver/verified pills,
   rendered only when `upload_karma` is present.)*
-- [ ] **P2 · User Dashboard** — local-only usage analytics (posts viewed, searches,
+- [x] **P2 · User Dashboard** — local-only usage analytics (posts viewed, searches,
   favorites ±, votes, downloads + bytes, time in app, per-site splits, daily buckets,
   top viewed artists/characters). All local, nothing sent, opt-out toggle. Desktop:
   `components/Dashboard/`, `state/statsStore.ts`. Charts are hand-rolled — no chart lib.
+  *(Android 2.29.0: `UsageStatsStore` (own DataStore JSON) records searches (`PostGridViewModel`),
+  votes/favorites/post-views (`PostActionsRepository`), downloads (`DownloadQueue`); per-site +
+  daily-bucket + top-artist/character rollups. `DashboardScreen` (drawer) shows stat tiles + hand-
+  rolled bars, an opt-out toggle and Clear. Deliberate divergence: no time-in-app or download-bytes
+  tracking.)*
 - [x] **P2 · Favorites analysis** — a progressive page-by-page fetch of `fav:<user>` (yours or
   any user's public favorites), rolled up into rating / filetype / score-bucket / year /
   top-artist / top-character breakdowns, with a progress bar + cancel. Structurally
@@ -353,3 +358,5 @@ capability). Listed so we don't keep rediscovering them.
   all download entry points route through it.
 - 2026-09-01 · 2.28.0 · P2 Favorites analysis · progressive fav:<user> fetch + rollup screen
   (ratings/filetypes/scores/years/artists/characters), opened from the favorites top bar.
+- 2026-09-01 · 2.29.0 · P2 User Dashboard · UsageStatsStore + instrumentation + DashboardScreen
+  (stat tiles, per-site/daily/top-tag bars, opt-out, clear).

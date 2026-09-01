@@ -34,6 +34,7 @@ class DownloadQueue(
     private val appContext: Context,
     private val scope: CoroutineScope,
     private val downloadLocationUri: () -> String?,
+    private val onDownloadComplete: (() -> Unit)? = null,
 ) {
     private val _jobs = MutableStateFlow<List<DownloadJob>>(emptyList())
     val jobs: StateFlow<List<DownloadJob>> = _jobs.asStateFlow()
@@ -78,7 +79,10 @@ class DownloadQueue(
         setState(id) { it.copy(state = DownloadState.ACTIVE) }
         val result = MediaDownloader(appContext).download(job.url, job.fileName, job.mimeType, downloadLocationUri())
         result.fold(
-            onSuccess = { uri -> setState(id) { it.copy(state = DownloadState.DONE, resultUri = uri) } },
+            onSuccess = { uri ->
+                setState(id) { it.copy(state = DownloadState.DONE, resultUri = uri) }
+                onDownloadComplete?.invoke()
+            },
             onFailure = { e -> setState(id) { it.copy(state = DownloadState.ERROR, error = e.message ?: e.toString()) } },
         )
     }

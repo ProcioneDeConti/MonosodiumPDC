@@ -1,5 +1,6 @@
 package one.proci.e621.data.repository
 
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -22,13 +23,27 @@ import one.proci.e621.data.model.UpdateCommentRequest
 import one.proci.e621.data.model.VoteRequest
 
 /** Casts votes and favorites against the user's own e621 account. */
-class PostActionsRepository(private val api: E621ApiService) {
+class PostActionsRepository(
+    private val api: E621ApiService,
+    private val usageStats: one.proci.e621.data.settings.UsageStatsStore? = null,
+    private val appScope: kotlinx.coroutines.CoroutineScope? = null,
+) {
 
     private val prettyJson = Json { prettyPrint = true; prettyPrintIndent = "  " }
+
+    private fun stat(block: suspend one.proci.e621.data.settings.UsageStatsStore.() -> Unit) {
+        val store = usageStats ?: return
+        appScope?.launch { runCatching { store.block() } }
+    }
+
+    /** Records that [post] was viewed (for the on-device Dashboard). No-op when stats are off. */
+    fun recordPostView(post: Post, siteName: String) =
+        stat { recordPostView(siteName, post.tags.artist, post.tags.character) }
 
     /** [direction] is always the button's fixed intent (1 or -1); the server toggles it off if already at that value. */
     suspend fun vote(post: Post, direction: Int): Post {
         val response = api.vote(post.id, VoteRequest(direction))
+        stat { recordVote(direction) }
         return post.copy(
             score = post.score.copy(up = response.up, down = response.down, total = response.score),
             voteBy = response.ourScore,
@@ -37,11 +52,13 @@ class PostActionsRepository(private val api: E621ApiService) {
 
     suspend fun favorite(post: Post): Post {
         val response = api.addFavorite(FavoriteRequest(post.id))
+        stat { recordFavorite(added = true) }
         return post.copy(isFavorited = true, favCount = response.favoriteCount)
     }
 
     suspend fun unfavorite(post: Post): Post {
         val response = api.removeFavorite(post.id)
+        stat { recordFavorite(added = false) }
         return post.copy(isFavorited = false, favCount = response.favoriteCount)
     }
 

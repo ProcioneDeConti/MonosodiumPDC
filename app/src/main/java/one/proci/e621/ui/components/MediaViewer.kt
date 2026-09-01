@@ -26,9 +26,15 @@ fun MediaViewer(
     onTap: () -> Unit,
     onDismiss: () -> Unit,
     postActionsRepository: PostActionsRepository,
+    siteName: String = "",
     modifier: Modifier = Modifier,
 ) {
     val url = post.playableUrl ?: post.preview.url
+
+    // On-device Dashboard: record a view the first time this page becomes the active one.
+    LaunchedEffect(post.id, isActive) {
+        if (isActive) postActionsRepository.recordPostView(post, siteName)
+    }
 
     when {
         url == null -> Unit

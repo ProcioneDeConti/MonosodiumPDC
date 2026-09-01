@@ -49,7 +49,8 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     private val apiService by lazy { E621Client.create(userPreferences.settingsState) }
     val postRepository by lazy { PostRepository(apiService, userPreferences.settingsState) }
     val userRepository by lazy { UserRepository(apiService) }
-    val postActionsRepository by lazy { PostActionsRepository(apiService) }
+    val usageStatsStore by lazy { one.proci.e621.data.settings.UsageStatsStore(this) }
+    val postActionsRepository by lazy { PostActionsRepository(apiService, usageStatsStore, applicationScope) }
     val poolRepository by lazy { PoolRepository(apiService) }
     val popularRepository by lazy { PopularRepository(apiService) }
     val postSetRepository by lazy { PostSetRepository(apiService) }
@@ -63,7 +64,12 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val savedSearchStore by lazy { SavedSearchStore(this) }
     val localCollectionStore by lazy { LocalCollectionStore(this) }
     val downloadQueue by lazy {
-        DownloadQueue(this, applicationScope) { userPreferences.settingsState.value.downloadLocationUri }
+        DownloadQueue(
+            this,
+            applicationScope,
+            downloadLocationUri = { userPreferences.settingsState.value.downloadLocationUri },
+            onDownloadComplete = { applicationScope.launch { runCatching { usageStatsStore.recordDownload() } } },
+        )
     }
 
     // Deliberately in onCreate(), not init{}: init{} runs during the Application's own

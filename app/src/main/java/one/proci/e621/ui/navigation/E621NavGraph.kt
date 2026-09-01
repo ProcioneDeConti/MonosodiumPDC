@@ -26,6 +26,8 @@ import one.proci.e621.E621Application
 import one.proci.e621.ui.AppViewModelFactory
 import one.proci.e621.ui.NotificationsViewModel
 import one.proci.e621.ui.screens.detail.PostByIdScreen
+import one.proci.e621.ui.screens.dashboard.DashboardScreen
+import one.proci.e621.ui.screens.dashboard.DashboardViewModel
 import one.proci.e621.ui.screens.downloads.DownloadsScreen
 import one.proci.e621.ui.screens.detail.PostDetailScreen
 import one.proci.e621.ui.screens.favorites.FavoritesAnalysisScreen
@@ -88,6 +90,7 @@ private object Routes {
     const val WIKI = "wiki"
     const val ADVANCED_SEARCH = "advanced_search"
     const val DOWNLOADS = "downloads"
+    const val DASHBOARD = "dashboard"
     const val FAV_ANALYSIS = "favorites_analysis/{username}"
     const val COLLECTION_CONTENT = "local_collection/{collectionId}"
     const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
@@ -149,6 +152,7 @@ fun E621NavGraph(
     val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
     val popularViewModel: PopularViewModel = viewModel(factory = factory)
     val localCollectionsViewModel: LocalCollectionsViewModel = viewModel(factory = factory)
+    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
     val wikiViewModel: WikiViewModel = viewModel(factory = factory)
 
     // Every search results screen (whether from the search bar or a post's tag menu) gets its own
@@ -276,6 +280,7 @@ fun E621NavGraph(
                 onOpenWiki = { navController.navigate(Routes.WIKI) },
                 onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
                 onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
+                onOpenDashboard = { navController.navigate(Routes.DASHBOARD) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -795,6 +800,15 @@ fun E621NavGraph(
                 onBack = { navController.popBackStack() },
                 onCancel = analysisViewModel::cancel,
                 onRestart = analysisViewModel::start,
+            )
+        }
+        composable(Routes.DASHBOARD) {
+            val state by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+            DashboardScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onSetEnabled = dashboardViewModel::setEnabled,
+                onClear = dashboardViewModel::clear,
             )
         }
         composable(Routes.DOWNLOADS) {

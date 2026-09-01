@@ -46,6 +46,7 @@ class PostGridViewModel(
     private val repository: PostRepository,
     private val userPreferences: UserPreferences,
     private val postActionsRepository: PostActionsRepository,
+    private val usageStats: one.proci.e621.data.settings.UsageStatsStore? = null,
     initialQuery: String = "",
 ) : ViewModel() {
 
@@ -163,6 +164,7 @@ class PostGridViewModel(
     fun refresh() {
         loadJob?.cancel()
         val query = internalState.value.query
+        viewModelScope.launch { runCatching { usageStats?.recordSearch() } }
         loadJob = viewModelScope.launch {
             internalState.update {
                 it.copy(isRefreshing = true, error = null, activeQuery = query, rawPosts = emptyList(), endReached = false, nextPage = 2)

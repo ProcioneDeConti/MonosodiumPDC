@@ -61,6 +61,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
@@ -215,6 +216,7 @@ fun PostGridScreen(
     onOpenWiki: () -> Unit,
     onOpenAdvancedSearch: () -> Unit,
     onOpenDownloads: () -> Unit,
+    onOpenDashboard: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -304,6 +306,7 @@ fun PostGridScreen(
             onOpenWiki = onOpenWiki,
             onOpenAdvancedSearch = onOpenAdvancedSearch,
             onOpenDownloads = onOpenDownloads,
+            onOpenDashboard = onOpenDashboard,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -335,6 +338,7 @@ private fun NavDrawerOverlay(
     onOpenWiki: () -> Unit,
     onOpenAdvancedSearch: () -> Unit,
     onOpenDownloads: () -> Unit,
+    onOpenDashboard: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -477,6 +481,11 @@ private fun NavDrawerOverlay(
                         icon = Icons.Filled.Download,
                         label = stringResource(R.string.downloads_title),
                         onClick = dismissAnd(onOpenDownloads),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.Insights,
+                        label = stringResource(R.string.dashboard_title),
+                        onClick = dismissAnd(onOpenDashboard),
                     )
                     DrawerItem(
                         icon = Icons.Filled.PhotoLibrary,

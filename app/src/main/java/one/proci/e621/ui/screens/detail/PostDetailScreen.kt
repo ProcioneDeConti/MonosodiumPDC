@@ -237,6 +237,7 @@ fun PostDetailScreen(
                     onTap = { infoVisible = !infoVisible },
                     onDismiss = ::handleBack,
                     postActionsRepository = postActionsRepository,
+                    siteName = site.name,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
