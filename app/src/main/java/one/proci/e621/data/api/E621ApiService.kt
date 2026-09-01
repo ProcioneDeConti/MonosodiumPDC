@@ -47,6 +47,10 @@ interface E621ApiService {
     @GET("users/me.json")
     suspend fun getCurrentUser(): UserProfile
 
+    /** Public; a pool's metadata + authoritative ordered `post_ids`. */
+    @GET("pools/{id}.json")
+    suspend fun getPool(@Path("id") id: Long): one.proci.e621.data.model.Pool
+
     /** Public; a subset of fields (no blacklisted_tags/mail/etc, those are self-only) but includes avatar_id. */
     @GET("users/{id}.json")
     suspend fun getUser(@Path("id") id: Long): UserProfile

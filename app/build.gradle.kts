@@ -30,8 +30,8 @@ android {
         applicationId = "one.proci.e621"
         minSdk = 28
         targetSdk = 37
-        versionCode = 93
-        versionName = "2.15.0"
+        versionCode = 94
+        versionName = "2.16.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

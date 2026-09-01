@@ -9,6 +9,7 @@ import one.proci.e621.ui.screens.forum.ForumTopicViewModel
 import one.proci.e621.ui.screens.forum.ForumViewModel
 import one.proci.e621.ui.screens.grid.PostGridViewModel
 import one.proci.e621.ui.screens.messages.MessagesViewModel
+import one.proci.e621.ui.screens.pool.PoolViewModel
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsViewModel
@@ -53,6 +54,14 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 ForumTopicViewModel(topicId, initialTitle, app.forumRepository, app.userPreferences) as T
+        }
+
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for one pool's fixed post list. */
+    fun poolViewModelFactory(poolId: Long): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                PoolViewModel(poolId, app.poolRepository, app.userPreferences) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory]; null [userId] means "the signed-in user's own profile." */

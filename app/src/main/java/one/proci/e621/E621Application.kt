@@ -26,6 +26,7 @@ import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.ForumRepository
 import one.proci.e621.data.repository.HealthCheckRepository
 import one.proci.e621.data.repository.MessagesRepository
+import one.proci.e621.data.repository.PoolRepository
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.repository.TagSuggestionRepository
@@ -44,6 +45,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val postRepository by lazy { PostRepository(apiService, userPreferences.settingsState) }
     val userRepository by lazy { UserRepository(apiService) }
     val postActionsRepository by lazy { PostActionsRepository(apiService) }
+    val poolRepository by lazy { PoolRepository(apiService) }
     val tagSuggestionRepository by lazy { TagSuggestionRepository(apiService) }
     val messagesRepository by lazy { MessagesRepository(apiService) }
     val forumRepository by lazy { ForumRepository(apiService) }

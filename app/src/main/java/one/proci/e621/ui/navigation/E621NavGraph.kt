@@ -41,6 +41,8 @@ import one.proci.e621.ui.screens.messages.MessageComposeScreen
 import one.proci.e621.ui.screens.messages.MessageDetailScreen
 import one.proci.e621.ui.screens.messages.MessagesScreen
 import one.proci.e621.ui.screens.messages.MessagesViewModel
+import one.proci.e621.ui.screens.pool.PoolScreen
+import one.proci.e621.ui.screens.pool.PoolViewModel
 import one.proci.e621.ui.screens.profile.ProfileScreen
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesScreen
@@ -63,6 +65,7 @@ private object Routes {
     const val SAVED_SEARCHES = "saved_searches/{query}"
     const val PROFILE = "profile?id={id}"
     const val POST_DETAIL = "post_detail/{postId}"
+    const val POOL = "pool/{poolId}"
     const val USER_FEEDBACK = "user_feedback/{id}/{username}"
     const val USER_COMMENTS = "user_comments/{id}/{username}"
 
@@ -76,12 +79,14 @@ private object Routes {
     /** Null [id] means "the signed-in user's own profile" - encoded as -1, since Nav route args can't be nullable. */
     fun profile(id: Long? = null) = "profile?id=${id ?: -1L}"
     fun postDetail(postId: Long) = "post_detail/$postId"
+    fun pool(poolId: Long) = "pool/$poolId"
     fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
     fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
 }
 
 private const val SOURCE_SEARCH = "search"
 private const val SOURCE_FAVORITES = "favorites"
+private const val SOURCE_POOL = "pool"
 private const val NO_SEARCH_ID = -1
 
 @Composable
@@ -119,6 +124,7 @@ fun E621NavGraph(
     // post list and showing an unrelated post after backing up.
     val nextSearchId = remember { AtomicInteger(0) }
     val searchViewModels = remember { mutableMapOf<Int, PostGridViewModel>() }
+    val poolViewModels = remember { mutableMapOf<Long, PoolViewModel>() }
     val startRoute = remember { Routes.search(nextSearchId.incrementAndGet(), "") }
 
     // Handles a /posts/{id} link (e621.net, e926.net, e6ai.net) that launched or resumed the
@@ -146,6 +152,10 @@ fun E621NavGraph(
     /** Null [id] opens the signed-in user's own profile. */
     fun navigateToProfile(id: Long?) {
         navController.navigate(Routes.profile(id))
+    }
+
+    fun navigateToPool(poolId: Long) {
+        navController.navigate(Routes.pool(poolId))
     }
 
     // Start destination is a search for everything (empty query) - the app's "home page". Every
@@ -265,47 +275,23 @@ fun E621NavGraph(
             val source = backStackEntry.arguments?.getString("source") ?: SOURCE_SEARCH
             val searchId = backStackEntry.arguments?.getInt("searchId") ?: NO_SEARCH_ID
             val index = backStackEntry.arguments?.getInt("index") ?: 0
-            if (source == SOURCE_FAVORITES) {
-                val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
-                PostDetailScreen(
-                    posts = state.posts,
-                    initialIndex = index,
-                    onBack = { navController.popBackStack() },
-                    onLoadMore = favoritesViewModel::loadMore,
-                    onPostUpdated = favoritesViewModel::updatePost,
-                    postActionsRepository = app.postActionsRepository,
-                    avatarRepository = app.avatarRepository,
-                    onAddTagToBlacklist = ::addTagToBlacklist,
-                    onSearchTag = ::navigateToSearch,
-                    onAddTagToSearch = ::navigateToSearch,
-                    onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
-                    onOpenProfile = { id -> navigateToProfile(id) },
-                    site = activeSite,
-                    videoLoopEnabled = userSettings.videoLoopEnabled,
-                    videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
-                    videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
-                    downloadLocationUri = userSettings.downloadLocationUri,
-                    matchingBlacklistTags = { post ->
-                        if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
-                    },
-                )
-            } else {
-                val searchViewModel = searchViewModels[searchId]
-                if (searchViewModel != null) {
-                    val state by searchViewModel.uiState.collectAsStateWithLifecycle()
+            when {
+                source == SOURCE_FAVORITES -> {
+                    val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
                     PostDetailScreen(
                         posts = state.posts,
                         initialIndex = index,
                         onBack = { navController.popBackStack() },
-                        onLoadMore = searchViewModel::loadMore,
-                        onPostUpdated = searchViewModel::updatePost,
+                        onLoadMore = favoritesViewModel::loadMore,
+                        onPostUpdated = favoritesViewModel::updatePost,
                         postActionsRepository = app.postActionsRepository,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
-                        onAddTagToSearch = { tag -> navigateToSearch("${state.activeQuery} $tag".trim()) },
-                        onExcludeTagFromSearch = { tag -> navigateToSearch("${state.activeQuery} -$tag".trim()) },
+                        onAddTagToSearch = ::navigateToSearch,
+                        onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                         onOpenProfile = { id -> navigateToProfile(id) },
+                        onOpenPool = ::navigateToPool,
                         site = activeSite,
                         videoLoopEnabled = userSettings.videoLoopEnabled,
                         videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -315,6 +301,64 @@ fun E621NavGraph(
                             if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
                         },
                     )
+                }
+                source == SOURCE_POOL -> {
+                    val poolViewModel = poolViewModels[searchId.toLong()]
+                    if (poolViewModel != null) {
+                        val state by poolViewModel.uiState.collectAsStateWithLifecycle()
+                        PostDetailScreen(
+                            posts = state.posts,
+                            initialIndex = index,
+                            onBack = { navController.popBackStack() },
+                            onLoadMore = {},
+                            onPostUpdated = poolViewModel::updatePost,
+                            postActionsRepository = app.postActionsRepository,
+                            avatarRepository = app.avatarRepository,
+                            onAddTagToBlacklist = ::addTagToBlacklist,
+                            onSearchTag = ::navigateToSearch,
+                            onAddTagToSearch = ::navigateToSearch,
+                            onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
+                            onOpenProfile = { id -> navigateToProfile(id) },
+                            onOpenPool = ::navigateToPool,
+                            site = activeSite,
+                            videoLoopEnabled = userSettings.videoLoopEnabled,
+                            videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                            videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                            downloadLocationUri = userSettings.downloadLocationUri,
+                            matchingBlacklistTags = { post ->
+                                if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                            },
+                        )
+                    }
+                }
+                else -> {
+                    val searchViewModel = searchViewModels[searchId]
+                    if (searchViewModel != null) {
+                        val state by searchViewModel.uiState.collectAsStateWithLifecycle()
+                        PostDetailScreen(
+                            posts = state.posts,
+                            initialIndex = index,
+                            onBack = { navController.popBackStack() },
+                            onLoadMore = searchViewModel::loadMore,
+                            onPostUpdated = searchViewModel::updatePost,
+                            postActionsRepository = app.postActionsRepository,
+                            avatarRepository = app.avatarRepository,
+                            onAddTagToBlacklist = ::addTagToBlacklist,
+                            onSearchTag = ::navigateToSearch,
+                            onAddTagToSearch = { tag -> navigateToSearch("${state.activeQuery} $tag".trim()) },
+                            onExcludeTagFromSearch = { tag -> navigateToSearch("${state.activeQuery} -$tag".trim()) },
+                            onOpenProfile = { id -> navigateToProfile(id) },
+                            onOpenPool = ::navigateToPool,
+                            site = activeSite,
+                            videoLoopEnabled = userSettings.videoLoopEnabled,
+                            videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                            videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                            downloadLocationUri = userSettings.downloadLocationUri,
+                            matchingBlacklistTags = { post ->
+                                if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -539,11 +583,40 @@ fun E621NavGraph(
                 onAddTagToSearch = ::navigateToSearch,
                 onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                 onOpenProfile = { id -> navigateToProfile(id) },
+                onOpenPool = ::navigateToPool,
                 site = activeSite,
                 videoLoopEnabled = userSettings.videoLoopEnabled,
                 videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
                 videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
                 downloadLocationUri = userSettings.downloadLocationUri,
+            )
+        }
+        composable(
+            route = Routes.POOL,
+            arguments = listOf(navArgument("poolId") { type = NavType.LongType }),
+            popEnterTransition = {
+                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+            },
+        ) { backStackEntry ->
+            val poolId = backStackEntry.arguments?.getLong("poolId") ?: 0L
+            val poolFactory = remember(backStackEntry) { factory.poolViewModelFactory(poolId) }
+            val poolViewModel: PoolViewModel = viewModel(viewModelStoreOwner = backStackEntry, factory = poolFactory)
+            SideEffect { poolViewModels[poolId] = poolViewModel }
+            DisposableEffect(backStackEntry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_DESTROY) poolViewModels.remove(poolId)
+                }
+                backStackEntry.lifecycle.addObserver(observer)
+                onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+            }
+            val state by poolViewModel.uiState.collectAsStateWithLifecycle()
+            PoolScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = poolViewModel::refresh,
+                onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POOL, poolId.toInt(), index)) },
+                onSetBlacklistDisabled = poolViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = poolViewModel::setGridThumbnailSizeDp,
             )
         }
         composable(

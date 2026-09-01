@@ -51,8 +51,10 @@ cosmetic / polish.
   `Post` model (it's in the JSON already). *(Android 2.10.0: added `PostRelationships` to the model;
   `RelationshipsRow` in the viewer info sheet renders Parent / N-children chips that run the search
   and close the sheet.)*
-- [ ] **P2 · Pools as interactive chips + pool browser** — Android shows `#123, #456` as plain
+- [x] **P2 · Pools as interactive chips + pool browser** — Android shows `#123, #456` as plain
   text. Desktop makes them chips that open a `PoolPanel` (see Pools item under Browsing).
+  *(Android 2.16.0: the info-sheet pools row is now `#<id>` chips that open the pool grid; opening a
+  pool from a post already in a pool stacks on the nav back-stack.)*
 - [x] **P2 · Comment voting** — Android comments are view/post only. Desktop votes on comments
   (e621's voting controller is shared between posts and comments — same `VoteRequest`/
   `VoteResponse` shape). Desktop: `vote_comment` command, `useCommentMutations.ts`.
@@ -92,11 +94,14 @@ cosmetic / polish.
 
 ## Browsing & discovery
 
-- [ ] **P1 · Pools browser** — `PoolPanel`: fetch a pool (`get_pool` → `pools/<id>.json`,
+- [x] **P1 · Pools browser** — `PoolPanel`: fetch a pool (`get_pool` → `pools/<id>.json`,
   public), then assemble the sequence client-side (`id:1,2,3,...` search re-sorted against the
   pool's authoritative `post_ids`), feed it to the grid/viewer as a fixed non-paginated list.
   320-post-per-request cap is a known limit. Opening a pool from a post that's itself in a pool
-  should stack.
+  should stack. *(Android 2.16.0: `Pool` model + `getPool`, `PoolRepository.fetchPoolContent`
+  (fetch by `id:` + re-sort against `post_ids`, 320 cap with a "first 320" banner), `PoolViewModel`
+  (fixed list, blacklist-aware like the grid), `PoolScreen` reusing `PostGridBody`, `pool/{id}` route
+  + a `SOURCE_POOL` branch in the detail viewer. Rating filter deliberately not applied to a pool.)*
 - [ ] **P2 · Popular posts browser** — `popular.json?date=&scale=` (public). Day/Week/Month
   segmented control + prev/next period steppers + "Now" shortcut. Desktop: `PopularPanel`,
   `get_popular_posts`, `lib/popular.ts` for the date math. Fixed non-paginated list like pools.
@@ -278,3 +283,5 @@ capability). Listed so we don't keep rediscovering them.
   search bar; Contribution section on the profile (bundled - both small).
 - 2026-09-01 · 2.15.0 · P1 Post notes overlay · PostNote model + numbered tap-to-reveal note
   boxes in the image viewer.
+- 2026-09-01 · 2.16.0 · P1 Pools browser + P2 pool chips · Pool model/repo/VM/screen, pool/{id}
+  route, SOURCE_POOL detail branch; info-sheet pool chips.

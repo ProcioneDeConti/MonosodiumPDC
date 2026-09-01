@@ -121,6 +121,8 @@
     <string name="info_sources">Sources</string>
     <string name="info_pools">Pools</string>
     <string name="info_relationships">Relationships</string>
+    <string name="pool_title">Pool</string>
+    <string name="pool_truncated">Showing the first 320 posts of this pool.</string>
     <string name="relationship_parent">Parent #%1$d</string>
     <plurals name="relationship_children">
         <item quantity="one">%1$d child</item>

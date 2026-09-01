@@ -159,6 +159,7 @@ fun PostDetailScreen(
     onAddTagToSearch: (String) -> Unit,
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
+    onOpenPool: (Long) -> Unit = {},
     site: Site,
     videoLoopEnabled: Boolean,
     videoPlaybackSpeed: Float,
@@ -283,6 +284,10 @@ fun PostDetailScreen(
             onSearch = { query ->
                 infoSheetVisible = false
                 onSearchTag(query)
+            },
+            onOpenPool = { poolId ->
+                infoSheetVisible = false
+                onOpenPool(poolId)
             },
             site = site,
         )
@@ -679,6 +684,7 @@ private fun PostInfoSheet(
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
     onSearch: (String) -> Unit,
+    onOpenPool: (Long) -> Unit,
     site: Site,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -802,7 +808,22 @@ private fun PostInfoSheet(
             }
             RelationshipsRow(post = post, onSearch = onSearch)
             if (post.pools.isNotEmpty()) {
-                InfoRow(stringResource(R.string.info_pools), post.pools.joinToString(", ") { "#$it" })
+                Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        stringResource(R.string.info_pools),
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    FlowRow(
+                        modifier = Modifier.padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        post.pools.forEach { poolId ->
+                            RelationshipChip("#$poolId") { onOpenPool(poolId) }
+                        }
+                    }
+                }
             }
 
             if (post.sources.isNotEmpty()) {
