@@ -165,10 +165,14 @@ cosmetic / polish.
   favorites for Upvote / Favorite / Download. Vote+favorite route through the grid VM's
   `quickUpvote`/`quickToggleFavorite` (+ `updatePost` patch); on the favorites grid an unfavorite
   prunes the post immediately. Pool/popular/set grids omitted.)*
-- [ ] **P2 · Multi-select + bulk actions** — select mode with checkboxes; bulk favorite,
+- [x] **P2 · Multi-select + bulk actions** — select mode with checkboxes; bulk favorite,
   bulk unfavorite (two-tap confirm — bulk-destructive), add-to-set, download. Sequential
   `mutateAsync`-style calls so the rate limiter paces them, with N/total progress. When
-  viewing your own favorites, pruned posts should leave the grid immediately.
+  viewing your own favorites, pruned posts should leave the grid immediately. *(Android 2.23.0:
+  "Select" in the thumbnail long-press menu enters select mode (gold-ringed tiles, tap toggles);
+  a bottom bar does bulk Favorite / Unfavorite (two-tap Confirm) / Download with an N/total
+  progress bar. Favorite/unfavorite run one request at a time via the grid VM's `bulkSetFavorite`;
+  on the favorites grid an unfavorited post leaves immediately. Bulk add-to-set skipped.)*
 
 ## Downloads
 
@@ -317,3 +321,5 @@ capability). Listed so we don't keep rediscovering them.
   completion in the search bar (was fully suppressed for any `:`).
 - 2026-09-01 · 2.22.0 · P2 Grid quick-actions · long-press thumbnail menu (upvote/favorite/download)
   on the search + favorites grids.
+- 2026-09-01 · 2.23.0 · P2 Multi-select + bulk actions · select mode + bottom bar (bulk
+  favorite/unfavorite/download, sequential, N/total progress) on the search + favorites grids.

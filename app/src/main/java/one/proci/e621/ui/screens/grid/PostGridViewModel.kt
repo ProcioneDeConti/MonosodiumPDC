@@ -16,6 +16,7 @@ import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.Site
 import one.proci.e621.data.settings.UserPreferences
+import one.proci.e621.data.util.BulkProgress
 import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.accumulatePostsUntilVisibleOrEnd
 import one.proci.e621.data.util.messageOrDefault
@@ -38,6 +39,7 @@ data class PostGridUiState(
     val username: String = "",
     val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     val site: Site = Site.E621,
+    val bulkProgress: BulkProgress? = null,
 )
 
 class PostGridViewModel(
@@ -57,6 +59,7 @@ class PostGridViewModel(
         val endReached: Boolean = false,
         val error: String? = null,
         val nextPage: Int = 2,
+        val bulkProgress: BulkProgress? = null,
     )
 
     private val internalState = MutableStateFlow(InternalState(query = initialQuery))
@@ -82,6 +85,7 @@ class PostGridViewModel(
             username = settings.username,
             gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
             site = settings.site,
+            bulkProgress = s.bulkProgress,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PostGridUiState())
 
@@ -109,6 +113,38 @@ class PostGridViewModel(
             s.copy(rawPosts = s.rawPosts.map { if (it.id == updated.id) updated else it })
         }
     }
+
+    /**
+     * Bulk-favorites (or unfavorites) [ids], one request at a time so the rate limiter paces
+     * them, publishing N/total progress. [favorite] false = unfavorite.
+     */
+    fun bulkSetFavorite(ids: Set<Long>, favorite: Boolean) {
+        if (ids.isEmpty() || internalState.value.bulkProgress != null) return
+        viewModelScope.launch {
+            val targets = internalState.value.rawPosts.filter { it.id in ids }
+            var done = 0
+            var failures = 0
+            internalState.update { it.copy(bulkProgress = BulkProgress(0, targets.size)) }
+            for (post in targets) {
+                runCatching {
+                    if (favorite && !post.isFavorited) postActionsRepository.favorite(post)
+                    else if (!favorite && post.isFavorited) postActionsRepository.unfavorite(post)
+                    else post
+                }.onSuccess(::updatePost).onFailure { failures++ }
+                done++
+                internalState.update { it.copy(bulkProgress = BulkProgress(done, targets.size, failures)) }
+            }
+            internalState.update { it.copy(bulkProgress = null) }
+        }
+    }
+
+    fun beginBulkProgress(total: Int) =
+        internalState.update { it.copy(bulkProgress = BulkProgress(0, total)) }
+
+    fun updateBulkProgress(done: Int, total: Int, failures: Int) =
+        internalState.update { it.copy(bulkProgress = BulkProgress(done, total, failures)) }
+
+    fun endBulkProgress() = internalState.update { it.copy(bulkProgress = null) }
 
     /** Grid long-press quick action: toggle upvote. */
     fun quickUpvote(post: Post) {

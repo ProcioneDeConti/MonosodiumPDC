@@ -19,6 +19,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -42,9 +46,15 @@ fun FavoritesScreen(
     onThumbnailSizeChange: (Int) -> Unit,
     onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
     onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    onBulkFavorite: (Set<Long>, Boolean) -> Unit,
+    bulkProgress: one.proci.e621.data.util.BulkProgress?,
     downloadLocationUri: String?,
     modifier: Modifier = Modifier,
 ) {
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
+    androidx.activity.compose.BackHandler(enabled = selectionMode) { exitSelection() }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -111,6 +121,17 @@ fun FavoritesScreen(
                 onQuickFavorite = onQuickFavorite,
                 onQuickUpvote = onQuickUpvote,
                 onQuickDownload = ::quickDownload,
+                selectionMode = selectionMode,
+                selectedIds = selectedIds,
+                onToggleSelect = { p ->
+                    selectedIds = if (p.id in selectedIds) selectedIds - p.id else selectedIds + p.id
+                },
+                onEnterSelection = { p -> selectionMode = true; selectedIds = setOf(p.id) },
+                onExitSelection = ::exitSelection,
+                onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
+                onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
+                onBulkDownload = { list -> list.forEach(::quickDownload) },
+                bulkProgress = bulkProgress,
                 modifier = Modifier.padding(padding),
             )
         }

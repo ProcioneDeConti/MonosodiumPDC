@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
@@ -60,6 +61,7 @@ fun PostThumbnail(
     onQuickFavorite: (() -> Unit)? = null,
     onQuickUpvote: (() -> Unit)? = null,
     onQuickDownload: (() -> Unit)? = null,
+    onEnterSelection: (() -> Unit)? = null,
     /** When non-null the thumbnail is in multi-select mode; the value is whether this post is selected. */
     selected: Boolean? = null,
 ) {
@@ -70,7 +72,8 @@ fun PostThumbnail(
     }
     val shape = ThumbnailShape
     var menuExpanded by remember { mutableStateOf(false) }
-    val hasQuickActions = onQuickFavorite != null || onQuickUpvote != null || onQuickDownload != null
+    val hasQuickActions = onQuickFavorite != null || onQuickUpvote != null ||
+        onQuickDownload != null || onEnterSelection != null
 
     Box(
         modifier = modifier
@@ -160,6 +163,13 @@ fun PostThumbnail(
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.quick_action_download)) },
                     leadingIcon = { Icon(Icons.Filled.Download, contentDescription = null) },
+                    onClick = { menuExpanded = false; action() },
+                )
+            }
+            onEnterSelection?.let { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.quick_action_select)) },
+                    leadingIcon = { Icon(Icons.Filled.Checklist, contentDescription = null) },
                     onClick = { menuExpanded = false; action() },
                 )
             }

@@ -101,6 +101,14 @@
     <string name="quick_action_favorite">Favorite</string>
     <string name="quick_action_unfavorite">Unfavorite</string>
     <string name="quick_action_download">Download</string>
+    <string name="quick_action_select">Select</string>
+    <string name="bulk_done">Done</string>
+    <string name="bulk_selected_count">%1$d selected</string>
+    <string name="bulk_favorite">Favorite</string>
+    <string name="bulk_unfavorite">Unfavorite</string>
+    <string name="bulk_unfavorite_confirm">Confirm</string>
+    <string name="bulk_download">Download</string>
+    <string name="bulk_progress">%1$d / %2$d…</string>
     <string name="action_delete">Delete</string>
     <string name="score">Score</string>
     <string name="favorites">Favorites</string>

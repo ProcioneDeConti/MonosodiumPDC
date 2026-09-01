@@ -212,6 +212,7 @@ fun PostGridScreen(
     onThumbnailSizeChange: (Int) -> Unit,
     onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
     onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    onBulkFavorite: (Set<Long>, Boolean) -> Unit,
     downloadLocationUri: String?,
     unreadMessageCount: Int,
     forumUnread: Boolean,
@@ -223,6 +224,10 @@ fun PostGridScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
+    BackHandler(enabled = selectionMode) { exitSelection() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val downloadStartedMessage = stringResource(R.string.download_started)
@@ -276,6 +281,17 @@ fun PostGridScreen(
                 onQuickFavorite = onQuickFavorite,
                 onQuickUpvote = onQuickUpvote,
                 onQuickDownload = ::quickDownload,
+                selectionMode = selectionMode,
+                selectedIds = selectedIds,
+                onToggleSelect = { p ->
+                    selectedIds = if (p.id in selectedIds) selectedIds - p.id else selectedIds + p.id
+                },
+                onEnterSelection = { p -> selectionMode = true; selectedIds = setOf(p.id) },
+                onExitSelection = ::exitSelection,
+                onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
+                onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
+                onBulkDownload = { list -> list.forEach(::quickDownload) },
+                bulkProgress = state.bulkProgress,
                 modifier = Modifier.padding(padding),
             )
         }

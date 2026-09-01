@@ -32,11 +32,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -74,6 +76,16 @@ fun PostGridBody(
     onQuickFavorite: ((Post) -> Unit)? = null,
     onQuickUpvote: ((Post) -> Unit)? = null,
     onQuickDownload: ((Post) -> Unit)? = null,
+    // Multi-select
+    selectionMode: Boolean = false,
+    selectedIds: Set<Long> = emptySet(),
+    onToggleSelect: (Post) -> Unit = {},
+    onEnterSelection: ((Post) -> Unit)? = null,
+    onExitSelection: () -> Unit = {},
+    onBulkFavorite: (List<Post>) -> Unit = {},
+    onBulkUnfavorite: (List<Post>) -> Unit = {},
+    onBulkDownload: (List<Post>) -> Unit = {},
+    bulkProgress: one.proci.e621.data.util.BulkProgress? = null,
     emptyContent: @Composable () -> Unit = { DefaultEmptyState() },
 ) {
     val gridState = rememberLazyStaggeredGridState()
@@ -176,11 +188,13 @@ fun PostGridBody(
                                 val onClick = remember(index) { { onPostClickState.value(index) } }
                                 PostThumbnail(
                                     post = post,
-                                    onClick = onClick,
+                                    onClick = if (selectionMode) ({ onToggleSelect(post) }) else onClick,
                                     showCautionBorder = blacklistDisabled && post.id in blacklistedIds,
-                                    onQuickFavorite = onQuickFavorite?.let { cb -> { cb(post) } },
-                                    onQuickUpvote = onQuickUpvote?.let { cb -> { cb(post) } },
-                                    onQuickDownload = onQuickDownload?.let { cb -> { cb(post) } },
+                                    onQuickFavorite = if (selectionMode) null else onQuickFavorite?.let { cb -> { cb(post) } },
+                                    onQuickUpvote = if (selectionMode) null else onQuickUpvote?.let { cb -> { cb(post) } },
+                                    onQuickDownload = if (selectionMode) null else onQuickDownload?.let { cb -> { cb(post) } },
+                                    onEnterSelection = if (selectionMode) null else onEnterSelection?.let { cb -> { cb(post) } },
+                                    selected = if (selectionMode) post.id in selectedIds else null,
                                 )
                             }
                             if (isLoadingMore) {
@@ -198,6 +212,78 @@ fun PostGridBody(
                 }
             }
             SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+        }
+        if (selectionMode) {
+            SelectionBar(
+                selected = posts.filter { it.id in selectedIds },
+                bulkProgress = bulkProgress,
+                onExit = onExitSelection,
+                onBulkFavorite = onBulkFavorite,
+                onBulkUnfavorite = onBulkUnfavorite,
+                onBulkDownload = onBulkDownload,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionBar(
+    selected: List<Post>,
+    bulkProgress: one.proci.e621.data.util.BulkProgress?,
+    onExit: () -> Unit,
+    onBulkFavorite: (List<Post>) -> Unit,
+    onBulkUnfavorite: (List<Post>) -> Unit,
+    onBulkDownload: (List<Post>) -> Unit,
+) {
+    var confirmingUnfavorite by remember { mutableStateOf(false) }
+    LaunchedEffect(selected.size) { confirmingUnfavorite = false }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        if (bulkProgress != null && !bulkProgress.finished) {
+            Text(
+                stringResource(R.string.bulk_progress, bulkProgress.done, bulkProgress.total),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { bulkProgress.fraction },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onExit) { Text(stringResource(R.string.bulk_done)) }
+            Text(
+                stringResource(R.string.bulk_selected_count, selected.size),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            val enabled = selected.isNotEmpty() && bulkProgress == null
+            TextButton(enabled = enabled, onClick = { onBulkFavorite(selected) }) {
+                Text(stringResource(R.string.bulk_favorite))
+            }
+            TextButton(
+                enabled = enabled,
+                onClick = {
+                    if (confirmingUnfavorite) {
+                        onBulkUnfavorite(selected)
+                        confirmingUnfavorite = false
+                    } else {
+                        confirmingUnfavorite = true
+                    }
+                },
+            ) {
+                Text(
+                    stringResource(if (confirmingUnfavorite) R.string.bulk_unfavorite_confirm else R.string.bulk_unfavorite),
+                    color = if (confirmingUnfavorite) MaterialTheme.colorScheme.error else Color.Unspecified,
+                )
+            }
+            TextButton(enabled = enabled, onClick = { onBulkDownload(selected) }) {
+                Text(stringResource(R.string.bulk_download))
+            }
         }
     }
 }

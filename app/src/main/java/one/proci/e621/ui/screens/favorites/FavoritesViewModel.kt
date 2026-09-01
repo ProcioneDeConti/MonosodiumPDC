@@ -14,6 +14,7 @@ import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.UserPreferences
+import one.proci.e621.data.util.BulkProgress
 import one.proci.e621.data.util.GridThumbnailSize
 import one.proci.e621.data.util.accumulatePostsUntilVisibleOrEnd
 import one.proci.e621.data.util.messageOrDefault
@@ -29,6 +30,7 @@ data class FavoritesUiState(
     val error: String? = null,
     val blacklistDisabled: Boolean = false,
     val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
+    val bulkProgress: BulkProgress? = null,
 )
 
 /** Favorites are just posts.json tagged fav:<username> — no separate endpoint needed. */
@@ -45,6 +47,7 @@ class FavoritesViewModel(
         val endReached: Boolean = false,
         val error: String? = null,
         val loadedForUsername: String? = null,
+        val bulkProgress: BulkProgress? = null,
     )
 
     private val internalState = MutableStateFlow(InternalState())
@@ -66,6 +69,7 @@ class FavoritesViewModel(
             error = s.error,
             blacklistDisabled = blacklistDisabled,
             gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
+            bulkProgress = s.bulkProgress,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, FavoritesUiState())
 
@@ -102,6 +106,33 @@ class FavoritesViewModel(
 
     fun quickUpvote(post: Post) {
         viewModelScope.launch { runCatching { postActionsRepository.vote(post, 1) }.onSuccess(::updatePost) }
+    }
+
+    /** Bulk favorite/unfavorite, one request at a time; an unfavorite prunes the post from the list. */
+    fun bulkSetFavorite(ids: Set<Long>, favorite: Boolean) {
+        if (ids.isEmpty() || internalState.value.bulkProgress != null) return
+        viewModelScope.launch {
+            val targets = internalState.value.rawPosts.filter { it.id in ids }
+            var done = 0
+            var failures = 0
+            internalState.update { it.copy(bulkProgress = BulkProgress(0, targets.size)) }
+            for (post in targets) {
+                runCatching {
+                    if (favorite && !post.isFavorited) postActionsRepository.favorite(post)
+                    else if (!favorite && post.isFavorited) postActionsRepository.unfavorite(post)
+                    else post
+                }.onSuccess { updated ->
+                    if (!updated.isFavorited) {
+                        internalState.update { s -> s.copy(rawPosts = s.rawPosts.filterNot { it.id == updated.id }) }
+                    } else {
+                        updatePost(updated)
+                    }
+                }.onFailure { failures++ }
+                done++
+                internalState.update { it.copy(bulkProgress = BulkProgress(done, targets.size, failures)) }
+            }
+            internalState.update { it.copy(bulkProgress = null) }
+        }
     }
 
     /** On unfavorite from the grid, the post is pruned from the list immediately (this is the favorites list). */

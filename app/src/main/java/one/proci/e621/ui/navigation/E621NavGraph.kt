@@ -245,6 +245,7 @@ fun E621NavGraph(
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
                 onQuickFavorite = searchViewModel::quickToggleFavorite,
                 onQuickUpvote = searchViewModel::quickUpvote,
+                onBulkFavorite = searchViewModel::bulkSetFavorite,
                 downloadLocationUri = userSettings.downloadLocationUri,
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
@@ -282,6 +283,8 @@ fun E621NavGraph(
                 onThumbnailSizeChange = favoritesViewModel::setGridThumbnailSizeDp,
                 onQuickFavorite = favoritesViewModel::quickToggleFavorite,
                 onQuickUpvote = favoritesViewModel::quickUpvote,
+                onBulkFavorite = favoritesViewModel::bulkSetFavorite,
+                bulkProgress = state.bulkProgress,
                 downloadLocationUri = userSettings.downloadLocationUri,
             )
         }
