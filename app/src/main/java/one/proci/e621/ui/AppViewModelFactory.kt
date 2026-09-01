@@ -18,6 +18,7 @@ import one.proci.e621.ui.screens.sets.PostSetContentViewModel
 import one.proci.e621.ui.screens.sets.PostSetsViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsViewModel
+import one.proci.e621.ui.screens.wiki.WikiViewModel
 import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
 
 class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.Factory {
@@ -43,6 +44,8 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             PopularViewModel(app.popularRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(LocalCollectionsViewModel::class.java) ->
             LocalCollectionsViewModel(app.localCollectionStore) as T
+        modelClass.isAssignableFrom(WikiViewModel::class.java) ->
+            WikiViewModel(app.wikiRepository) as T
         else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 

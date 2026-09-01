@@ -90,11 +90,12 @@ cosmetic / polish.
   *(Android 2.24.1: `PostVersion` model + `fetchPostVersions`; a "History" pill in the info sheet
   opens a dialog listing versions — updater/date, +added / −removed tags, rating/description/parent/
   source change flags. Android has no sidebar tabs, so a dialog rather than a tab.)*
-- [ ] **P2 · Inline wiki previews** — `[[wiki]]` links currently open the browser. Desktop
+- [x] **P2 · Inline wiki previews** — `[[wiki]]` links currently open the browser. Desktop
   turns them into a tap-to-preview popover rendering the target page's own DText inline
   (`get_wiki_page` → `wiki_pages.json?search[title]=&limit=1`, returns null for a missing
-  page). Needs `[[wiki]]` to become its own DText node type carrying the raw title, distinct
-  from a plain named link.
+  page). *(Android 2.25.0: new `DInline.WikiLink` node carrying the raw title; `DTextView` gains a
+  `wikiPreview` param — when set, `[[wiki]]` becomes a tap-to-expand inline card rendering the
+  target page's DText; when null it opens the web page as before. Wired into the post description.)*
 - [x] **P2 · Add current post to a set** — a viewer-toolbar popover (add to an existing set or
   create one inline). Depends on Post sets (Browsing). *(Android 2.17.0: "Add to set" pill in the
   info sheet opens a dialog listing your sets (already-in marked) + an inline "new set from this
@@ -138,10 +139,15 @@ cosmetic / polish.
   `SavedSearchStore`); `LocalCollectionsScreen` (drawer entry, list/create/delete),
   `LocalCollectionContentViewModel`/`Screen` (id: fetch + re-sort, 320 cap) + `local_collection/{id}`
   and `collection_detail/{id}/{index}` routes; "Add to collection" picker in the viewer.)*
-- [ ] **P2 · Artist pages** — `ArtistPanel`: an artist's wiki/DText + their posts, opened from
-  an artist tag. Desktop: `components/Artist/ArtistPanel.tsx`.
-- [ ] **P2 · Wiki browser** — `WikiPanel`: search + browse wiki pages standalone (not just the
-  inline preview). `wiki_pages.json`.
+- [x] **P2 · Artist pages** — `ArtistPanel`: an artist's wiki/DText + their posts, opened from
+  an artist tag. Desktop: `components/Artist/ArtistPanel.tsx`. *(Android 2.25.0: an "Artist page"
+  item in an artist tag-chip's menu opens a dialog with the artist's wiki DText + a "View posts"
+  button that searches the tag. `getArtistByName` is available for links but the wiki page carries
+  the artist info. Non-artist tags get the same as "Wiki page".)*
+- [x] **P2 · Wiki browser** — `WikiPanel`: search + browse wiki pages standalone (not just the
+  inline preview). `wiki_pages.json`. *(Android 2.25.0: `WikiScreen` + `WikiViewModel` (debounced
+  title search), drawer entry; opening a result renders its DText with nested `[[wiki]]` previews
+  and a "View posts" button.)*
 - [ ] **P2 · Advanced search builder** — `SearchBuilder.tsx`: a form for composing a query
   (rating, order, score/date comparisons, include/exclude tag fields) without hand-typing
   metatags.
@@ -333,3 +339,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.24.0 · P2 Local collections · on-device post collections (store + screens +
   routes + viewer picker).
 - 2026-09-01 · 2.24.1 · P2 Post history · PostVersion model + History dialog in the viewer info sheet.
+- 2026-09-01 · 2.25.0 · P2 inline wiki previews + wiki browser + artist pages · WikiLink DText
+  node, DTextView wikiPreview, WikiScreen (drawer), Wiki/Artist-page tag-chip dialog.

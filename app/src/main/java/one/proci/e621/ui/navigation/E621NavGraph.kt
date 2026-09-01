@@ -61,6 +61,8 @@ import one.proci.e621.ui.screens.settings.SettingsScreen
 import one.proci.e621.ui.screens.settings.SettingsViewModel
 import one.proci.e621.ui.screens.usercomments.UserCommentsScreen
 import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
+import one.proci.e621.ui.screens.wiki.WikiScreen
+import one.proci.e621.ui.screens.wiki.WikiViewModel
 
 private object Routes {
     const val SEARCH = "search/{id}/{query}"
@@ -79,6 +81,7 @@ private object Routes {
     const val POST_SETS = "post_sets"
     const val POPULAR = "popular"
     const val COLLECTIONS = "local_collections"
+    const val WIKI = "wiki"
     const val COLLECTION_CONTENT = "local_collection/{collectionId}"
     const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
     const val POST_SET_CONTENT = "post_set/{setId}"
@@ -138,6 +141,7 @@ fun E621NavGraph(
     val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
     val popularViewModel: PopularViewModel = viewModel(factory = factory)
     val localCollectionsViewModel: LocalCollectionsViewModel = viewModel(factory = factory)
+    val wikiViewModel: WikiViewModel = viewModel(factory = factory)
 
     // Every search results screen (whether from the search bar or a post's tag menu) gets its own
     // small integer id and its own PostGridViewModel, registered here by id as each one composes.
@@ -256,6 +260,7 @@ fun E621NavGraph(
                 onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
                 onOpenPopular = { navController.navigate(Routes.POPULAR) },
                 onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
+                onOpenWiki = { navController.navigate(Routes.WIKI) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -333,6 +338,7 @@ fun E621NavGraph(
                         postActionsRepository = app.postActionsRepository,
                         postSetRepository = app.postSetRepository,
                         localCollectionStore = app.localCollectionStore,
+                        wikiRepository = app.wikiRepository,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -361,6 +367,7 @@ fun E621NavGraph(
                         postActionsRepository = app.postActionsRepository,
                         postSetRepository = app.postSetRepository,
                         localCollectionStore = app.localCollectionStore,
+                        wikiRepository = app.wikiRepository,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -391,6 +398,7 @@ fun E621NavGraph(
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
+                            wikiRepository = app.wikiRepository,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -422,6 +430,7 @@ fun E621NavGraph(
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
+                            wikiRepository = app.wikiRepository,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -453,6 +462,7 @@ fun E621NavGraph(
                             postActionsRepository = app.postActionsRepository,
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
+                            wikiRepository = app.wikiRepository,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -690,6 +700,7 @@ fun E621NavGraph(
                 postActionsRepository = app.postActionsRepository,
                 postSetRepository = app.postSetRepository,
                 localCollectionStore = app.localCollectionStore,
+                wikiRepository = app.wikiRepository,
                 avatarRepository = app.avatarRepository,
                 onBack = { navController.popBackStack() },
                 onAddTagToBlacklist = ::addTagToBlacklist,
@@ -746,6 +757,18 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(Routes.WIKI) {
+            val state by wikiViewModel.uiState.collectAsStateWithLifecycle()
+            WikiScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onQueryChange = wikiViewModel::onQueryChange,
+                onOpen = wikiViewModel::open,
+                onCloseSelected = wikiViewModel::closeSelected,
+                onSearchTag = ::navigateToSearch,
+                wikiPreview = { title -> app.wikiRepository.fetchPage(title)?.body },
             )
         }
         composable(Routes.COLLECTIONS) {
@@ -810,6 +833,7 @@ fun E621NavGraph(
                     postActionsRepository = app.postActionsRepository,
                     postSetRepository = app.postSetRepository,
                     localCollectionStore = app.localCollectionStore,
+                    wikiRepository = app.wikiRepository,
                     avatarRepository = app.avatarRepository,
                     onAddTagToBlacklist = ::addTagToBlacklist,
                     onSearchTag = ::navigateToSearch,

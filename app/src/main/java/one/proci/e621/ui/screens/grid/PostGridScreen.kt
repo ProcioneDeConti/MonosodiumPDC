@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Clear
@@ -209,6 +210,7 @@ fun PostGridScreen(
     onOpenPostSets: () -> Unit,
     onOpenPopular: () -> Unit,
     onOpenCollections: () -> Unit,
+    onOpenWiki: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -311,6 +313,7 @@ fun PostGridScreen(
             onOpenPostSets = onOpenPostSets,
             onOpenPopular = onOpenPopular,
             onOpenCollections = onOpenCollections,
+            onOpenWiki = onOpenWiki,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -339,6 +342,7 @@ private fun NavDrawerOverlay(
     onOpenPostSets: () -> Unit,
     onOpenPopular: () -> Unit,
     onOpenCollections: () -> Unit,
+    onOpenWiki: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -460,6 +464,11 @@ private fun NavDrawerOverlay(
                         icon = Icons.Filled.Collections,
                         label = stringResource(R.string.collections_title),
                         onClick = dismissAnd(onOpenCollections),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.MenuBook,
+                        label = stringResource(R.string.wiki_title),
+                        onClick = dismissAnd(onOpenWiki),
                     )
                     DrawerItem(
                         icon = Icons.Filled.Bookmark,

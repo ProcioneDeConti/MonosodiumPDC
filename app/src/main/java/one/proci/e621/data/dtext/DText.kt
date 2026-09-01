@@ -25,6 +25,8 @@ sealed class DInline {
     data class PlainText(val text: String) : DInline()
     data class Styled(val tag: String, val children: List<DInline>) : DInline()
     data class Link(val label: String, val url: String) : DInline()
+    /** A `[[wiki title]]` reference. [url] is the fallback web URL; [title] is the raw page title. */
+    data class WikiLink(val title: String, val label: String, val url: String) : DInline()
     data class Mention(val name: String) : DInline()
 }
 
@@ -238,7 +240,11 @@ private fun parseInline(input: String): List<DInline> {
             wikiLink -> {
                 val page = match.groupValues[1].trim()
                 val display = match.groupValues[2].ifBlank { page }.trim()
-                nodes += DInline.Link(display, "${DTextLinkConfig.webBaseUrl}/wiki_pages/show_or_new?title=" + encodeWikiTitle(page))
+                nodes += DInline.WikiLink(
+                    title = page,
+                    label = display,
+                    url = "${DTextLinkConfig.webBaseUrl}/wiki_pages/show_or_new?title=" + encodeWikiTitle(page),
+                )
                 remaining = remaining.substring(match.range.last + 1)
             }
             bareUrl -> {

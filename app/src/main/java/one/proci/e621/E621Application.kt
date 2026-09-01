@@ -34,6 +34,7 @@ import one.proci.e621.data.repository.PostSetRepository
 import one.proci.e621.data.repository.TagSuggestionRepository
 import one.proci.e621.data.repository.UpdateCheckRepository
 import one.proci.e621.data.repository.UserRepository
+import one.proci.e621.data.repository.WikiRepository
 import one.proci.e621.data.settings.LocalCollectionStore
 import one.proci.e621.data.settings.SavedSearchStore
 import one.proci.e621.data.settings.UserPreferences
@@ -56,6 +57,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val forumRepository by lazy { ForumRepository(apiService) }
     val avatarRepository by lazy { AvatarRepository(apiService) }
     val healthCheckRepository by lazy { HealthCheckRepository(apiService) }
+    val wikiRepository by lazy { WikiRepository(apiService) }
     val updateCheckRepository by lazy { UpdateCheckRepository(GitHubClient.create()) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
     val localCollectionStore by lazy { LocalCollectionStore(this) }

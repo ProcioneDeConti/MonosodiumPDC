@@ -256,4 +256,25 @@ interface E621ApiService {
     /** Requires Basic Auth + an e621 member account; rejected on locked topics or for logged-out requests. */
     @POST("forum_posts.json")
     suspend fun createForumPost(@Body body: CreateForumPostRequest): ForumPost
+
+    /** Public. Exact wiki page by title; empty list when the page doesn't exist. */
+    @GET("wiki_pages.json")
+    suspend fun getWikiPageByTitle(
+        @Query("search[title]") title: String,
+        @Query("limit") limit: Int = 1,
+    ): List<one.proci.e621.data.model.WikiPage>
+
+    /** Public. Wiki pages whose title matches [titleMatches] (wildcarded by the caller), for the wiki browser. */
+    @GET("wiki_pages.json")
+    suspend fun searchWikiPages(
+        @Query("search[title]") titleMatches: String,
+        @Query("limit") limit: Int = 40,
+    ): List<one.proci.e621.data.model.WikiPage>
+
+    /** Public. An artist record by exact name. */
+    @GET("artists.json")
+    suspend fun getArtistByName(
+        @Query("search[name]") name: String,
+        @Query("limit") limit: Int = 1,
+    ): List<one.proci.e621.data.model.Artist>
 }

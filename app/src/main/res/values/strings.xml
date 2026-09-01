@@ -203,6 +203,15 @@
 
     <string name="tag_menu_add_blacklist">Add to blacklist</string>
     <string name="tag_menu_related">Related tags</string>
+    <string name="tag_menu_wiki">Wiki page</string>
+    <string name="tag_menu_artist_page">Artist page</string>
+    <string name="wiki_title">Wiki</string>
+    <string name="wiki_search_hint">Search wiki pages</string>
+    <string name="wiki_search_prompt">Type at least 2 characters to search.</string>
+    <string name="wiki_no_results">No matching wiki pages.</string>
+    <string name="wiki_no_page">No wiki page for this tag.</string>
+    <string name="wiki_empty_body">This wiki page has no content.</string>
+    <string name="wiki_view_posts">View posts</string>
     <string name="related_tags_title">Related to %1$s</string>
     <string name="related_tags_failed">Couldn\'t load related tags (members only).</string>
     <string name="related_tags_none">No related tags found.</string>

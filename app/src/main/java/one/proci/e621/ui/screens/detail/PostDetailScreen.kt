@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Public
@@ -160,6 +161,7 @@ fun PostDetailScreen(
     postActionsRepository: PostActionsRepository,
     postSetRepository: one.proci.e621.data.repository.PostSetRepository? = null,
     localCollectionStore: one.proci.e621.data.settings.LocalCollectionStore? = null,
+    wikiRepository: one.proci.e621.data.repository.WikiRepository? = null,
     avatarRepository: AvatarRepository,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -265,6 +267,7 @@ fun PostDetailScreen(
                 InfoPanel(
                     post = currentPost,
                     postActionsRepository = postActionsRepository,
+                    wikiRepository = wikiRepository,
                     onPostUpdated = onPostUpdated,
                     onAddTagToBlacklist = onAddTagToBlacklist,
                     onSearchTag = onSearchTag,
@@ -285,6 +288,7 @@ fun PostDetailScreen(
             postActionsRepository = postActionsRepository,
             postSetRepository = postSetRepository,
             localCollectionStore = localCollectionStore,
+            wikiRepository = wikiRepository,
             onDismiss = { infoSheetVisible = false },
             onOpenComments = {
                 infoSheetVisible = false
@@ -346,6 +350,7 @@ private fun TopBar(onBack: () -> Unit, index: Int, total: Int, rating: String?, 
 private fun InfoPanel(
     post: Post,
     postActionsRepository: PostActionsRepository,
+    wikiRepository: one.proci.e621.data.repository.WikiRepository?,
     onPostUpdated: (Post) -> Unit,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -495,6 +500,7 @@ private fun InfoPanel(
                 onAddToSearch = onAddTagToSearch,
                 onExcludeFromSearch = onExcludeTagFromSearch,
                 onFetchRelated = postActionsRepository::fetchRelatedTags,
+                onFetchWiki = wikiRepository?.let { repo -> { title -> repo.fetchPage(title)?.body } },
                 highlightedTags = highlightedTags,
             )
         }
@@ -693,6 +699,7 @@ private fun PostInfoSheet(
     postActionsRepository: PostActionsRepository,
     postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     localCollectionStore: one.proci.e621.data.settings.LocalCollectionStore?,
+    wikiRepository: one.proci.e621.data.repository.WikiRepository?,
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
     onSearch: (String) -> Unit,
@@ -891,6 +898,7 @@ private fun PostInfoSheet(
                     text = post.description,
                     style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.85f)),
                     modifier = Modifier.padding(top = 6.dp),
+                    wikiPreview = wikiRepository?.let { repo -> { title -> repo.fetchPage(title)?.body } },
                 )
             }
         }
@@ -1834,6 +1842,7 @@ private fun TagSections(
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
+    onFetchWiki: (suspend (String) -> String?)?,
     highlightedTags: Set<String>,
 ) {
     val grouped = tags.groupBy { it.category }
@@ -1849,6 +1858,7 @@ private fun TagSections(
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
                     onFetchRelated = onFetchRelated,
+                    onFetchWiki = onFetchWiki,
                     highlightedTags = highlightedTags,
                 )
             }
@@ -1866,6 +1876,7 @@ private fun TagSection(
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
+    onFetchWiki: (suspend (String) -> String?)?,
     highlightedTags: Set<String>,
 ) {
     val headerColor = when (category) {
@@ -1904,6 +1915,7 @@ private fun TagSection(
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
                     onFetchRelated = onFetchRelated,
+                    onFetchWiki = onFetchWiki,
                     isBlacklistMatch = tag.name.lowercase() in highlightedTags,
                 )
             }
@@ -1919,9 +1931,11 @@ private fun TagChip(
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
+    onFetchWiki: (suspend (String) -> String?)?,
     isBlacklistMatch: Boolean = false,
 ) {
     var showRelated by remember { mutableStateOf(false) }
+    var showWiki by remember { mutableStateOf(false) }
     val (background, content) = when (tag.category) {
         TagCategory.ARTIST -> TagArtist to Color.Black
         TagCategory.COPYRIGHT -> TagCopyright to Color.White
@@ -1995,6 +2009,22 @@ private fun TagChip(
                     showRelated = true
                 },
             )
+            if (onFetchWiki != null) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(
+                                if (tag.category == TagCategory.ARTIST) R.string.tag_menu_artist_page else R.string.tag_menu_wiki,
+                            ),
+                        )
+                    },
+                    leadingIcon = { Icon(Icons.Filled.MenuBook, contentDescription = null) },
+                    onClick = {
+                        menuExpanded = false
+                        showWiki = true
+                    },
+                )
+            }
             DropdownMenuItem(
                 text = {
                     Text(
@@ -2028,6 +2058,45 @@ private fun TagChip(
             onDismiss = { showRelated = false },
         )
     }
+
+    if (showWiki && onFetchWiki != null) {
+        WikiPageDialog(
+            tag = tag.name,
+            fetch = onFetchWiki,
+            onSearch = { onSearch(tag.name); showWiki = false },
+            onDismiss = { showWiki = false },
+        )
+    }
+}
+
+@Composable
+private fun WikiPageDialog(
+    tag: String,
+    fetch: suspend (String) -> String?,
+    onSearch: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var body by remember(tag) { mutableStateOf<String?>(null) }
+    var missing by remember(tag) { mutableStateOf(false) }
+    LaunchedEffect(tag) {
+        val result = runCatching { fetch(tag) }.getOrNull()
+        if (result.isNullOrBlank()) missing = true else body = result
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tag.replace('_', ' ')) },
+        text = {
+            Box(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                when {
+                    missing -> Text(stringResource(R.string.wiki_no_page))
+                    body == null -> CircularProgressIndicator()
+                    else -> DTextView(text = body!!, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onSearch) { Text(stringResource(R.string.wiki_view_posts)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) } },
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
