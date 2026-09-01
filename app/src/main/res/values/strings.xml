@@ -159,6 +159,7 @@
     <string name="post_sets_delete_title">Delete set?</string>
     <string name="post_sets_delete_body">Delete the set \"%1$s\"? This can\'t be undone.</string>
     <string name="add_to_set_action">Add to set</string>
+    <string name="add_to_set_action_n">Add %1$d posts to set</string>
     <string name="add_to_set_new">New set from this post</string>
     <string name="add_to_set_added">Added to %1$s</string>
     <string name="add_to_set_failed">Couldn\'t add to set: %1$s</string>

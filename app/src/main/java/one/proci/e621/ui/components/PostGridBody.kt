@@ -85,6 +85,7 @@ fun PostGridBody(
     onBulkFavorite: (List<Post>) -> Unit = {},
     onBulkUnfavorite: (List<Post>) -> Unit = {},
     onBulkDownload: (List<Post>) -> Unit = {},
+    onBulkAddToSet: ((List<Post>) -> Unit)? = null,
     bulkProgress: one.proci.e621.data.util.BulkProgress? = null,
     emptyContent: @Composable () -> Unit = { DefaultEmptyState() },
 ) {
@@ -221,11 +222,13 @@ fun PostGridBody(
                 onBulkFavorite = onBulkFavorite,
                 onBulkUnfavorite = onBulkUnfavorite,
                 onBulkDownload = onBulkDownload,
+                onBulkAddToSet = onBulkAddToSet,
             )
         }
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun SelectionBar(
     selected: List<Post>,
@@ -234,6 +237,7 @@ private fun SelectionBar(
     onBulkFavorite: (List<Post>) -> Unit,
     onBulkUnfavorite: (List<Post>) -> Unit,
     onBulkDownload: (List<Post>) -> Unit,
+    onBulkAddToSet: ((List<Post>) -> Unit)?,
 ) {
     var confirmingUnfavorite by remember { mutableStateOf(false) }
     LaunchedEffect(selected.size) { confirmingUnfavorite = false }
@@ -261,7 +265,11 @@ private fun SelectionBar(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            val enabled = selected.isNotEmpty() && bulkProgress == null
+        }
+        val enabled = selected.isNotEmpty() && bulkProgress == null
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             TextButton(enabled = enabled, onClick = { onBulkFavorite(selected) }) {
                 Text(stringResource(R.string.bulk_favorite))
             }
@@ -280,6 +288,11 @@ private fun SelectionBar(
                     stringResource(if (confirmingUnfavorite) R.string.bulk_unfavorite_confirm else R.string.bulk_unfavorite),
                     color = if (confirmingUnfavorite) MaterialTheme.colorScheme.error else Color.Unspecified,
                 )
+            }
+            if (onBulkAddToSet != null) {
+                TextButton(enabled = enabled, onClick = { onBulkAddToSet(selected) }) {
+                    Text(stringResource(R.string.add_to_set_action))
+                }
             }
             TextButton(enabled = enabled, onClick = { onBulkDownload(selected) }) {
                 Text(stringResource(R.string.bulk_download))

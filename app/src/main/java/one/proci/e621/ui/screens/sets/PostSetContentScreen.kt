@@ -31,6 +31,9 @@ fun PostSetContentScreen(
     onPostClick: (index: Int) -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
+    onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
+    onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -85,6 +88,9 @@ fun PostSetContentScreen(
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,
+                onQuickFavorite = onQuickFavorite,
+                onQuickUpvote = onQuickUpvote,
+                onQuickDownload = onQuickDownload,
             )
         }
     }

@@ -288,6 +288,7 @@ fun E621NavGraph(
                 onQuickUpvote = searchViewModel::quickUpvote,
                 onQuickDownload = ::enqueueDownload,
                 onBulkFavorite = searchViewModel::bulkSetFavorite,
+                postSetRepository = app.postSetRepository,
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
@@ -328,6 +329,7 @@ fun E621NavGraph(
                 onQuickDownload = ::enqueueDownload,
                 onBulkFavorite = favoritesViewModel::bulkSetFavorite,
                 bulkProgress = state.bulkProgress,
+                postSetRepository = app.postSetRepository,
             )
         }
         composable(
@@ -769,6 +771,9 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POOL, poolId.toInt(), index)) },
                 onSetBlacklistDisabled = poolViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = poolViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = poolViewModel::quickToggleFavorite,
+                onQuickUpvote = poolViewModel::quickUpvote,
+                onQuickDownload = ::enqueueDownload,
             )
         }
         composable(Routes.POPULAR) {
@@ -784,6 +789,9 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = popularViewModel::quickToggleFavorite,
+                onQuickUpvote = popularViewModel::quickUpvote,
+                onQuickDownload = ::enqueueDownload,
             )
         }
         composable(
@@ -963,6 +971,9 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POST_SET, setId.toInt(), index)) },
                 onSetBlacklistDisabled = setViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = setViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = setViewModel::quickToggleFavorite,
+                onQuickUpvote = setViewModel::quickUpvote,
+                onQuickDownload = ::enqueueDownload,
             )
         }
         composable(

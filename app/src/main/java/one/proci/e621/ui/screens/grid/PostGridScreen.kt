@@ -224,6 +224,7 @@ fun PostGridScreen(
     onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
     onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
     onBulkFavorite: (Set<Long>, Boolean) -> Unit,
+    postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     unreadMessageCount: Int,
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
@@ -236,6 +237,7 @@ fun PostGridScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    var bulkAddToSetIds by remember { mutableStateOf<List<Long>?>(null) }
     fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
     BackHandler(enabled = selectionMode) { exitSelection() }
     Box(modifier = modifier) {
@@ -285,6 +287,7 @@ fun PostGridScreen(
                 onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
                 onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
                 onBulkDownload = { list -> list.forEach(onQuickDownload) },
+                onBulkAddToSet = postSetRepository?.let { { list -> bulkAddToSetIds = list.map { it.id } } },
                 bulkProgress = state.bulkProgress,
                 modifier = Modifier.padding(padding),
             )
@@ -313,6 +316,15 @@ fun PostGridScreen(
             healthCheckRepository = healthCheckRepository,
             useE6Ai = useE6Ai,
             onSetUseE6Ai = onSetUseE6Ai,
+        )
+    }
+
+    val addToSetIds = bulkAddToSetIds
+    if (addToSetIds != null && postSetRepository != null) {
+        one.proci.e621.ui.components.AddToSetDialog(
+            postIds = addToSetIds,
+            repository = postSetRepository,
+            onDismiss = { bulkAddToSetIds = null },
         )
     }
 }

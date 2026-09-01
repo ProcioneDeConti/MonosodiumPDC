@@ -31,6 +31,7 @@ class PostSetContentViewModel(
     private val setId: Long,
     private val repository: PostSetRepository,
     private val userPreferences: UserPreferences,
+    private val postActionsRepository: one.proci.e621.data.repository.PostActionsRepository,
 ) : ViewModel() {
 
     private data class InternalState(
@@ -100,5 +101,17 @@ class PostSetContentViewModel(
 
     fun updatePost(updated: Post) {
         internalState.update { s -> s.copy(rawPosts = s.rawPosts.map { if (it.id == updated.id) updated else it }) }
+    }
+
+    fun quickUpvote(post: Post) {
+        viewModelScope.launch { runCatching { postActionsRepository.vote(post, 1) }.onSuccess(::updatePost) }
+    }
+
+    fun quickToggleFavorite(post: Post) {
+        viewModelScope.launch {
+            runCatching {
+                if (post.isFavorited) postActionsRepository.unfavorite(post) else postActionsRepository.favorite(post)
+            }.onSuccess(::updatePost)
+        }
     }
 }

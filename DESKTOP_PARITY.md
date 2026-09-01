@@ -179,7 +179,7 @@ cosmetic / polish.
   thumbnail updates instantly. *(Android 2.22.0: long-press a thumbnail on the search grid or
   favorites for Upvote / Favorite / Download. Vote+favorite route through the grid VM's
   `quickUpvote`/`quickToggleFavorite` (+ `updatePost` patch); on the favorites grid an unfavorite
-  prunes the post immediately. Pool/popular/set grids omitted.)*
+  prunes the post immediately. extended to pool/popular/set grids in 2.30.0.)*
 - [x] **P2 · Multi-select + bulk actions** — select mode with checkboxes; bulk favorite,
   bulk unfavorite (two-tap confirm — bulk-destructive), add-to-set, download. Sequential
   `mutateAsync`-style calls so the rate limiter paces them, with N/total progress. When
@@ -187,7 +187,7 @@ cosmetic / polish.
   "Select" in the thumbnail long-press menu enters select mode (gold-ringed tiles, tap toggles);
   a bottom bar does bulk Favorite / Unfavorite (two-tap Confirm) / Download with an N/total
   progress bar. Favorite/unfavorite run one request at a time via the grid VM's `bulkSetFavorite`;
-  on the favorites grid an unfavorited post leaves immediately. Bulk add-to-set skipped.)*
+  on the favorites grid an unfavorited post leaves immediately. Bulk add-to-set added in 2.30.0.)*
 
 ## Downloads
 
@@ -360,3 +360,6 @@ capability). Listed so we don't keep rediscovering them.
   (ratings/filetypes/scores/years/artists/characters), opened from the favorites top bar.
 - 2026-09-01 · 2.29.0 · P2 User Dashboard · UsageStatsStore + instrumentation + DashboardScreen
   (stat tiles, per-site/daily/top-tag bars, opt-out, clear).
+- 2026-09-01 · 2.30.0 · follow-ups · bulk Add-to-set in the grid selection bar (shared
+  AddToSetDialog now takes a list); grid quick-actions (upvote/favorite/download) extended to the
+  pool, popular and post-set grids.

@@ -43,7 +43,7 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
         modelClass.isAssignableFrom(PostSetsViewModel::class.java) ->
             PostSetsViewModel(app.postSetRepository, app.userPreferences) as T
         modelClass.isAssignableFrom(PopularViewModel::class.java) ->
-            PopularViewModel(app.popularRepository, app.userPreferences) as T
+            PopularViewModel(app.popularRepository, app.userPreferences, app.postActionsRepository) as T
         modelClass.isAssignableFrom(LocalCollectionsViewModel::class.java) ->
             LocalCollectionsViewModel(app.localCollectionStore) as T
         modelClass.isAssignableFrom(WikiViewModel::class.java) ->
@@ -79,7 +79,7 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                PoolViewModel(poolId, app.poolRepository, app.userPreferences) as T
+                PoolViewModel(poolId, app.poolRepository, app.userPreferences, app.postActionsRepository) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory], for one on-device collection's posts. */
@@ -95,7 +95,7 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                PostSetContentViewModel(setId, app.postSetRepository, app.userPreferences) as T
+                PostSetContentViewModel(setId, app.postSetRepository, app.userPreferences, app.postActionsRepository) as T
         }
 
     /** Progressive `fav:<username>` breakdown - see [FavoritesAnalysisViewModel]. */

@@ -50,10 +50,12 @@ fun FavoritesScreen(
     onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
     onBulkFavorite: (Set<Long>, Boolean) -> Unit,
     bulkProgress: one.proci.e621.data.util.BulkProgress?,
+    postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     modifier: Modifier = Modifier,
 ) {
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    var bulkAddToSetIds by remember { mutableStateOf<List<Long>?>(null) }
     fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
     androidx.activity.compose.BackHandler(enabled = selectionMode) { exitSelection() }
     Scaffold(
@@ -122,10 +124,20 @@ fun FavoritesScreen(
                 onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
                 onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
                 onBulkDownload = { list -> list.forEach(onQuickDownload) },
+                onBulkAddToSet = postSetRepository?.let { { list -> bulkAddToSetIds = list.map { it.id } } },
                 bulkProgress = bulkProgress,
                 modifier = Modifier.padding(padding),
             )
         }
+    }
+
+    val addToSetIds = bulkAddToSetIds
+    if (addToSetIds != null && postSetRepository != null) {
+        one.proci.e621.ui.components.AddToSetDialog(
+            postIds = addToSetIds,
+            repository = postSetRepository,
+            onDismiss = { bulkAddToSetIds = null },
+        )
     }
 }
 
