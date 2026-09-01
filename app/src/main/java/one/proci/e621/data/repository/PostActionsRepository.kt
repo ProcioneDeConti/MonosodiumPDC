@@ -56,6 +56,10 @@ class PostActionsRepository(private val api: E621ApiService) {
     suspend fun fetchComments(postId: Long): List<Comment> =
         api.getComments(postId).filterNot { it.isHidden }
 
+    /** A post's edit history (tag/rating/source/description changes), newest first. */
+    suspend fun fetchPostVersions(postId: Long): List<one.proci.e621.data.model.PostVersion> =
+        api.getPostVersions(postId)
+
     /** A post's active translation/annotation notes (inactive ones are filtered out). */
     suspend fun fetchNotes(postId: Long): List<PostNote> =
         api.getNotes(postId).filter { it.isActive && it.width > 0 && it.height > 0 }

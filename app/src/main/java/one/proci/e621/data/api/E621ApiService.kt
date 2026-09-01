@@ -143,6 +143,13 @@ interface E621ApiService {
     @GET("comments.json")
     suspend fun getComments(@Query("search[post_id]") postId: Long): List<Comment>
 
+    /** Public; a post's tag/rating/source/description edit history, newest first. */
+    @GET("post_versions.json")
+    suspend fun getPostVersions(
+        @Query("search[post_id]") postId: Long,
+        @Query("limit") limit: Int = 40,
+    ): List<one.proci.e621.data.model.PostVersion>
+
     /** Public; a post's translation/annotation notes. Empty array (not 404) for a post with none. */
     @GET("notes.json")
     suspend fun getNotes(

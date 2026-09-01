@@ -238,6 +238,14 @@
     <string name="post_flag_hint">Reason for reporting…</string>
     <string name="post_flag_send">Send report</string>
     <string name="post_flag_action">Report post</string>
+    <string name="post_history_action">History</string>
+    <string name="post_history_title">Edit history</string>
+    <string name="post_history_failed">Couldn\'t load history.</string>
+    <string name="post_history_empty">No edit history.</string>
+    <string name="post_history_rating">rating changed</string>
+    <string name="post_history_description">description changed</string>
+    <string name="post_history_parent">parent changed</string>
+    <string name="post_history_source">sources changed</string>
     <string name="post_flag_sent">Report sent</string>
     <string name="post_flag_failed">Couldn\'t send report: %1$s</string>
 

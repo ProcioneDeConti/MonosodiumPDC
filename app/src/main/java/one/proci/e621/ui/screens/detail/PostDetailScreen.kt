@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -714,6 +715,7 @@ private fun PostInfoSheet(
     val flagFailedTemplate = stringResource(R.string.post_flag_failed)
     var showAddToSetDialog by remember(post.id) { mutableStateOf(false) }
     var showAddToCollectionDialog by remember(post.id) { mutableStateOf(false) }
+    var showHistoryDialog by remember(post.id) { mutableStateOf(false) }
 
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
@@ -799,6 +801,11 @@ private fun PostInfoSheet(
                     icon = Icons.Filled.Flag,
                     label = stringResource(R.string.post_flag_action),
                     onClick = { showFlagDialog = true },
+                )
+                PillAction(
+                    icon = Icons.Filled.History,
+                    label = stringResource(R.string.post_history_action),
+                    onClick = { showHistoryDialog = true },
                 )
                 if (postSetRepository != null) {
                     PillAction(
@@ -970,6 +977,73 @@ private fun PostInfoSheet(
             onDismiss = { showAddToCollectionDialog = false },
         )
     }
+
+    if (showHistoryDialog) {
+        PostHistoryDialog(
+            postId = post.id,
+            fetch = postActionsRepository::fetchPostVersions,
+            onDismiss = { showHistoryDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun PostHistoryDialog(
+    postId: Long,
+    fetch: suspend (Long) -> List<one.proci.e621.data.model.PostVersion>,
+    onDismiss: () -> Unit,
+) {
+    var versions by remember(postId) { mutableStateOf<List<one.proci.e621.data.model.PostVersion>?>(null) }
+    var error by remember(postId) { mutableStateOf(false) }
+
+    LaunchedEffect(postId) {
+        runCatching { fetch(postId) }.onSuccess { versions = it }.onFailure { error = true }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.post_history_title)) },
+        text = {
+            Box(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                when {
+                    error -> Text(stringResource(R.string.post_history_failed))
+                    versions == null -> CircularProgressIndicator()
+                    versions!!.isEmpty() -> Text(stringResource(R.string.post_history_empty))
+                    else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        versions!!.forEach { v ->
+                            Column {
+                                Text(
+                                    buildString {
+                                        append("#${v.version}")
+                                        v.updaterName?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                                        v.updatedAt?.let { append(" · ${it.take(10)}") }
+                                    },
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                if (v.addedTags.isNotEmpty()) {
+                                    Text("+ ${v.addedTags.joinToString(" ")}", style = MaterialTheme.typography.bodySmall, color = VoteUpActive)
+                                }
+                                if (v.removedTags.isNotEmpty()) {
+                                    Text("− ${v.removedTags.joinToString(" ")}", style = MaterialTheme.typography.bodySmall, color = VoteDownActive)
+                                }
+                                val flags = buildList {
+                                    if (v.ratingChanged) add(stringResource(R.string.post_history_rating))
+                                    if (v.descriptionChanged) add(stringResource(R.string.post_history_description))
+                                    if (v.parentChanged) add(stringResource(R.string.post_history_parent))
+                                    if (v.sourceChanged) add(stringResource(R.string.post_history_source))
+                                }
+                                if (flags.isNotEmpty()) {
+                                    Text(flags.joinToString(", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) } },
+    )
 }
 
 @Composable

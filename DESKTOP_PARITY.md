@@ -85,8 +85,11 @@ cosmetic / polish.
   (raw body) + `fetchRelatedTags` parses bare-array / `{related_tags:[]}` / `[name,cat]` pairs /
   query-keyed shapes; a "Related tags" item in the tag-chip menu opens a dialog of category-coloured
   chips, tap a chip for search / + / − actions.)*
-- [ ] **P2 · Post history / versions tab** — `get_post_versions` (`post_versions.json?
+- [x] **P2 · Post history / versions tab** — `get_post_versions` (`post_versions.json?
   search[post_id]=`). Desktop: a third viewer sidebar tab (Tags / Comments / History).
+  *(Android 2.24.1: `PostVersion` model + `fetchPostVersions`; a "History" pill in the info sheet
+  opens a dialog listing versions — updater/date, +added / −removed tags, rating/description/parent/
+  source change flags. Android has no sidebar tabs, so a dialog rather than a tab.)*
 - [ ] **P2 · Inline wiki previews** — `[[wiki]]` links currently open the browser. Desktop
   turns them into a tap-to-preview popover rendering the target page's own DText inline
   (`get_wiki_page` → `wiki_pages.json?search[title]=&limit=1`, returns null for a missing
@@ -329,3 +332,4 @@ capability). Listed so we don't keep rediscovering them.
   favorite/unfavorite/download, sequential, N/total progress) on the search + favorites grids.
 - 2026-09-01 · 2.24.0 · P2 Local collections · on-device post collections (store + screens +
   routes + viewer picker).
+- 2026-09-01 · 2.24.1 · P2 Post history · PostVersion model + History dialog in the viewer info sheet.
