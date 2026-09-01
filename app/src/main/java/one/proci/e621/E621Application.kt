@@ -21,6 +21,7 @@ import one.proci.e621.data.api.GitHubClient
 import one.proci.e621.data.api.MediaUserAgent
 import one.proci.e621.data.api.SharedHttp
 import one.proci.e621.data.api.UserAgentInterceptor
+import one.proci.e621.data.download.DownloadQueue
 import one.proci.e621.data.dtext.DTextLinkConfig
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.ForumRepository
@@ -61,6 +62,9 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val updateCheckRepository by lazy { UpdateCheckRepository(GitHubClient.create()) }
     val savedSearchStore by lazy { SavedSearchStore(this) }
     val localCollectionStore by lazy { LocalCollectionStore(this) }
+    val downloadQueue by lazy {
+        DownloadQueue(this, applicationScope) { userPreferences.settingsState.value.downloadLocationUri }
+    }
 
     // Deliberately in onCreate(), not init{}: init{} runs during the Application's own
     // construction, before the framework calls attachBaseContext() - these coroutines run on

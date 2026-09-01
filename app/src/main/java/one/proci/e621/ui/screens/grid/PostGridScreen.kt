@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Forum
@@ -213,13 +214,14 @@ fun PostGridScreen(
     onOpenCollections: () -> Unit,
     onOpenWiki: () -> Unit,
     onOpenAdvancedSearch: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
     onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
     onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
     onBulkFavorite: (Set<Long>, Boolean) -> Unit,
-    downloadLocationUri: String?,
     unreadMessageCount: Int,
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
@@ -234,22 +236,6 @@ fun PostGridScreen(
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
     BackHandler(enabled = selectionMode) { exitSelection() }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val downloadStartedMessage = stringResource(R.string.download_started)
-    val downloadSavedMessage = stringResource(R.string.download_saved)
-    val downloadFailedTemplate = stringResource(R.string.download_failed)
-    fun quickDownload(post: one.proci.e621.data.model.Post) {
-        val url = post.playableUrl ?: return
-        android.widget.Toast.makeText(context, downloadStartedMessage, android.widget.Toast.LENGTH_SHORT).show()
-        scope.launch {
-            val message = one.proci.e621.data.download.MediaDownloader(context)
-                .download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
-                .fold(onSuccess = { downloadSavedMessage }, onFailure = { e -> String.format(downloadFailedTemplate, e.message ?: e.toString()) })
-            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
-        }
-    }
-
     Box(modifier = modifier) {
         Scaffold(
             topBar = {
@@ -286,7 +272,7 @@ fun PostGridScreen(
                 onThumbnailSizeChange = onThumbnailSizeChange,
                 onQuickFavorite = onQuickFavorite,
                 onQuickUpvote = onQuickUpvote,
-                onQuickDownload = ::quickDownload,
+                onQuickDownload = onQuickDownload,
                 selectionMode = selectionMode,
                 selectedIds = selectedIds,
                 onToggleSelect = { p ->
@@ -296,7 +282,7 @@ fun PostGridScreen(
                 onExitSelection = ::exitSelection,
                 onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
                 onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
-                onBulkDownload = { list -> list.forEach(::quickDownload) },
+                onBulkDownload = { list -> list.forEach(onQuickDownload) },
                 bulkProgress = state.bulkProgress,
                 modifier = Modifier.padding(padding),
             )
@@ -317,6 +303,7 @@ fun PostGridScreen(
             onOpenCollections = onOpenCollections,
             onOpenWiki = onOpenWiki,
             onOpenAdvancedSearch = onOpenAdvancedSearch,
+            onOpenDownloads = onOpenDownloads,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -347,6 +334,7 @@ private fun NavDrawerOverlay(
     onOpenCollections: () -> Unit,
     onOpenWiki: () -> Unit,
     onOpenAdvancedSearch: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -484,6 +472,11 @@ private fun NavDrawerOverlay(
                         icon = Icons.Filled.Tune,
                         label = stringResource(R.string.advanced_search_title),
                         onClick = dismissAnd(onOpenAdvancedSearch),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.Download,
+                        label = stringResource(R.string.downloads_title),
+                        onClick = dismissAnd(onOpenDownloads),
                     )
                     DrawerItem(
                         icon = Icons.Filled.PhotoLibrary,

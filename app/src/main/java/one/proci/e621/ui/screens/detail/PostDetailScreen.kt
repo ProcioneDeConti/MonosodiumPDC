@@ -162,6 +162,7 @@ fun PostDetailScreen(
     postSetRepository: one.proci.e621.data.repository.PostSetRepository? = null,
     localCollectionStore: one.proci.e621.data.settings.LocalCollectionStore? = null,
     wikiRepository: one.proci.e621.data.repository.WikiRepository? = null,
+    downloadQueue: one.proci.e621.data.download.DownloadQueue? = null,
     avatarRepository: AvatarRepository,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -268,6 +269,7 @@ fun PostDetailScreen(
                     post = currentPost,
                     postActionsRepository = postActionsRepository,
                     wikiRepository = wikiRepository,
+                    downloadQueue = downloadQueue,
                     onPostUpdated = onPostUpdated,
                     onAddTagToBlacklist = onAddTagToBlacklist,
                     onSearchTag = onSearchTag,
@@ -351,6 +353,7 @@ private fun InfoPanel(
     post: Post,
     postActionsRepository: PostActionsRepository,
     wikiRepository: one.proci.e621.data.repository.WikiRepository?,
+    downloadQueue: one.proci.e621.data.download.DownloadQueue?,
     onPostUpdated: (Post) -> Unit,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -372,8 +375,14 @@ private fun InfoPanel(
     val shareFailedTemplate = stringResource(R.string.share_failed)
 
     fun startDownload(url: String) {
-        isDownloading = true
         Toast.makeText(context, downloadStartedMessage, Toast.LENGTH_SHORT).show()
+        val queue = downloadQueue
+        if (queue != null) {
+            // Route through the shared queue so it's visible/retryable in Downloads.
+            queue.enqueue(url, post.downloadFileName, post.mimeType, post.id, post.preview.url)
+            return
+        }
+        isDownloading = true
         scope.launch {
             val result = MediaDownloader(context).download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
             isDownloading = false

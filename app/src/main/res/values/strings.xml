@@ -222,6 +222,15 @@
     <string name="advanced_search_min_favcount">Min favorites</string>
     <string name="advanced_search_date_after">Uploaded on or after</string>
     <string name="advanced_search_run">Search</string>
+    <string name="downloads_title">Downloads</string>
+    <string name="downloads_empty">No downloads yet.</string>
+    <string name="downloads_clear_finished">Clear finished</string>
+    <string name="downloads_retry">Retry</string>
+    <string name="downloads_open">Open</string>
+    <string name="downloads_state_queued">Queued</string>
+    <string name="downloads_state_active">Downloading…</string>
+    <string name="downloads_state_done">Saved</string>
+    <string name="downloads_state_error">Failed</string>
     <string name="related_tags_title">Related to %1$s</string>
     <string name="related_tags_failed">Couldn\'t load related tags (members only).</string>
     <string name="related_tags_none">No related tags found.</string>

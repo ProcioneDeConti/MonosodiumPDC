@@ -191,11 +191,13 @@ cosmetic / polish.
 
 ## Downloads
 
-- [ ] **P2 · Download queue** — a queue panel with per-job state (queued/active/done/error),
+- [x] **P2 · Download queue** — a queue panel with per-job state (queued/active/done/error),
   retry, remove, "show in folder", clear-finished/clear-all. All downloads route through it
   (grid button, viewer button, bulk). Desktop: `DownloadsPanel` + `state/downloadsStore.ts`
-  (session-only queue, concurrency 2). Android already downloads single files — this is the
-  queue/visibility layer on top.
+  (session-only queue, concurrency 2). *(Android 2.27.0: `DownloadQueue` — session-only, in-memory,
+  concurrency 2, de-dupes by filename; `DownloadsScreen` (drawer entry) shows per-job state with
+  retry / open / remove / clear-finished. Grid quick-download, bulk download and the viewer
+  download button all enqueue through it.)*
 
 ## Account, profile & analytics
 
@@ -344,3 +346,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.25.0 · P2 inline wiki previews + wiki browser + artist pages · WikiLink DText
   node, DTextView wikiPreview, WikiScreen (drawer), Wiki/Artist-page tag-chip dialog.
 - 2026-09-01 · 2.26.0 · P2 Advanced search builder · AdvancedSearchScreen form -> query string.
+- 2026-09-01 · 2.27.0 · P2 Download queue · DownloadQueue (concurrency 2) + DownloadsScreen;
+  all download entry points route through it.

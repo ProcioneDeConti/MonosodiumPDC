@@ -26,6 +26,7 @@ import one.proci.e621.E621Application
 import one.proci.e621.ui.AppViewModelFactory
 import one.proci.e621.ui.NotificationsViewModel
 import one.proci.e621.ui.screens.detail.PostByIdScreen
+import one.proci.e621.ui.screens.downloads.DownloadsScreen
 import one.proci.e621.ui.screens.detail.PostDetailScreen
 import one.proci.e621.ui.screens.favorites.FavoritesScreen
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
@@ -84,6 +85,7 @@ private object Routes {
     const val COLLECTIONS = "local_collections"
     const val WIKI = "wiki"
     const val ADVANCED_SEARCH = "advanced_search"
+    const val DOWNLOADS = "downloads"
     const val COLLECTION_CONTENT = "local_collection/{collectionId}"
     const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
     const val POST_SET_CONTENT = "post_set/{setId}"
@@ -177,6 +179,11 @@ fun E621NavGraph(
         }
     }
 
+    fun enqueueDownload(post: one.proci.e621.data.model.Post) {
+        val url = post.playableUrl ?: return
+        app.downloadQueue.enqueue(url, post.downloadFileName, post.mimeType, post.id, post.preview.url)
+    }
+
     fun navigateToSearch(query: String) {
         navController.navigate(Routes.search(nextSearchId.incrementAndGet(), query))
     }
@@ -264,13 +271,14 @@ fun E621NavGraph(
                 onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
                 onOpenWiki = { navController.navigate(Routes.WIKI) },
                 onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
+                onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
                 onQuickFavorite = searchViewModel::quickToggleFavorite,
                 onQuickUpvote = searchViewModel::quickUpvote,
+                onQuickDownload = ::enqueueDownload,
                 onBulkFavorite = searchViewModel::bulkSetFavorite,
-                downloadLocationUri = userSettings.downloadLocationUri,
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
@@ -307,9 +315,9 @@ fun E621NavGraph(
                 onThumbnailSizeChange = favoritesViewModel::setGridThumbnailSizeDp,
                 onQuickFavorite = favoritesViewModel::quickToggleFavorite,
                 onQuickUpvote = favoritesViewModel::quickUpvote,
+                onQuickDownload = ::enqueueDownload,
                 onBulkFavorite = favoritesViewModel::bulkSetFavorite,
                 bulkProgress = state.bulkProgress,
-                downloadLocationUri = userSettings.downloadLocationUri,
             )
         }
         composable(
@@ -342,6 +350,7 @@ fun E621NavGraph(
                         postSetRepository = app.postSetRepository,
                         localCollectionStore = app.localCollectionStore,
                         wikiRepository = app.wikiRepository,
+                        downloadQueue = app.downloadQueue,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -371,6 +380,7 @@ fun E621NavGraph(
                         postSetRepository = app.postSetRepository,
                         localCollectionStore = app.localCollectionStore,
                         wikiRepository = app.wikiRepository,
+                        downloadQueue = app.downloadQueue,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -402,6 +412,7 @@ fun E621NavGraph(
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
                             wikiRepository = app.wikiRepository,
+                            downloadQueue = app.downloadQueue,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -434,6 +445,7 @@ fun E621NavGraph(
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
                             wikiRepository = app.wikiRepository,
+                            downloadQueue = app.downloadQueue,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -466,6 +478,7 @@ fun E621NavGraph(
                             postSetRepository = app.postSetRepository,
                             localCollectionStore = app.localCollectionStore,
                             wikiRepository = app.wikiRepository,
+                            downloadQueue = app.downloadQueue,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -704,6 +717,7 @@ fun E621NavGraph(
                 postSetRepository = app.postSetRepository,
                 localCollectionStore = app.localCollectionStore,
                 wikiRepository = app.wikiRepository,
+                downloadQueue = app.downloadQueue,
                 avatarRepository = app.avatarRepository,
                 onBack = { navController.popBackStack() },
                 onAddTagToBlacklist = ::addTagToBlacklist,
@@ -760,6 +774,16 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(Routes.DOWNLOADS) {
+            val jobs by app.downloadQueue.jobs.collectAsStateWithLifecycle()
+            DownloadsScreen(
+                jobs = jobs,
+                onBack = { navController.popBackStack() },
+                onRetry = app.downloadQueue::retry,
+                onRemove = app.downloadQueue::remove,
+                onClearFinished = app.downloadQueue::clearFinished,
             )
         }
         composable(Routes.ADVANCED_SEARCH) {
@@ -846,6 +870,7 @@ fun E621NavGraph(
                     postSetRepository = app.postSetRepository,
                     localCollectionStore = app.localCollectionStore,
                     wikiRepository = app.wikiRepository,
+                    downloadQueue = app.downloadQueue,
                     avatarRepository = app.avatarRepository,
                     onAddTagToBlacklist = ::addTagToBlacklist,
                     onSearchTag = ::navigateToSearch,
