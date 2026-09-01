@@ -132,9 +132,10 @@ class PostGridViewModel(
      *
      * A custom `order:` (e.g. order:score_asc) sorts results by something other than id, so the
      * id-based cursor doesn't bound the next page correctly and can re-return already-seen posts -
-     * plain page-number pagination is used for those queries instead. Either way, results are
-     * de-duplicated by id before being appended, since Compose's grid keys items by post id and
-     * throws on a duplicate key.
+     * plain page-number pagination is used for those queries instead, capped at e621's hard limit
+     * of page 750 (requesting beyond it is a server error, so we surface it as "end reached").
+     * Either way, results are de-duplicated by id before being appended, since Compose's grid keys
+     * items by post id and throws on a duplicate key.
      */
     fun loadMore() {
         val current = internalState.value
@@ -154,7 +155,8 @@ class PostGridViewModel(
                     isBlacklisted = settings::isBlacklisted,
                 ) {
                     val page = if (useCustomOrder) {
-                        repository.fetchPosts(tags = current.activeQuery, pageNumber = pageNumber)
+                        if (pageNumber > MAX_NUMBERED_PAGE) emptyList()
+                        else repository.fetchPosts(tags = current.activeQuery, pageNumber = pageNumber)
                     } else {
                         repository.fetchPosts(tags = current.activeQuery, beforeId = cursor)
                     }
@@ -180,5 +182,10 @@ class PostGridViewModel(
 
     fun dismissError() {
         internalState.update { it.copy(error = null) }
+    }
+
+    private companion object {
+        /** e621's hard ceiling on numbered pagination; requesting a higher page is a server error. */
+        const val MAX_NUMBERED_PAGE = 750
     }
 }
