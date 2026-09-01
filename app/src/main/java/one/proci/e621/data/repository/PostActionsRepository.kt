@@ -102,7 +102,7 @@ class PostActionsRepository(private val api: E621ApiService) {
         3 -> TagCategory.COPYRIGHT
         4 -> TagCategory.CHARACTER
         5 -> TagCategory.SPECIES
-        6 -> TagCategory.META
+        7 -> TagCategory.META
         8 -> TagCategory.LORE
         else -> TagCategory.GENERAL
     }

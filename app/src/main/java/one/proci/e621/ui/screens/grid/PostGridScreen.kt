@@ -906,7 +906,9 @@ private fun SuggestionChip(suggestion: TagSuggestion, isNegative: Boolean, onCli
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(suggestion.name.replace('_', ' '), color = content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(formatPostCount(suggestion.postCount), color = content.copy(alpha = 0.75f), fontSize = 11.sp)
+            if (suggestion.postCount > 0) {
+                Text(formatPostCount(suggestion.postCount), color = content.copy(alpha = 0.75f), fontSize = 11.sp)
+            }
         }
         if (suggestion.antecedentName != null) {
             Text(

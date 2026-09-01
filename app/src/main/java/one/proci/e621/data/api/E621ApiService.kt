@@ -97,6 +97,20 @@ interface E621ApiService {
     @GET("users/{id}.json")
     suspend fun getUser(@Path("id") id: Long): UserProfile
 
+    /** Public; users whose name starts with [nameMatches] (already wildcarded, e.g. "fo*") - for `user:`/`fav:` autocomplete. */
+    @GET("users.json")
+    suspend fun autocompleteUsers(
+        @Query("search[name_matches]") nameMatches: String,
+        @Query("limit") limit: Int = 10,
+    ): List<UserProfile>
+
+    /** Public; pools whose name starts with [nameMatches] - for `pool:` autocomplete. */
+    @GET("pools.json")
+    suspend fun autocompletePools(
+        @Query("search[name_matches]") nameMatches: String,
+        @Query("limit") limit: Int = 10,
+    ): List<one.proci.e621.data.model.Pool>
+
     /**
      * e621 responds 204 No Content on success (no body), so this returns the raw Response
      * rather than a typed body - a non-nullable typed return would make Retrofit throw on the

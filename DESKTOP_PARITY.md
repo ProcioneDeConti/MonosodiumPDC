@@ -140,11 +140,13 @@ cosmetic / polish.
   metatags.
 - [ ] **P3 · ID list import** — a dialog to paste a list of post IDs and open them as a search
   (`id:1,2,3,...`). Desktop: `IdListImportDialog.tsx`.
-- [ ] **P2 · Metatag value autocomplete** — currently anything with `:` suppresses
+- [x] **P2 · Metatag value autocomplete** — currently anything with `:` suppresses
   autocomplete. Desktop: `lib/metatags.ts` — static enums for `rating:`/`order:`/`type:`/
   `filetype:`/`status:`/`locked:`, live-fetched `user:`/`fav:`/`pool:` (via `autocomplete_users`
   → `users.json?search[name_matches]=<prefix>*` and `autocomplete_pools`), syntax hints for
-  `score:`/`date:`/`filesize:`.
+  `score:`/`date:`/`filesize:`. *(Android 2.21.0: `TagSuggestionRepository.suggestMetatagValues` -
+  static enums for the six, `autocompleteUsers`/`autocompletePools` for `user:`/`fav:`/`pool:`;
+  picking one drops in a `metatag:value` chip. Syntax-hint rows for score:/date:/filesize: skipped.)*
 - [ ] **P3 · Recent search history** — auto-recorded, most-recent-first, deduped, capped ~25,
   shown as a dropdown when the search box is focused and empty. Separate from Saved Searches
   (named, explicit). Deliberately not in the backup snapshot.
@@ -308,3 +310,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.19.0 · P2 Related tags · defensive related_tag.json parse + a Related tags dialog
   from the tag-chip menu.
 - 2026-09-01 · 2.20.0 · P2 Blacklist tester · Settings > Blacklist tester (post id -> matched lines).
+- 2026-09-01 · 2.21.0 · P2 Metatag value autocomplete · static enums + live user:/fav:/pool:
+  completion in the search bar (was fully suppressed for any `:`).
