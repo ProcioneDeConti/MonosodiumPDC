@@ -91,6 +91,7 @@ import one.proci.e621.R
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.repository.RateLimitInfo
 import one.proci.e621.data.repository.UpdateCheckStatus
+import one.proci.e621.data.settings.ThemePreference
 import one.proci.e621.data.settings.UserSettings
 import one.proci.e621.data.util.ImageCacheLimits
 import one.proci.e621.data.util.VideoPlaybackSpeeds
@@ -123,6 +124,7 @@ fun SettingsScreen(
     onImportBlacklist: suspend () -> Result<String>,
     onPushBlacklist: suspend (String) -> Result<Unit>,
     onSetAccentColor: (Int?) -> Unit,
+    onSetThemePreference: (ThemePreference) -> Unit,
     onSetImageCacheLimitMb: (Int) -> Unit,
     onSetVideoLoopEnabled: (Boolean) -> Unit,
     onSetVideoPlaybackSpeed: (Float) -> Unit,
@@ -295,6 +297,14 @@ fun SettingsScreen(
             }
 
             SettingsSection(stringResource(R.string.settings_appearance)) {
+                Text(
+                    stringResource(R.string.settings_theme),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ThemePreferenceSelector(current = settings.themePreference, onSelect = onSetThemePreference)
+
+                Spacer(Modifier.height(16.dp))
                 Text(
                     stringResource(R.string.settings_accent_color),
                     style = MaterialTheme.typography.bodyMedium,
@@ -946,6 +956,40 @@ private fun RatingRow(label: String, checked: Boolean, enabled: Boolean = true, 
             style = MaterialTheme.typography.bodyLarge,
             color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/** System / Light / Dark segmented selector for [ThemePreference]. */
+@Composable
+private fun ThemePreferenceSelector(current: ThemePreference, onSelect: (ThemePreference) -> Unit) {
+    val options = listOf(
+        ThemePreference.SYSTEM to stringResource(R.string.settings_theme_system),
+        ThemePreference.LIGHT to stringResource(R.string.settings_theme_light),
+        ThemePreference.DARK to stringResource(R.string.settings_theme_dark),
+    )
+    Row(
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .clip(RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        options.forEach { (pref, label) ->
+            val selected = pref == current
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelect(pref) }
+                    .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

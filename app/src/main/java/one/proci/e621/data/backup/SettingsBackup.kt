@@ -17,6 +17,8 @@ data class SettingsBackup(
     val adultModeEnabled: Boolean,
     val blacklist: String,
     val accentColor: Int? = null,
+    /** [one.proci.e621.data.settings.ThemePreference] name; absent/unknown restores as SYSTEM. */
+    val themePreference: String? = null,
     val eulaAcceptedHash: String? = null,
     val imageCacheLimitMb: Int,
     val gridThumbnailSizeDp: Int,
@@ -36,6 +38,7 @@ fun UserSettings.toBackup() = SettingsBackup(
     adultModeEnabled = adultModeEnabled,
     blacklist = blacklist,
     accentColor = accentColor,
+    themePreference = themePreference.name,
     eulaAcceptedHash = eulaAcceptedHash,
     imageCacheLimitMb = imageCacheLimitMb,
     gridThumbnailSizeDp = gridThumbnailSizeDp,

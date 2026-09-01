@@ -41,6 +41,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val ADULT_MODE = booleanPreferencesKey("adult_mode_enabled")
         val BLACKLIST = stringPreferencesKey("blacklist")
         val ACCENT_COLOR = intPreferencesKey("accent_color")
+        val THEME_PREFERENCE = stringPreferencesKey("theme_preference")
         // A distinct name from any earlier boolean "eula_accepted" key - DataStore ties a key's
         // type to its name, so reusing the old name with a new (string) type could crash reading
         // stale data written under the old type.
@@ -71,6 +72,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             adultModeEnabled = prefs[Keys.ADULT_MODE] == true,
             blacklist = prefs[Keys.BLACKLIST].orEmpty(),
             accentColor = prefs[Keys.ACCENT_COLOR],
+            themePreference = ThemePreference.fromName(prefs[Keys.THEME_PREFERENCE]),
             eulaAcceptedHash = prefs[Keys.EULA_ACCEPTED_HASH],
             imageCacheLimitMb = prefs[Keys.IMAGE_CACHE_LIMIT_MB]?.let { ImageCacheLimits.clamp(it) }
                 ?: ImageCacheLimits.DEFAULT_MB,
@@ -137,6 +139,10 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         }
     }
 
+    suspend fun setThemePreference(preference: ThemePreference) {
+        dataStore.edit { prefs -> prefs[Keys.THEME_PREFERENCE] = preference.name }
+    }
+
     /** Pass the hash of the EULA text just agreed to, or null to clear (un-accept). */
     suspend fun setEulaAccepted(hash: String?) {
         dataStore.edit { prefs ->
@@ -194,6 +200,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             prefs[Keys.ADULT_MODE] = backup.adultModeEnabled
             prefs[Keys.BLACKLIST] = backup.blacklist
             if (backup.accentColor == null) prefs.remove(Keys.ACCENT_COLOR) else prefs[Keys.ACCENT_COLOR] = backup.accentColor
+            prefs[Keys.THEME_PREFERENCE] = ThemePreference.fromName(backup.themePreference).name
             if (backup.eulaAcceptedHash == null) {
                 prefs.remove(Keys.EULA_ACCEPTED_HASH)
             } else {

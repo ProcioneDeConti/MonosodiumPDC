@@ -11,6 +11,10 @@
     <string name="settings_api_key_get_link">Get your API key from %1$s</string>
     <string name="settings_api_key_warning">Your API key works like a password to your account. Never share it, post it, or include it in a screenshot.</string>
     <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
     <string name="settings_accent_color">Accent color</string>
     <string name="settings_accent_default">Default</string>
     <string name="settings_accent_custom">Custom</string>

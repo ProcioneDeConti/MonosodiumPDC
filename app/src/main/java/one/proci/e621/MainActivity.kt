@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import one.proci.e621.BuildConfig
+import one.proci.e621.data.settings.ThemePreference
 import one.proci.e621.data.util.eulaHash
 import one.proci.e621.data.util.loadEulaText
 import one.proci.e621.ui.navigation.E621NavGraph
@@ -62,7 +64,15 @@ class MainActivity : ComponentActivity() {
                 }
                 info.firstInstallTime == info.lastUpdateTime
             }
-            E621Theme(accentColor = settings.accentColor?.let { Color(it) }) {
+            val darkTheme = when (settings.themePreference) {
+                ThemePreference.LIGHT -> false
+                ThemePreference.DARK -> true
+                ThemePreference.SYSTEM -> isSystemInDarkTheme()
+            }
+            E621Theme(
+                darkTheme = darkTheme,
+                accentColor = settings.accentColor?.let { Color(it) },
+            ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when {
                         // DataStore's first real read hasn't landed yet - settings is still the

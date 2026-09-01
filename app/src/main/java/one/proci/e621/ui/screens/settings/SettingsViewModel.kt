@@ -14,6 +14,7 @@ import one.proci.e621.data.repository.RateLimitInfo
 import one.proci.e621.data.repository.UpdateCheckRepository
 import one.proci.e621.data.repository.UpdateCheckStatus
 import one.proci.e621.data.repository.UserRepository
+import one.proci.e621.data.settings.ThemePreference
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.settings.UserSettings
 
@@ -78,6 +79,10 @@ class SettingsViewModel(
 
     fun setAccentColor(color: Int?) {
         viewModelScope.launch { userPreferences.updateAccentColor(color) }
+    }
+
+    fun setThemePreference(preference: ThemePreference) {
+        viewModelScope.launch { userPreferences.setThemePreference(preference) }
     }
 
     fun setImageCacheLimitMb(mb: Int) {

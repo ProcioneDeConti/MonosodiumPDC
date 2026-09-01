@@ -19,6 +19,8 @@ data class UserSettings(
     val blacklist: String = "",
     /** ARGB color int; null means "use the device's dynamic/default color." */
     val accentColor: Int? = null,
+    /** Light/dark override; [ThemePreference.SYSTEM] follows the device. */
+    val themePreference: ThemePreference = ThemePreference.SYSTEM,
     /** The hash (see [one.proci.e621.data.util.eulaHash]) of whichever EULA text the user last agreed to; null means never agreed. */
     val eulaAcceptedHash: String? = null,
     /** Max on-disk size, in MB, for cached post images/thumbnails. See [one.proci.e621.data.util.ImageCacheLimits]. */

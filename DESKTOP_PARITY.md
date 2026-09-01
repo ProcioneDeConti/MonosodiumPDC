@@ -178,9 +178,11 @@ cosmetic / polish.
 
 ## Settings
 
-- [ ] **P2 · Theme override (System / Light / Dark)** — Android follows the system theme only.
+- [x] **P2 · Theme override (System / Light / Dark)** — Android follows the system theme only.
   Desktop: `Settings > Appearance` segmented control (1.14.47), persisted + in the backup
-  snapshot.
+  snapshot. *(Android 2.13.0: `ThemePreference` enum, `theme_preference` DataStore key,
+  `SettingsBackup.themePreference`, a System/Light/Dark segmented selector in Settings > Appearance;
+  `MainActivity` derives `darkTheme` from it.)*
 - [ ] **P2 · Blacklist tester** — paste/pick a post and see which blacklist entries match it,
   live. Desktop: `BlacklistTester` in the blacklist settings section (1.14.48).
 - [ ] **P3 · Backup coverage audit** — desktop found several times that its backup wasn't
@@ -262,3 +264,4 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.11.1 · P2 Post reporting/flag · reportPost → tickets.json (qtype:post) + a
   "Report post" action with a reason dialog in the viewer info sheet.
 - 2026-09-01 · 2.12.0 · P2 Delete dmails · deleteDmail + two-tap delete in message detail.
+- 2026-09-01 · 2.13.0 · P2 Theme override · System/Light/Dark selector, persisted + backed up.
