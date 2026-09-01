@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -23,9 +24,18 @@ import one.proci.e621.data.util.VideoPlaybackSpeeds
 
 private val Context.dataStore by preferencesDataStore(name = "user_settings")
 
+/**
+ * Separate store for the e6AI kill switch, on its own file so it can be excluded from Android's
+ * Auto Backup / device-transfer (see res/xml/backup_rules.xml + data_extraction_rules.xml). The
+ * user-facing settings export/restore ([SettingsBackup]) never touches it either. A fresh install
+ * is the only thing that clears it.
+ */
+private val Context.e6aiLockDataStore by preferencesDataStore(name = "e6ai_lock")
+
 class UserPreferences(context: Context, scope: CoroutineScope) {
 
     private val dataStore = context.applicationContext.dataStore
+    private val e6aiLockStore = context.applicationContext.e6aiLockDataStore
 
     private object Keys {
         // e621's own credentials - kept under their original key names for backward compatibility.
@@ -46,6 +56,9 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         // type to its name, so reusing the old name with a new (string) type could crash reading
         // stale data written under the old type.
         val EULA_ACCEPTED_HASH = stringPreferencesKey("eula_accepted_hash")
+
+        /** Lives in [e6aiLockStore], not [dataStore]. */
+        val E6AI_PERMANENTLY_DISABLED = booleanPreferencesKey("e6ai_permanently_disabled")
         val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
         val GRID_THUMBNAIL_SIZE_DP = intPreferencesKey("grid_thumbnail_size_dp")
         val VIDEO_LOOP_ENABLED = booleanPreferencesKey("video_loop_enabled")
@@ -56,14 +69,16 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val CLOUD_BACKUP_ENABLED = booleanPreferencesKey("cloud_backup_enabled")
     }
 
-    val settingsFlow = dataStore.data.map { prefs ->
+    val settingsFlow = combine(dataStore.data, e6aiLockStore.data) { prefs, lock ->
         val ratings = buildSet {
             if (prefs[Keys.RATING_SAFE] != false) add(Rating.SAFE)
             if (prefs[Keys.RATING_QUESTIONABLE] != false) add(Rating.QUESTIONABLE)
             if (prefs[Keys.RATING_EXPLICIT] != false) add(Rating.EXPLICIT)
         }
+        val e6aiDisabled = lock[Keys.E6AI_PERMANENTLY_DISABLED] == true
         UserSettings(
-            useE6Ai = prefs[Keys.USE_E6AI] == true,
+            useE6Ai = prefs[Keys.USE_E6AI] == true && !e6aiDisabled,
+            e6aiPermanentlyDisabled = e6aiDisabled,
             e621Username = prefs[Keys.USERNAME].orEmpty(),
             e621ApiKey = prefs[Keys.API_KEY].orEmpty(),
             e6aiUsername = prefs[Keys.E6AI_USERNAME].orEmpty(),
@@ -113,8 +128,26 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         }
     }
 
+    private suspend fun e6aiPermanentlyDisabled(): Boolean =
+        e6aiLockStore.data.first()[Keys.E6AI_PERMANENTLY_DISABLED] == true
+
     suspend fun setUseE6Ai(enabled: Boolean) {
-        dataStore.edit { prefs -> prefs[Keys.USE_E6AI] = enabled }
+        val allowed = enabled && !e6aiPermanentlyDisabled()
+        dataStore.edit { prefs -> prefs[Keys.USE_E6AI] = allowed }
+    }
+
+    /**
+     * One-way: permanently blocks e6AI on this device. Sets the lock (in its own, not-backed-up
+     * store), forces the active site back to e621, wipes the e6AI credentials, and there is no
+     * method to reverse it (see [UserSettings.e6aiPermanentlyDisabled]).
+     */
+    suspend fun permanentlyDisableE6ai() {
+        e6aiLockStore.edit { it[Keys.E6AI_PERMANENTLY_DISABLED] = true }
+        dataStore.edit { prefs ->
+            prefs[Keys.USE_E6AI] = false
+            prefs.remove(Keys.E6AI_USERNAME)
+            prefs.remove(Keys.E6AI_API_KEY)
+        }
     }
 
     suspend fun updateRatings(ratings: Set<Rating>) {
@@ -188,12 +221,20 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
 
     /** Overwrites every backed-up field in one edit - see Settings > Backup & Restore. */
     suspend fun applyBackup(backup: SettingsBackup) {
+        // The e6AI kill switch is deliberately not in the backup and must survive a restore -
+        // never let restored data resurrect e6AI access or credentials.
+        val e6aiDisabled = e6aiPermanentlyDisabled()
         dataStore.edit { prefs ->
-            prefs[Keys.USE_E6AI] = backup.useE6Ai
+            prefs[Keys.USE_E6AI] = backup.useE6Ai && !e6aiDisabled
             prefs[Keys.USERNAME] = backup.e621Username
             prefs[Keys.API_KEY] = backup.e621ApiKey
-            prefs[Keys.E6AI_USERNAME] = backup.e6aiUsername
-            prefs[Keys.E6AI_API_KEY] = backup.e6aiApiKey
+            if (e6aiDisabled) {
+                prefs.remove(Keys.E6AI_USERNAME)
+                prefs.remove(Keys.E6AI_API_KEY)
+            } else {
+                prefs[Keys.E6AI_USERNAME] = backup.e6aiUsername
+                prefs[Keys.E6AI_API_KEY] = backup.e6aiApiKey
+            }
             prefs[Keys.RATING_SAFE] = Rating.SAFE.name in backup.enabledRatings
             prefs[Keys.RATING_QUESTIONABLE] = Rating.QUESTIONABLE.name in backup.enabledRatings
             prefs[Keys.RATING_EXPLICIT] = Rating.EXPLICIT.name in backup.enabledRatings

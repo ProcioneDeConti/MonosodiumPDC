@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -31,7 +32,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Shield
@@ -39,6 +42,7 @@ import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -134,6 +139,7 @@ fun SettingsScreen(
     onSetVideoAutoplayEnabled: (Boolean) -> Unit,
     onSetDownloadLocationUri: (String?) -> Unit,
     onSetCloudBackupEnabled: (Boolean) -> Unit,
+    onPermanentlyDisableE6ai: () -> Unit,
     onExportBackupJson: (password: String?) -> String,
     onIsBackupEncrypted: (fileContents: String) -> Boolean,
     onImportBackup: suspend (fileContents: String, password: String?) -> Result<Unit>,
@@ -144,6 +150,8 @@ fun SettingsScreen(
     var blacklist by remember(settings.blacklist) { mutableStateOf(settings.blacklist) }
     var showEulaDialog by remember { mutableStateOf(false) }
     var showWhatsNewDialog by remember { mutableStateOf(false) }
+    // 0 = closed, 1 = first confirmation, 2 = final confirmation
+    var e6aiDisableStep by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -546,6 +554,33 @@ fun SettingsScreen(
                 }
             }
 
+            SettingsSection(stringResource(R.string.settings_e6ai_section)) {
+                if (settings.e6aiPermanentlyDisabled) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.settings_e6ai_disabled_state),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                } else {
+                    Text(
+                        stringResource(R.string.settings_e6ai_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = { e6aiDisableStep = 1 },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) {
+                        Icon(Icons.Filled.Block, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.settings_e6ai_disable_button))
+                    }
+                }
+            }
+
             SettingsSection(stringResource(R.string.settings_legal)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -619,6 +654,61 @@ fun SettingsScreen(
 
     if (showEulaDialog) {
         EulaReadOnlyDialog(onDismiss = { showEulaDialog = false })
+    }
+
+    if (e6aiDisableStep == 1) {
+        AlertDialog(
+            onDismissRequest = { e6aiDisableStep = 0 },
+            icon = { Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.settings_e6ai_dialog1_title)) },
+            text = {
+                Text(
+                    stringResource(R.string.settings_e6ai_dialog1_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { e6aiDisableStep = 2 }) {
+                    Text(stringResource(R.string.settings_e6ai_dialog1_continue), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { e6aiDisableStep = 0 }) { Text(stringResource(R.string.dialog_cancel)) }
+            },
+        )
+    }
+
+    if (e6aiDisableStep == 2) {
+        AlertDialog(
+            onDismissRequest = { e6aiDisableStep = 0 },
+            icon = { Icon(Icons.Filled.Block, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = {
+                Text(
+                    stringResource(R.string.settings_e6ai_dialog2_title),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    stringResource(R.string.settings_e6ai_dialog2_body),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onPermanentlyDisableE6ai()
+                    e6aiDisableStep = 0
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.settings_e6ai_done)) }
+                }) {
+                    Text(stringResource(R.string.settings_e6ai_dialog2_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { e6aiDisableStep = 0 }) { Text(stringResource(R.string.dialog_cancel)) }
+            },
+        )
     }
 
     if (showWhatsNewDialog) {

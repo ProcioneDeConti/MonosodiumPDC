@@ -294,6 +294,7 @@ fun E621NavGraph(
                 tagSuggestionRepository = app.tagSuggestionRepository,
                 healthCheckRepository = app.healthCheckRepository,
                 useE6Ai = userSettings.useE6Ai,
+                e6aiPermanentlyDisabled = userSettings.e6aiPermanentlyDisabled,
                 onSetUseE6Ai = { enabled ->
                     // Awaited (not fire-and-forget) before refreshing - SiteInterceptor reads the
                     // settings StateFlow synchronously per-request, so refreshing before the
@@ -538,6 +539,7 @@ fun E621NavGraph(
                 onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
                 onSetDownloadLocationUri = settingsViewModel::setDownloadLocationUri,
                 onSetCloudBackupEnabled = settingsViewModel::setCloudBackupEnabled,
+                onPermanentlyDisableE6ai = settingsViewModel::permanentlyDisableE6ai,
                 onExportBackupJson = settingsViewModel::exportBackupJson,
                 onIsBackupEncrypted = settingsViewModel::isBackupEncrypted,
                 onImportBackup = settingsViewModel::importBackup,

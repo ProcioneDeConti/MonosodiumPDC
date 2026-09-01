@@ -96,6 +96,11 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.setThemePreference(preference) }
     }
 
+    /** One-way: permanently blocks e6AI on this device (double-confirmed in the UI). */
+    fun permanentlyDisableE6ai() {
+        viewModelScope.launch { userPreferences.permanentlyDisableE6ai() }
+    }
+
     fun setImageCacheLimitMb(mb: Int) {
         viewModelScope.launch { userPreferences.setImageCacheLimitMb(mb) }
     }

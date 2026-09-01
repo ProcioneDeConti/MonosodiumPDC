@@ -231,6 +231,7 @@ fun PostGridScreen(
     healthCheckRepository: HealthCheckRepository,
     useE6Ai: Boolean,
     onSetUseE6Ai: (Boolean) -> Unit,
+    e6aiPermanentlyDisabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -315,6 +316,7 @@ fun PostGridScreen(
             site = state.site,
             healthCheckRepository = healthCheckRepository,
             useE6Ai = useE6Ai,
+            e6aiPermanentlyDisabled = e6aiPermanentlyDisabled,
             onSetUseE6Ai = onSetUseE6Ai,
         )
     }
@@ -357,6 +359,7 @@ private fun NavDrawerOverlay(
     healthCheckRepository: HealthCheckRepository,
     useE6Ai: Boolean,
     onSetUseE6Ai: (Boolean) -> Unit,
+    e6aiPermanentlyDisabled: Boolean,
 ) {
     BackHandler(enabled = expanded, onBack = onDismiss)
 
@@ -512,7 +515,9 @@ private fun NavDrawerOverlay(
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     HorizontalDivider(modifier = Modifier.padding(bottom = 4.dp))
-                    SiteSwitchRow(useE6Ai = useE6Ai, onSetUseE6Ai = onSetUseE6Ai)
+                    if (!e6aiPermanentlyDisabled) {
+                        SiteSwitchRow(useE6Ai = useE6Ai, onSetUseE6Ai = onSetUseE6Ai)
+                    }
                     HealthCheckRow(site = site, status = healthStatus, onRecheck = ::recheckHealth)
                 }
             }

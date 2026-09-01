@@ -9,6 +9,13 @@ import one.proci.e621.data.util.VideoPlaybackSpeeds
 data class UserSettings(
     /** Which site is currently active - e621 or e6AI (e6ai.net). Each keeps its own separate login, below. */
     val useE6Ai: Boolean = false,
+    /**
+     * One-way, device-local kill switch for e6AI: once true, the site can never be switched to,
+     * its credentials are wiped, and the switch is hidden. Deliberately NOT in [SettingsBackup]
+     * (a restore must not resurrect e6AI access) and has no "re-enable" path - only a fresh
+     * install clears it.
+     */
+    val e6aiPermanentlyDisabled: Boolean = false,
     val e621Username: String = "",
     val e621ApiKey: String = "",
     val e6aiUsername: String = "",
@@ -57,11 +64,11 @@ data class UserSettings(
      */
     val isLoaded: Boolean = false,
 ) {
-    val site: Site get() = if (useE6Ai) Site.E6AI else Site.E621
+    val site: Site get() = if (useE6Ai && !e6aiPermanentlyDisabled) Site.E6AI else Site.E621
 
     /** The active site's credentials - e621 and e6AI are separate accounts, so switching sites swaps these. */
-    val username: String get() = if (useE6Ai) e6aiUsername else e621Username
-    val apiKey: String get() = if (useE6Ai) e6aiApiKey else e621ApiKey
+    val username: String get() = if (site == Site.E6AI) e6aiUsername else e621Username
+    val apiKey: String get() = if (site == Site.E6AI) e6aiApiKey else e621ApiKey
 
     val isAuthenticated: Boolean get() = username.isNotBlank() && apiKey.isNotBlank()
 
