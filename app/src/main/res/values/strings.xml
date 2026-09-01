@@ -367,12 +367,14 @@
         entries in each array - drop the oldest pair once there are more than 10.
     -->
     <string-array name="whats_new_versions">
+        <item>2.29.0</item>
         <item>2.7.4</item>
         <item>2.7.0</item>
         <item>2.6.4</item>
         <item>2.6.3</item>
     </string-array>
     <string-array name="whats_new_entries">
+        <item>A big feature pass bringing the app in line with the desktop version:\n• Pools and Popular browsers, plus post sets, on-device collections, a wiki browser and an advanced search builder (all in the menu).\n• Post viewer: translation-note overlay, parent/child links, edit history, related tags, inline wiki previews, and Add to set / collection.\n• Comments: vote, edit or delete your own, and report others\'.\n• Long-press a thumbnail for quick favourite / upvote / download, or enter multi-select for bulk actions.\n• A download queue, a Light/Dark theme override, a blacklist tester, and an optional on-device usage Dashboard.\n• Shuffle button, delete dmails, upload-level on profiles.</item>
         <item>• Smoother grid scrolling and lower memory use while browsing.\n• Fixed a bug that could prevent saving images/videos to your device on Android 9.\n• Various under-the-hood efficiency and cleanup improvements.</item>
         <item>• New Cloud Backup toggle (Settings &gt; Backup &amp; Restore) - turn off Android\'s automatic Google account backup if you\'d rather your account/settings never leave this device, with a warning if your device has no screen lock (which weakens that backup\'s encryption).\n• Uninstalling now offers a \"Keep app data\" option.</item>
         <item>• Lowered the minimum required Android version from 14 down to 9 - this app now runs on far more devices, so feel free to share it with friends on older phones.</item>
