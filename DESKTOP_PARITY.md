@@ -96,10 +96,12 @@ cosmetic / polish.
 - [ ] **P2 · Popular posts browser** — `popular.json?date=&scale=` (public). Day/Week/Month
   segmented control + prev/next period steppers + "Now" shortcut. Desktop: `PopularPanel`,
   `get_popular_posts`, `lib/popular.ts` for the date math. Fixed non-paginated list like pools.
-- [ ] **P2 · Random post / shuffle** — a button that re-runs the *current* search with
+- [x] **P2 · Random post / shuffle** — a button that re-runs the *current* search with
   `order:random` mixed in (drop any existing `order:*` first). Re-submitting must actually
   re-roll (e621 re-randomises per request — don't no-op on the unchanged query). Optional:
-  a shuffle mode for the slideshow.
+  a shuffle mode for the slideshow. *(Android 2.14.0: a shuffle icon in the search bar's trailing
+  row runs `withRandomOrder(activeQuery)` through `onSearchSubmit`; an unchanged query hits
+  `refresh()` which re-fetches, and e621 re-randomises per request, so each tap re-rolls.)*
 - [ ] **P2 · Post sets** — `post_sets.json`. List your sets, create (name → shortname:
   3–50 `[a-z0-9_]`, ≥1 letter/underscore), open a set into a grid/viewer, add/remove posts.
   Endpoints verified against e621ng source in the desktop `PROGRESS.md` entry
@@ -156,9 +158,12 @@ cosmetic / polish.
   failure, everything else = success, matching e621ng's template-less response); two-tap Delete in
   the message detail top bar, drops the row from the inbox on return. List multi-select deliberately
   deferred to the general multi-select item.)*
-- [ ] **P2 · Upload level / upload karma on profile** — e621ng's newer `method_attributes`
+- [x] **P2 · Upload level / upload karma on profile** — e621ng's newer `method_attributes`
   expose upload karma. Desktop shows it on the profile with a progress indicator (1.14.34).
-  Verify the Android profile doesn't already have it.
+  Verify the Android profile doesn't already have it. *(Android 2.14.0: added the method_attributes
+  fields to `UserProfile` (all optional - absent on older e621ng); a Contribution section shows the
+  recomputed 0-10 upload level + karma progress bar + uploads/edits tiles + approver/verified pills,
+  rendered only when `upload_karma` is present.)*
 - [ ] **P2 · User Dashboard** — local-only usage analytics (posts viewed, searches,
   favorites ±, votes, downloads + bytes, time in app, per-site splits, daily buckets,
   top viewed artists/characters). All local, nothing sent, opt-out toggle. Desktop:
@@ -265,3 +270,5 @@ capability). Listed so we don't keep rediscovering them.
   "Report post" action with a reason dialog in the viewer info sheet.
 - 2026-09-01 · 2.12.0 · P2 Delete dmails · deleteDmail + two-tap delete in message detail.
 - 2026-09-01 · 2.13.0 · P2 Theme override · System/Light/Dark selector, persisted + backed up.
+- 2026-09-01 · 2.14.0 · P2 Random shuffle + P2 upload karma on profile · shuffle button in the
+  search bar; Contribution section on the profile (bundled - both small).

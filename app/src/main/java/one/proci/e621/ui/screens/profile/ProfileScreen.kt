@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,8 +35,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import one.proci.e621.R
 import one.proci.e621.data.model.UserProfile
 import one.proci.e621.data.model.levelLabel
+import one.proci.e621.data.model.uploadKarmaProgress
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.ui.components.DTextView
 import one.proci.e621.ui.components.UserAvatar
@@ -155,6 +159,24 @@ private fun ProfileContent(
                     label = stringResource(R.string.profile_action_records),
                     onClick = { onOpenFeedback(profile.id, profile.name) },
                 )
+            }
+        }
+
+        profile.uploadKarma?.let { karma ->
+            ProfileSection(stringResource(R.string.profile_section_contribution)) {
+                UploadKarmaBar(karma)
+                val contributionStats = listOfNotNull(
+                    profile.postUploadCount?.let { stringResource(R.string.profile_stat_uploads) to it },
+                    profile.postUpdateCount?.let { stringResource(R.string.profile_stat_tag_edits) to it },
+                    profile.noteUpdateCount?.let { stringResource(R.string.profile_stat_note_edits) to it },
+                    profile.baseUploadLimit?.let { stringResource(R.string.profile_stat_upload_limit) to it },
+                )
+                if (contributionStats.isNotEmpty()) StatsGrid(contributionStats)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (profile.canApprovePosts) ProfilePill(stringResource(R.string.profile_pill_approver))
+                    if (profile.canUploadFree) ProfilePill(stringResource(R.string.profile_pill_upload_free))
+                    if (profile.isVerified) ProfilePill(stringResource(R.string.profile_pill_verified))
+                }
             }
         }
 
@@ -331,6 +353,55 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(2.dp))
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun UploadKarmaBar(karma: Int) {
+    val progress = remember(karma) { uploadKarmaProgress(karma) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                stringResource(R.string.profile_upload_level, progress.level),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                String.format(stringResource(R.string.profile_upload_karma), karma),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        LinearProgressIndicator(
+            progress = { progress.percent },
+            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+        )
+        Text(
+            if (progress.isMax) {
+                stringResource(R.string.profile_upload_level_max)
+            } else {
+                String.format(stringResource(R.string.profile_upload_karma_to_next), progress.toNext)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ProfilePill(label: String) {
+    Box(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(7.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimary,
+        )
     }
 }
 

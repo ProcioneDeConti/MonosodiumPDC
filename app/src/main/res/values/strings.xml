@@ -91,6 +91,7 @@
     <string name="action_clear">Clear</string>
     <string name="action_more">More</string>
     <string name="action_menu">Menu</string>
+    <string name="action_shuffle">Shuffle results</string>
     <string name="action_delete">Delete</string>
     <string name="score">Score</string>
     <string name="favorites">Favorites</string>
@@ -284,6 +285,18 @@
     <string name="profile_stat_pool_edits">Pool edits</string>
     <string name="profile_stat_upload_slots">Upload slots</string>
     <string name="profile_stat_flags">Flags</string>
+    <string name="profile_section_contribution">Contribution</string>
+    <string name="profile_stat_uploads">Uploads</string>
+    <string name="profile_stat_tag_edits">Tag edits</string>
+    <string name="profile_stat_note_edits">Note edits</string>
+    <string name="profile_stat_upload_limit">Upload limit</string>
+    <string name="profile_upload_level">Upload level %1$d</string>
+    <string name="profile_upload_level_max">Top upload level reached</string>
+    <string name="profile_upload_karma">%1$,d karma</string>
+    <string name="profile_upload_karma_to_next">%1$,d karma to the next level</string>
+    <string name="profile_pill_approver">Post approver</string>
+    <string name="profile_pill_upload_free">Bypasses upload queue</string>
+    <string name="profile_pill_verified">Verified</string>
     <string name="profile_section_feedback">Feedback</string>
     <string name="profile_feedback_positive">Positive</string>
     <string name="profile_feedback_neutral">Neutral</string>

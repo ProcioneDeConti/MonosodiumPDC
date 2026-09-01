@@ -61,6 +61,7 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Badge
@@ -170,6 +171,15 @@ private fun parseToken(raw: String): SearchTag {
 private fun parseQuery(query: String): List<SearchTag> =
     query.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.map(::parseToken)
 
+/**
+ * The current query with every `order:*` metatag dropped and `order:random` appended - the
+ * "shuffle" query. Re-submitting it (even unchanged) makes the grid re-fetch, and e621
+ * re-randomises per request, so each shuffle genuinely re-rolls.
+ */
+private fun withRandomOrder(query: String): String =
+    (query.trim().split(Regex("\\s+")).filter { it.isNotBlank() && !it.startsWith("order:", ignoreCase = true) } +
+        "order:random").joinToString(" ")
+
 private fun List<SearchTag>.joinToQuery(): String = joinToString(" ") { it.token }
 
 private fun formatPostCount(count: Int): String = when {
@@ -214,6 +224,7 @@ fun PostGridScreen(
                     query = state.query,
                     onQueryChange = onQueryChange,
                     onSearchSubmit = onSearchSubmit,
+                    onShuffle = { onSearchSubmit(withRandomOrder(state.activeQuery)) },
                     onOpenMenu = { menuExpanded = true },
                     blacklistDisabled = state.blacklistDisabled,
                     onSetBlacklistDisabled = onSetBlacklistDisabled,
@@ -500,6 +511,7 @@ private fun SearchTopBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearchSubmit: (String) -> Unit,
+    onShuffle: () -> Unit,
     onOpenMenu: () -> Unit,
     blacklistDisabled: Boolean,
     onSetBlacklistDisabled: (Boolean) -> Unit,
@@ -764,6 +776,12 @@ private fun SearchTopBar(
                 exit = shrinkHorizontally() + fadeOut(),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onShuffle) {
+                        Icon(
+                            Icons.Filled.Shuffle,
+                            contentDescription = stringResource(R.string.action_shuffle),
+                        )
+                    }
                     IconButton(onClick = { onSetBlacklistDisabled(!blacklistDisabled) }) {
                         Icon(
                             if (blacklistDisabled) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
