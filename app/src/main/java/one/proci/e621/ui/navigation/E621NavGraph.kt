@@ -243,6 +243,9 @@ fun E621NavGraph(
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = searchViewModel::quickToggleFavorite,
+                onQuickUpvote = searchViewModel::quickUpvote,
+                downloadLocationUri = userSettings.downloadLocationUri,
                 unreadMessageCount = notifications.unreadMessageCount,
                 forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
@@ -277,6 +280,9 @@ fun E621NavGraph(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onSetBlacklistDisabled = favoritesViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = favoritesViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = favoritesViewModel::quickToggleFavorite,
+                onQuickUpvote = favoritesViewModel::quickUpvote,
+                downloadLocationUri = userSettings.downloadLocationUri,
             )
         }
         composable(

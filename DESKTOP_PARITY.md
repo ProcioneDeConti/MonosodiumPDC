@@ -158,10 +158,13 @@ cosmetic / polish.
 
 ## Grid
 
-- [ ] **P2 · Grid quick-actions** — favourite / upvote / download from the grid without
+- [x] **P2 · Grid quick-actions** — favourite / upvote / download from the grid without
   opening the viewer. Desktop uses hover; Android equivalent is a long-press menu or a
   small action row. Reuse the vote/favorite mutation + local post-cache patch so the
-  thumbnail updates instantly.
+  thumbnail updates instantly. *(Android 2.22.0: long-press a thumbnail on the search grid or
+  favorites for Upvote / Favorite / Download. Vote+favorite route through the grid VM's
+  `quickUpvote`/`quickToggleFavorite` (+ `updatePost` patch); on the favorites grid an unfavorite
+  prunes the post immediately. Pool/popular/set grids omitted.)*
 - [ ] **P2 · Multi-select + bulk actions** — select mode with checkboxes; bulk favorite,
   bulk unfavorite (two-tap confirm — bulk-destructive), add-to-set, download. Sequential
   `mutateAsync`-style calls so the rate limiter paces them, with N/total progress. When
@@ -312,3 +315,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.20.0 · P2 Blacklist tester · Settings > Blacklist tester (post id -> matched lines).
 - 2026-09-01 · 2.21.0 · P2 Metatag value autocomplete · static enums + live user:/fav:/pool:
   completion in the search bar (was fully suppressed for any `:`).
+- 2026-09-01 · 2.22.0 · P2 Grid quick-actions · long-press thumbnail menu (upvote/favorite/download)
+  on the search + favorites grids.

@@ -22,9 +22,9 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T = when {
         modelClass.isAssignableFrom(PostGridViewModel::class.java) ->
-            PostGridViewModel(app.postRepository, app.userPreferences) as T
+            PostGridViewModel(app.postRepository, app.userPreferences, app.postActionsRepository) as T
         modelClass.isAssignableFrom(FavoritesViewModel::class.java) ->
-            FavoritesViewModel(app.postRepository, app.userPreferences) as T
+            FavoritesViewModel(app.postRepository, app.userPreferences, app.postActionsRepository) as T
         modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
             SettingsViewModel(app.userPreferences, app.userRepository, app.updateCheckRepository, app.postRepository) as T
         modelClass.isAssignableFrom(MessagesViewModel::class.java) ->
@@ -52,7 +52,7 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                PostGridViewModel(app.postRepository, app.userPreferences, initialQuery) as T
+                PostGridViewModel(app.postRepository, app.userPreferences, app.postActionsRepository, initialQuery) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory], for a single forum topic's posts. */

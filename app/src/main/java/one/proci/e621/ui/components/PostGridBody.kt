@@ -70,6 +70,10 @@ fun PostGridBody(
     onEnableBlacklist: () -> Unit = {},
     thumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     onThumbnailSizeChange: (Int) -> Unit = {},
+    /** Long-press quick actions from the grid; null means that action isn't offered. */
+    onQuickFavorite: ((Post) -> Unit)? = null,
+    onQuickUpvote: ((Post) -> Unit)? = null,
+    onQuickDownload: ((Post) -> Unit)? = null,
     emptyContent: @Composable () -> Unit = { DefaultEmptyState() },
 ) {
     val gridState = rememberLazyStaggeredGridState()
@@ -174,6 +178,9 @@ fun PostGridBody(
                                     post = post,
                                     onClick = onClick,
                                     showCautionBorder = blacklistDisabled && post.id in blacklistedIds,
+                                    onQuickFavorite = onQuickFavorite?.let { cb -> { cb(post) } },
+                                    onQuickUpvote = onQuickUpvote?.let { cb -> { cb(post) } },
+                                    onQuickDownload = onQuickDownload?.let { cb -> { cb(post) } },
                                 )
                             }
                             if (isLoadingMore) {

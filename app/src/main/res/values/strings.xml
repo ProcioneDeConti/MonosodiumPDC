@@ -97,6 +97,10 @@
     <string name="action_more">More</string>
     <string name="action_menu">Menu</string>
     <string name="action_shuffle">Shuffle results</string>
+    <string name="quick_action_upvote">Upvote</string>
+    <string name="quick_action_favorite">Favorite</string>
+    <string name="quick_action_unfavorite">Unfavorite</string>
+    <string name="quick_action_download">Download</string>
     <string name="action_delete">Delete</string>
     <string name="score">Score</string>
     <string name="favorites">Favorites</string>

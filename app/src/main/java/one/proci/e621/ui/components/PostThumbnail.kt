@@ -1,8 +1,10 @@
 package one.proci.e621.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,12 +15,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import one.proci.e621.R
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.util.formatCount
 import one.proci.e621.ui.theme.FavoriteGold
@@ -36,22 +49,48 @@ import one.proci.e621.ui.theme.RatingSafe
 
 private val ThumbnailShape = RoundedCornerShape(7.dp)
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PostThumbnail(post: Post, onClick: () -> Unit, showCautionBorder: Boolean = false, modifier: Modifier = Modifier) {
+fun PostThumbnail(
+    post: Post,
+    onClick: () -> Unit,
+    showCautionBorder: Boolean = false,
+    modifier: Modifier = Modifier,
+    /** Long-press quick actions; all null (the default) means an ordinary click-only thumbnail. */
+    onQuickFavorite: (() -> Unit)? = null,
+    onQuickUpvote: (() -> Unit)? = null,
+    onQuickDownload: (() -> Unit)? = null,
+    /** When non-null the thumbnail is in multi-select mode; the value is whether this post is selected. */
+    selected: Boolean? = null,
+) {
     val aspect = if (post.preview.width > 0 && post.preview.height > 0) {
         post.preview.width.toFloat() / post.preview.height.toFloat()
     } else {
         1f
     }
     val shape = ThumbnailShape
+    var menuExpanded by remember { mutableStateOf(false) }
+    val hasQuickActions = onQuickFavorite != null || onQuickUpvote != null || onQuickDownload != null
 
     Box(
         modifier = modifier
             .aspectRatio(aspect.coerceIn(0.5f, 2f))
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick)
-            .then(if (showCautionBorder) Modifier.border(2.dp, CautionStripeBrush, shape) else Modifier),
+            .then(
+                if (hasQuickActions && selected == null) {
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = { menuExpanded = true })
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                },
+            )
+            .then(
+                when {
+                    selected == true -> Modifier.border(3.dp, FavoriteGold, shape)
+                    showCautionBorder -> Modifier.border(2.dp, CautionStripeBrush, shape)
+                    else -> Modifier
+                },
+            ),
     ) {
         NetworkImage(
             model = post.preview.url,
@@ -80,6 +119,48 @@ fun PostThumbnail(post: Post, onClick: () -> Unit, showCautionBorder: Boolean = 
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(13.dp),
+                )
+            }
+        }
+
+        if (selected == true) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(6.dp)
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(FavoriteGold),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Star, contentDescription = null, tint = Color.Black, modifier = Modifier.size(14.dp))
+            }
+        }
+
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            onQuickUpvote?.let { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.quick_action_upvote)) },
+                    leadingIcon = { Icon(Icons.Filled.ArrowUpward, contentDescription = null) },
+                    onClick = { menuExpanded = false; action() },
+                )
+            }
+            onQuickFavorite?.let { action ->
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(if (post.isFavorited) R.string.quick_action_unfavorite else R.string.quick_action_favorite))
+                    },
+                    leadingIcon = {
+                        Icon(if (post.isFavorited) Icons.Filled.Star else Icons.Filled.StarBorder, contentDescription = null, tint = FavoriteGold)
+                    },
+                    onClick = { menuExpanded = false; action() },
+                )
+            }
+            onQuickDownload?.let { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.quick_action_download)) },
+                    leadingIcon = { Icon(Icons.Filled.Download, contentDescription = null) },
+                    onClick = { menuExpanded = false; action() },
                 )
             }
         }

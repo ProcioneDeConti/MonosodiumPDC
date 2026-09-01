@@ -210,6 +210,9 @@ fun PostGridScreen(
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
+    onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
+    onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    downloadLocationUri: String?,
     unreadMessageCount: Int,
     forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
@@ -220,6 +223,21 @@ fun PostGridScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val downloadStartedMessage = stringResource(R.string.download_started)
+    val downloadSavedMessage = stringResource(R.string.download_saved)
+    val downloadFailedTemplate = stringResource(R.string.download_failed)
+    fun quickDownload(post: one.proci.e621.data.model.Post) {
+        val url = post.playableUrl ?: return
+        android.widget.Toast.makeText(context, downloadStartedMessage, android.widget.Toast.LENGTH_SHORT).show()
+        scope.launch {
+            val message = one.proci.e621.data.download.MediaDownloader(context)
+                .download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
+                .fold(onSuccess = { downloadSavedMessage }, onFailure = { e -> String.format(downloadFailedTemplate, e.message ?: e.toString()) })
+            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Box(modifier = modifier) {
         Scaffold(
@@ -255,6 +273,9 @@ fun PostGridScreen(
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,
+                onQuickFavorite = onQuickFavorite,
+                onQuickUpvote = onQuickUpvote,
+                onQuickDownload = ::quickDownload,
                 modifier = Modifier.padding(padding),
             )
         }

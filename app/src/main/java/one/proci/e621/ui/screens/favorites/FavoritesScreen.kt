@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
@@ -39,6 +40,9 @@ fun FavoritesScreen(
     onOpenSettings: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
+    onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
+    onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
+    downloadLocationUri: String?,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -75,6 +79,21 @@ fun FavoritesScreen(
         if (state.username.isBlank()) {
             NeedsUsernameState(onOpenSettings = onOpenSettings, modifier = Modifier.padding(padding))
         } else {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            val startedMsg = stringResource(R.string.download_started)
+            val savedMsg = stringResource(R.string.download_saved)
+            val failedTemplate = stringResource(R.string.download_failed)
+            fun quickDownload(post: one.proci.e621.data.model.Post) {
+                val url = post.playableUrl ?: return
+                android.widget.Toast.makeText(context, startedMsg, android.widget.Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    val msg = one.proci.e621.data.download.MediaDownloader(context)
+                        .download(url, post.downloadFileName, post.mimeType, downloadLocationUri)
+                        .fold(onSuccess = { savedMsg }, onFailure = { e -> String.format(failedTemplate, e.message ?: e.toString()) })
+                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
             PostGridBody(
                 posts = state.posts,
                 isRefreshing = state.isRefreshing,
@@ -89,6 +108,9 @@ fun FavoritesScreen(
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,
+                onQuickFavorite = onQuickFavorite,
+                onQuickUpvote = onQuickUpvote,
+                onQuickDownload = ::quickDownload,
                 modifier = Modifier.padding(padding),
             )
         }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import one.proci.e621.data.model.Post
+import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
 import one.proci.e621.data.settings.Site
 import one.proci.e621.data.settings.UserPreferences
@@ -42,6 +43,7 @@ data class PostGridUiState(
 class PostGridViewModel(
     private val repository: PostRepository,
     private val userPreferences: UserPreferences,
+    private val postActionsRepository: PostActionsRepository,
     initialQuery: String = "",
 ) : ViewModel() {
 
@@ -105,6 +107,20 @@ class PostGridViewModel(
     fun updatePost(updated: Post) {
         internalState.update { s ->
             s.copy(rawPosts = s.rawPosts.map { if (it.id == updated.id) updated else it })
+        }
+    }
+
+    /** Grid long-press quick action: toggle upvote. */
+    fun quickUpvote(post: Post) {
+        viewModelScope.launch { runCatching { postActionsRepository.vote(post, 1) }.onSuccess(::updatePost) }
+    }
+
+    /** Grid long-press quick action: toggle favorite. */
+    fun quickToggleFavorite(post: Post) {
+        viewModelScope.launch {
+            runCatching {
+                if (post.isFavorited) postActionsRepository.unfavorite(post) else postActionsRepository.favorite(post)
+            }.onSuccess(::updatePost)
         }
     }
 
