@@ -31,11 +31,15 @@ cosmetic / polish.
 
 ## Post viewer & detail
 
-- [ ] **P1 · Post notes overlay** — view-only translation/annotation boxes drawn over the
+- [x] **P1 · Post notes overlay** — view-only translation/annotation boxes drawn over the
   image, numbered, tap-to-reveal DText body. Desktop: `get_post_notes` command
   (`GET notes.json?search[post_id]=`), `ZoomableImage.tsx`'s `NoteOverlay`. `has_notes` is
   already on the Android `Post` model, unused. Positioning: note coords are against the
   *original* image size — scale by rendered/natural ratio, don't recompute the zoom transform.
+  *(Android 2.15.0: `PostNote` model + `getNotes`; `PostNotesOverlay` renders numbered boxes inside
+  the viewer's zoom/pan transform (so they track the image), scaled from original px to the
+  letterboxed `ContentScale.Fit` rect; tapping a box shows its DText body in a caption panel drawn
+  outside the transform. Only fetched when `has_notes` is set; images only.)*
 - [x] **P2 · Post description as DText** — Android renders `post.description` as plain `Text`
   (`PostDetailScreen.kt` info sheet). Desktop renders it through `DText`. `DTextView` already
   exists in this app; just swap it in. *(Android 2.9.3: swapped in `DTextView` in the info sheet;
@@ -272,3 +276,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.13.0 · P2 Theme override · System/Light/Dark selector, persisted + backed up.
 - 2026-09-01 · 2.14.0 · P2 Random shuffle + P2 upload karma on profile · shuffle button in the
   search bar; Contribution section on the profile (bundled - both small).
+- 2026-09-01 · 2.15.0 · P1 Post notes overlay · PostNote model + numbered tap-to-reveal note
+  boxes in the image viewer.

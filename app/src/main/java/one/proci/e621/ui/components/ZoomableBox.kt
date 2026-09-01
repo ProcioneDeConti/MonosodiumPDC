@@ -61,6 +61,11 @@ fun ZoomableBox(
     modifier: Modifier = Modifier,
     onTap: (() -> Unit)? = null,
     onDismiss: (() -> Unit)? = null,
+    /**
+     * Drawn inside the same zoom/pan transform as [content] (so it tracks the image), on top of
+     * it. Used for the post-notes overlay - see [one.proci.e621.ui.components.PostNotesOverlay].
+     */
+    imageOverlay: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -168,6 +173,7 @@ fun ZoomableBox(
                     ),
             ) {
                 content()
+                imageOverlay?.invoke()
             }
         },
     )

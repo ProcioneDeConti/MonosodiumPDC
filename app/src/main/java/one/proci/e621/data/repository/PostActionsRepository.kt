@@ -10,6 +10,7 @@ import one.proci.e621.data.model.CreateTicketFields
 import one.proci.e621.data.model.CreateTicketRequest
 import one.proci.e621.data.model.FavoriteRequest
 import one.proci.e621.data.model.Post
+import one.proci.e621.data.model.PostNote
 import one.proci.e621.data.model.UpdateCommentFields
 import one.proci.e621.data.model.UpdateCommentRequest
 import one.proci.e621.data.model.VoteRequest
@@ -48,6 +49,10 @@ class PostActionsRepository(private val api: E621ApiService) {
     /** Hidden comments are moderation-only, so they're filtered out client-side. */
     suspend fun fetchComments(postId: Long): List<Comment> =
         api.getComments(postId).filterNot { it.isHidden }
+
+    /** A post's active translation/annotation notes (inactive ones are filtered out). */
+    suspend fun fetchNotes(postId: Long): List<PostNote> =
+        api.getNotes(postId).filter { it.isActive && it.width > 0 && it.height > 0 }
 
     /** A given user's comments across all posts, most recent first; @param beforeId for infinite scroll. */
     suspend fun fetchCommentsByUser(userId: Long, beforeId: Long? = null, limit: Int = 50): List<Comment> {

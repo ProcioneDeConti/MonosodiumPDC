@@ -225,6 +225,7 @@ fun PostDetailScreen(
                     videoAutoplayEnabled = videoAutoplayEnabled,
                     onTap = { infoVisible = !infoVisible },
                     onDismiss = ::handleBack,
+                    postActionsRepository = postActionsRepository,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
