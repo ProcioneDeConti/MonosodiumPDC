@@ -59,6 +59,7 @@ import one.proci.e621.ui.screens.savedsearches.SavedSearchesScreen
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsScreen
 import one.proci.e621.ui.screens.settings.SettingsViewModel
+import one.proci.e621.ui.screens.search.AdvancedSearchScreen
 import one.proci.e621.ui.screens.usercomments.UserCommentsScreen
 import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
 import one.proci.e621.ui.screens.wiki.WikiScreen
@@ -82,6 +83,7 @@ private object Routes {
     const val POPULAR = "popular"
     const val COLLECTIONS = "local_collections"
     const val WIKI = "wiki"
+    const val ADVANCED_SEARCH = "advanced_search"
     const val COLLECTION_CONTENT = "local_collection/{collectionId}"
     const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
     const val POST_SET_CONTENT = "post_set/{setId}"
@@ -261,6 +263,7 @@ fun E621NavGraph(
                 onOpenPopular = { navController.navigate(Routes.POPULAR) },
                 onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
                 onOpenWiki = { navController.navigate(Routes.WIKI) },
+                onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -757,6 +760,15 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(Routes.ADVANCED_SEARCH) {
+            AdvancedSearchScreen(
+                onBack = { navController.popBackStack() },
+                onSearch = { query ->
+                    navController.popBackStack()
+                    navigateToSearch(query)
+                },
             )
         }
         composable(Routes.WIKI) {

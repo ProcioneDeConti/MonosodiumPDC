@@ -148,9 +148,11 @@ cosmetic / polish.
   inline preview). `wiki_pages.json`. *(Android 2.25.0: `WikiScreen` + `WikiViewModel` (debounced
   title search), drawer entry; opening a result renders its DText with nested `[[wiki]]` previews
   and a "View posts" button.)*
-- [ ] **P2 · Advanced search builder** — `SearchBuilder.tsx`: a form for composing a query
+- [x] **P2 · Advanced search builder** — `SearchBuilder.tsx`: a form for composing a query
   (rating, order, score/date comparisons, include/exclude tag fields) without hand-typing
-  metatags.
+  metatags. *(Android 2.26.0: `AdvancedSearchScreen` (drawer entry) — include/exclude tag fields,
+  rating chips (1 → `rating:x`, 2 → `~rating:` OR), order/type chip rows, min score/favcount,
+  date:>=; builds the query string and runs it. Live query preview at the bottom.)*
 - [ ] **P3 · ID list import** — a dialog to paste a list of post IDs and open them as a search
   (`id:1,2,3,...`). Desktop: `IdListImportDialog.tsx`.
 - [x] **P2 · Metatag value autocomplete** — currently anything with `:` suppresses
@@ -341,3 +343,4 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.24.1 · P2 Post history · PostVersion model + History dialog in the viewer info sheet.
 - 2026-09-01 · 2.25.0 · P2 inline wiki previews + wiki browser + artist pages · WikiLink DText
   node, DTextView wikiPreview, WikiScreen (drawer), Wiki/Artist-page tag-chip dialog.
+- 2026-09-01 · 2.26.0 · P2 Advanced search builder · AdvancedSearchScreen form -> query string.

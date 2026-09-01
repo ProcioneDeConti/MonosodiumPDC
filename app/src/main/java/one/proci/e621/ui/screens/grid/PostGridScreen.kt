@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Badge
@@ -211,6 +212,7 @@ fun PostGridScreen(
     onOpenPopular: () -> Unit,
     onOpenCollections: () -> Unit,
     onOpenWiki: () -> Unit,
+    onOpenAdvancedSearch: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -314,6 +316,7 @@ fun PostGridScreen(
             onOpenPopular = onOpenPopular,
             onOpenCollections = onOpenCollections,
             onOpenWiki = onOpenWiki,
+            onOpenAdvancedSearch = onOpenAdvancedSearch,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -343,6 +346,7 @@ private fun NavDrawerOverlay(
     onOpenPopular: () -> Unit,
     onOpenCollections: () -> Unit,
     onOpenWiki: () -> Unit,
+    onOpenAdvancedSearch: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -475,6 +479,11 @@ private fun NavDrawerOverlay(
                         label = stringResource(R.string.saved_searches_title),
                         tint = MaterialTheme.colorScheme.primary,
                         onClick = dismissAnd(onOpenSavedSearches),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.Tune,
+                        label = stringResource(R.string.advanced_search_title),
+                        onClick = dismissAnd(onOpenAdvancedSearch),
                     )
                     DrawerItem(
                         icon = Icons.Filled.PhotoLibrary,

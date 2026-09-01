@@ -212,6 +212,16 @@
     <string name="wiki_no_page">No wiki page for this tag.</string>
     <string name="wiki_empty_body">This wiki page has no content.</string>
     <string name="wiki_view_posts">View posts</string>
+    <string name="advanced_search_title">Advanced search</string>
+    <string name="advanced_search_include">Include tags</string>
+    <string name="advanced_search_exclude">Exclude tags</string>
+    <string name="advanced_search_rating">Rating</string>
+    <string name="advanced_search_order">Order</string>
+    <string name="advanced_search_type">File type</string>
+    <string name="advanced_search_min_score">Min score</string>
+    <string name="advanced_search_min_favcount">Min favorites</string>
+    <string name="advanced_search_date_after">Uploaded on or after</string>
+    <string name="advanced_search_run">Search</string>
     <string name="related_tags_title">Related to %1$s</string>
     <string name="related_tags_failed">Couldn\'t load related tags (members only).</string>
     <string name="related_tags_none">No related tags found.</string>
