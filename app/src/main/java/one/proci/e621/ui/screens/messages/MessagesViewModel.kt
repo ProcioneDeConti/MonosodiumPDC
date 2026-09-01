@@ -67,6 +67,11 @@ class MessagesViewModel(
         pager.updateItems { list -> list.map { if (it.id == id) it.copy(isRead = true) else it } }
     }
 
+    /** Drops a deleted dmail from the inbox list without a full refetch. */
+    fun removeLocally(id: Long) {
+        pager.updateItems { list -> list.filterNot { it.id == id } }
+    }
+
     private fun fetch() {
         loaded = true
         pager.refresh()

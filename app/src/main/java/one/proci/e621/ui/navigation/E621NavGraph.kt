@@ -373,6 +373,7 @@ fun E621NavGraph(
                 avatarRepository = app.avatarRepository,
                 onBack = { navController.popBackStack() },
                 onOpened = messagesViewModel::markReadLocally,
+                onDeleted = messagesViewModel::removeLocally,
                 onOpenProfile = { id -> navigateToProfile(id) },
                 onReply = { dmail ->
                     navController.navigate(

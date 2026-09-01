@@ -139,6 +139,14 @@ interface E621ApiService {
     @GET("dmails/{id}.json")
     suspend fun getDmail(@Path("id") id: Long): Dmail
 
+    /**
+     * Requires Basic Auth. e621ng soft-deletes (`is_deleted = true`) then renders a template-less
+     * JSON response, so a success can come back non-2xx just like `createDmail` - the caller only
+     * treats 401/403/404 as real failures.
+     */
+    @DELETE("dmails/{id}.json")
+    suspend fun deleteDmail(@Path("id") id: Long): Response<ResponseBody>
+
     /** Requires Basic Auth; posting anonymously is rejected server-side. */
     @POST("dmails.json")
     suspend fun createDmail(@Body body: CreateDmailRequest): Dmail

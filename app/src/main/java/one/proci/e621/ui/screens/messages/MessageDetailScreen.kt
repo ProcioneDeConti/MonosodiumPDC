@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.messages
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,10 +31,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
@@ -53,12 +57,18 @@ fun MessageDetailScreen(
     onBack: () -> Unit,
     onOpened: (Long) -> Unit,
     onReply: (Dmail) -> Unit,
+    onDeleted: (Long) -> Unit,
     onOpenProfile: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var dmail by remember(dmailId) { mutableStateOf<Dmail?>(null) }
     var error by remember(dmailId) { mutableStateOf<String?>(null) }
+    var confirmingDelete by remember(dmailId) { mutableStateOf(false) }
+    var deleting by remember(dmailId) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val loadFailedTemplate = stringResource(R.string.message_load_failed)
+    val deleteFailedTemplate = stringResource(R.string.message_delete_failed)
 
     LaunchedEffect(dmailId) {
         runCatching { messagesRepository.fetchDmail(dmailId) }
@@ -77,6 +87,44 @@ fun MessageDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                    }
+                },
+                actions = {
+                    if (dmail != null) {
+                        // Two-tap: first tap arms (button turns into "Delete?"), second confirms.
+                        TextButton(
+                            enabled = !deleting,
+                            onClick = {
+                                if (!confirmingDelete) {
+                                    confirmingDelete = true
+                                    return@TextButton
+                                }
+                                deleting = true
+                                scope.launch {
+                                    runCatching { messagesRepository.deleteDmail(dmailId) }
+                                        .onSuccess {
+                                            onDeleted(dmailId)
+                                            onBack()
+                                        }
+                                        .onFailure { e ->
+                                            deleting = false
+                                            confirmingDelete = false
+                                            Toast.makeText(
+                                                context,
+                                                String.format(deleteFailedTemplate, e.message ?: e.toString()),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                }
+                            },
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (confirmingDelete) R.string.message_delete_confirm else R.string.message_delete,
+                                ),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 },
             )

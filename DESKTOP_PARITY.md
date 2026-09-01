@@ -151,8 +151,11 @@ cosmetic / polish.
 
 ## Account, profile & analytics
 
-- [ ] **P2 · Delete dmails** — `DELETE /dmails/:id.json`. Desktop: `delete_dmail` (1.14.37).
-  Android `MessagesRepository` has no delete.
+- [x] **P2 · Delete dmails** — `DELETE /dmails/:id.json`. Desktop: `delete_dmail` (1.14.37).
+  Android `MessagesRepository` has no delete. *(Android 2.12.0: `deleteDmail` (401/403/404 = real
+  failure, everything else = success, matching e621ng's template-less response); two-tap Delete in
+  the message detail top bar, drops the row from the inbox on return. List multi-select deliberately
+  deferred to the general multi-select item.)*
 - [ ] **P2 · Upload level / upload karma on profile** — e621ng's newer `method_attributes`
   expose upload karma. Desktop shows it on the profile with a progress indicator (1.14.34).
   Verify the Android profile doesn't already have it.
@@ -258,3 +261,4 @@ capability). Listed so we don't keep rediscovering them.
   vote up/down, own-comment edit/delete (gated on users/me.json id), report others' comments.
 - 2026-09-01 · 2.11.1 · P2 Post reporting/flag · reportPost → tickets.json (qtype:post) + a
   "Report post" action with a reason dialog in the viewer info sheet.
+- 2026-09-01 · 2.12.0 · P2 Delete dmails · deleteDmail + two-tap delete in message detail.
