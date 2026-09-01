@@ -53,6 +53,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Public
@@ -61,6 +63,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -871,10 +875,22 @@ private fun CommentsSheet(
     var loadError by remember(post.id) { mutableStateOf<String?>(null) }
     var draft by remember(post.id) { mutableStateOf("") }
     var posting by remember { mutableStateOf(false) }
+    // Own-comment gate for the edit/delete controls; null until users/me.json resolves (or stays
+    // null when signed out).
+    var myUserId by remember(post.id) { mutableStateOf<Long?>(null) }
 
     val loadFailedTemplate = stringResource(R.string.comments_load_failed)
     val postFailedTemplate = stringResource(R.string.comments_post_failed)
     val anonymousLabel = stringResource(R.string.comments_anonymous)
+    val voteFailedTemplate = stringResource(R.string.comment_vote_failed)
+    val editFailedTemplate = stringResource(R.string.comment_edit_failed)
+    val deleteFailedTemplate = stringResource(R.string.comment_delete_failed)
+    val reportFailedTemplate = stringResource(R.string.comment_report_failed)
+
+    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    fun patch(updated: Comment) {
+        comments = comments?.map { if (it.id == updated.id) updated else it }
+    }
 
     LaunchedEffect(post.id) {
         loading = true
@@ -883,6 +899,30 @@ private fun CommentsSheet(
             .onSuccess { comments = it }
             .onFailure { e -> loadError = String.format(loadFailedTemplate, e.message ?: e.toString()) }
         loading = false
+    }
+    LaunchedEffect(post.id) {
+        myUserId = postActionsRepository.currentUserId()
+    }
+
+    fun voteComment(comment: Comment, direction: Int) = scope.launch {
+        runCatching { postActionsRepository.voteComment(comment, direction) }
+            .onSuccess(::patch)
+            .onFailure { e -> toast(String.format(voteFailedTemplate, e.message ?: e.toString())) }
+    }
+    fun editComment(comment: Comment, body: String, onDone: () -> Unit) = scope.launch {
+        runCatching { postActionsRepository.editComment(comment, body) }
+            .onSuccess { patch(it); onDone() }
+            .onFailure { e -> toast(String.format(editFailedTemplate, e.message ?: e.toString())) }
+    }
+    fun deleteComment(comment: Comment) = scope.launch {
+        runCatching { postActionsRepository.deleteComment(comment.id) }
+            .onSuccess { comments = comments?.filterNot { it.id == comment.id } }
+            .onFailure { e -> toast(String.format(deleteFailedTemplate, e.message ?: e.toString())) }
+    }
+    fun reportComment(comment: Comment, reason: String, onDone: () -> Unit) = scope.launch {
+        runCatching { postActionsRepository.reportComment(comment.id, reason) }
+            .onSuccess { onDone() }
+            .onFailure { e -> toast(String.format(reportFailedTemplate, e.message ?: e.toString())) }
     }
 
     fun submitComment() {
@@ -957,7 +997,18 @@ private fun CommentsSheet(
                     )
                     else -> LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(comments.orEmpty(), key = { it.id }) { comment ->
-                            CommentRow(comment, anonymousLabel, avatarRepository, onOpenProfile)
+                            CommentRow(
+                                comment = comment,
+                                anonymousLabel = anonymousLabel,
+                                avatarRepository = avatarRepository,
+                                onOpenProfile = onOpenProfile,
+                                isOwn = myUserId != null && comment.creatorId == myUserId,
+                                canAct = myUserId != null,
+                                onVote = { direction -> voteComment(comment, direction) },
+                                onEdit = { body, onDone -> editComment(comment, body, onDone) },
+                                onDelete = { deleteComment(comment) },
+                                onReport = { reason, onDone -> reportComment(comment, reason, onDone) },
+                            )
                         }
                     }
                 }
@@ -994,8 +1045,29 @@ private fun CommentsSheet(
     }
 }
 
+/**
+ * One comment: avatar/author/date header, DText body (or an inline edit field), and a
+ * vote / edit / delete / report action row. Edit + delete show only for [isOwn] comments;
+ * report shows for everyone else. [canAct] gates every write on being signed in.
+ */
 @Composable
-private fun CommentRow(comment: Comment, anonymousLabel: String, avatarRepository: AvatarRepository, onOpenProfile: (Long) -> Unit) {
+private fun CommentRow(
+    comment: Comment,
+    anonymousLabel: String,
+    avatarRepository: AvatarRepository,
+    onOpenProfile: (Long) -> Unit,
+    isOwn: Boolean,
+    canAct: Boolean,
+    onVote: (Int) -> Unit,
+    onEdit: (body: String, onDone: () -> Unit) -> Unit,
+    onDelete: () -> Unit,
+    onReport: (reason: String, onDone: () -> Unit) -> Unit,
+) {
+    var mode by remember(comment.id) { mutableStateOf(CommentRowMode.VIEW) }
+    var editDraft by remember(comment.id) { mutableStateOf(comment.body) }
+    var reportReason by remember(comment.id) { mutableStateOf("") }
+    var reported by remember(comment.id) { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1024,12 +1096,147 @@ private fun CommentRow(comment: Comment, anonymousLabel: String, avatarRepositor
                     Text(it.take(10), color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.bodySmall)
                 }
             }
-            DTextView(
-                text = comment.body,
-                style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
-                modifier = Modifier.padding(top = 4.dp),
-            )
+
+            if (mode == CommentRowMode.EDITING) {
+                OutlinedTextField(
+                    value = editDraft,
+                    onValueChange = { editDraft = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    maxLines = 6,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = { mode = CommentRowMode.VIEW; editDraft = comment.body }) {
+                        Text(stringResource(R.string.comment_action_cancel))
+                    }
+                    TextButton(
+                        enabled = editDraft.isNotBlank(),
+                        onClick = { onEdit(editDraft.trim()) { mode = CommentRowMode.VIEW } },
+                    ) {
+                        Text(stringResource(R.string.comment_edit_save))
+                    }
+                }
+            } else {
+                DTextView(
+                    text = comment.body,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
+            // Action row
+            Row(
+                modifier = Modifier.padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                CommentActionIcon(Icons.Filled.ThumbUp, stringResource(R.string.comment_upvote), enabled = canAct,
+                    tint = if (comment.voteBy > 0) VoteUpActive else Color.White.copy(alpha = 0.6f)) { onVote(1) }
+                Text(
+                    comment.score.toString(),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.width(24.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                CommentActionIcon(Icons.Filled.ThumbDown, stringResource(R.string.comment_downvote), enabled = canAct,
+                    tint = if (comment.voteBy < 0) VoteDownActive else Color.White.copy(alpha = 0.6f)) { onVote(-1) }
+
+                Spacer(Modifier.weight(1f))
+
+                if (isOwn) {
+                    CommentActionIcon(Icons.Filled.Edit, stringResource(R.string.comment_edit), enabled = mode != CommentRowMode.EDITING) {
+                        editDraft = comment.body
+                        mode = CommentRowMode.EDITING
+                    }
+                    CommentActionIcon(Icons.Filled.Delete, stringResource(R.string.comment_delete)) {
+                        mode = if (mode == CommentRowMode.CONFIRM_DELETE) CommentRowMode.VIEW else CommentRowMode.CONFIRM_DELETE
+                    }
+                } else {
+                    CommentActionIcon(
+                        Icons.Filled.Flag,
+                        if (reported) stringResource(R.string.comment_reported) else stringResource(R.string.comment_report),
+                        enabled = canAct && !reported,
+                        tint = if (reported) RatingQuestionable else Color.White.copy(alpha = 0.6f),
+                    ) {
+                        mode = if (mode == CommentRowMode.REPORTING) CommentRowMode.VIEW else CommentRowMode.REPORTING
+                    }
+                }
+            }
+
+            if (mode == CommentRowMode.CONFIRM_DELETE) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(RatingExplicit.copy(alpha = 0.15f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.comment_delete_confirm),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { mode = CommentRowMode.VIEW }) {
+                        Text(stringResource(R.string.comment_action_cancel))
+                    }
+                    TextButton(onClick = { mode = CommentRowMode.VIEW; onDelete() }) {
+                        Text(stringResource(R.string.comment_delete), color = RatingExplicit)
+                    }
+                }
+            }
+
+            if (mode == CommentRowMode.REPORTING) {
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    OutlinedTextField(
+                        value = reportReason,
+                        onValueChange = { reportReason = it },
+                        placeholder = { Text(stringResource(R.string.comment_report_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    ) {
+                        TextButton(onClick = { mode = CommentRowMode.VIEW }) {
+                            Text(stringResource(R.string.comment_action_cancel))
+                        }
+                        TextButton(
+                            enabled = reportReason.isNotBlank(),
+                            onClick = {
+                                onReport(reportReason.trim()) {
+                                    reported = true
+                                    mode = CommentRowMode.VIEW
+                                }
+                            },
+                        ) {
+                            Text(stringResource(R.string.comment_report_send), color = RatingExplicit)
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+private enum class CommentRowMode { VIEW, EDITING, CONFIRM_DELETE, REPORTING }
+
+@Composable
+private fun CommentActionIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    enabled: Boolean = true,
+    tint: Color = Color.White.copy(alpha = 0.6f),
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(32.dp)) {
+        Icon(icon, contentDescription = contentDescription, tint = if (enabled) tint else Color.White.copy(alpha = 0.25f), modifier = Modifier.size(16.dp))
     }
 }
 

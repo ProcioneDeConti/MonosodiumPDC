@@ -49,22 +49,29 @@ cosmetic / polish.
   and close the sheet.)*
 - [ ] **P2 · Pools as interactive chips + pool browser** — Android shows `#123, #456` as plain
   text. Desktop makes them chips that open a `PoolPanel` (see Pools item under Browsing).
-- [ ] **P2 · Comment voting** — Android comments are view/post only. Desktop votes on comments
+- [x] **P2 · Comment voting** — Android comments are view/post only. Desktop votes on comments
   (e621's voting controller is shared between posts and comments — same `VoteRequest`/
   `VoteResponse` shape). Desktop: `vote_comment` command, `useCommentMutations.ts`.
-- [ ] **P2 · Comment edit / delete (own comments only)** — `PATCH`/`DELETE comments/:id.json`,
+  *(Android 2.11.0: `voteComment` in `PostActionsRepository`; up/down + score in each `CommentRow`,
+  `voteBy`/`score` patched from the response since the comment index doesn't reliably serialize them.)*
+- [x] **P2 · Comment edit / delete (own comments only)** — `PATCH`/`DELETE comments/:id.json`,
   `{comment: {body}}` wrapper. Gate on `creator_id == users/me.json id`. Desktop: Comments
   round 2 in `PROGRESS.md`. (Caveat carried from desktop: unconfirmed whether PATCH returns
-  the updated comment JSON or an empty body.)
+  the updated comment JSON or an empty body.) *(Android 2.11.0: `editComment`/`deleteComment`;
+  PATCH treated as no-body, local copy patched with the sent text. `currentUserId()` fetched
+  per sheet-open — not cached, since accounts differ per site.)*
 - [ ] **P3 · Comment reply** — client-side DText `[quote]` insertion into the compose box
   (`{username} said:` + original body); e621 comments have no server threading.
-- [ ] **P2 · Comment reporting** — `POST tickets.json`, `{ticket: {disp_id, qtype: "comment",
+- [x] **P2 · Comment reporting** — `POST tickets.json`, `{ticket: {disp_id, qtype: "comment",
   reason}}`. Desktop: `report_comment`. (Low-confidence shape — inferred from the
   Danbooru-family ticket convention, not verified live. Same caveat applies to post reporting.)
-- [ ] **P2 · Post reporting / flag** — a flag button in the viewer toolbar filing a mod ticket
+  *(Android 2.11.0: `reportComment` → `createTicket`; a Flag action on other users' comments opens
+  an inline reason field.)*
+- [x] **P2 · Post reporting / flag** — a flag button in the viewer toolbar filing a mod ticket
   against the post (`qtype: "post"`, same `tickets.json` machinery). Android has a `PostFlag.kt`
   model — **verify** whether it's wired to anything; desktop has `ReportPostButton.tsx` +
-  `report_post`.
+  `report_post`. *(Android 2.11.1: `PostFlag` was read-only (flag-history box); added `reportPost`
+  → `createTicket(qtype:"post")` and a "Report post" action in the info sheet.)*
 - [ ] **P2 · Related tags** — e621's `related_tag.json` (`search[query]=<tag>`, member-only).
   Desktop: `TagChip` menu → "Related tags" → `RelatedTagsPanel` (category-coloured chips with
   search/add/exclude). Parse defensively — the response shape has drifted across e621ng
@@ -247,3 +254,5 @@ capability). Listed so we don't keep rediscovering them.
   through `DTextView`.
 - 2026-09-01 · 2.10.0 · P2 Parent/child relationships · `PostRelationships` model + Relationships
   row (Parent #X / N children chips) in the viewer info sheet.
+- 2026-09-01 · 2.11.0 · P2 Comment voting + edit/delete + reporting · one CommentRow rework:
+  vote up/down, own-comment edit/delete (gated on users/me.json id), report others' comments.

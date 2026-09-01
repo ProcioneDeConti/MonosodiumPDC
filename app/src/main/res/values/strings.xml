@@ -161,6 +161,27 @@
     <string name="comments_post">Post</string>
     <string name="comments_post_failed">Couldn\'t post comment: %1$s</string>
     <string name="comments_anonymous">Anonymous</string>
+    <string name="comment_upvote">Upvote</string>
+    <string name="comment_downvote">Downvote</string>
+    <string name="comment_edit">Edit</string>
+    <string name="comment_delete">Delete</string>
+    <string name="comment_report">Report</string>
+    <string name="comment_reported">Reported</string>
+    <string name="comment_edit_save">Save</string>
+    <string name="comment_action_cancel">Cancel</string>
+    <string name="comment_delete_confirm">Delete this comment?</string>
+    <string name="comment_report_hint">Reason for reporting…</string>
+    <string name="comment_report_send">Send report</string>
+    <string name="comment_vote_failed">Vote failed: %1$s</string>
+    <string name="comment_edit_failed">Couldn\'t save edit: %1$s</string>
+    <string name="comment_delete_failed">Couldn\'t delete: %1$s</string>
+    <string name="comment_report_failed">Couldn\'t send report: %1$s</string>
+    <string name="post_flag_title">Report this post</string>
+    <string name="post_flag_hint">Reason for reporting…</string>
+    <string name="post_flag_send">Send report</string>
+    <string name="post_flag_action">Report post</string>
+    <string name="post_flag_sent">Report sent</string>
+    <string name="post_flag_failed">Couldn\'t send report: %1$s</string>
 
     <string name="settings_credits_version">Proci.e621 app v%1$s</string>
     <string name="settings_credits_beta">[BETA]</string>

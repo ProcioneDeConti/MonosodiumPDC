@@ -5,6 +5,8 @@ import one.proci.e621.data.model.Comment
 import one.proci.e621.data.model.CreateCommentRequest
 import one.proci.e621.data.model.CreateDmailRequest
 import one.proci.e621.data.model.CreateForumPostRequest
+import one.proci.e621.data.model.CreateTicketRequest
+import one.proci.e621.data.model.UpdateCommentRequest
 import one.proci.e621.data.model.Dmail
 import one.proci.e621.data.model.FavoriteRequest
 import one.proci.e621.data.model.FavoriteResponse
@@ -92,6 +94,26 @@ interface E621ApiService {
     /** Requires Basic Auth; posting anonymously is rejected server-side. */
     @POST("comments.json")
     suspend fun createComment(@Body body: CreateCommentRequest): Comment
+
+    /**
+     * Requires Basic Auth; e621 rejects editing another user's comment server-side. Whether the
+     * PATCH returns the updated comment JSON or an empty body is unconfirmed, so this takes the
+     * raw Response and the caller patches its local copy from the body it already sent.
+     */
+    @PATCH("comments/{id}.json")
+    suspend fun updateComment(@Path("id") commentId: Long, @Body body: UpdateCommentRequest): Response<ResponseBody>
+
+    /** Requires Basic Auth; own comments only (or moderator). */
+    @DELETE("comments/{id}.json")
+    suspend fun deleteComment(@Path("id") commentId: Long): Response<ResponseBody>
+
+    /** Shares e621's one voting controller with post votes - same [VoteRequest]/[VoteResponse] shape. */
+    @POST("comments/{id}/votes.json")
+    suspend fun voteComment(@Path("id") commentId: Long, @Body body: VoteRequest): VoteResponse
+
+    /** Files a moderation report (comment or post - see [CreateTicketRequest]). Requires Basic Auth. */
+    @POST("tickets.json")
+    suspend fun createTicket(@Body body: CreateTicketRequest): Response<ResponseBody>
 
     /** Public; a user's feedback ("records") history - see [UserFeedback]. */
     @GET("user_feedbacks.json")
