@@ -26,6 +26,11 @@ class TagSuggestionRepository(private val api: E621ApiService) {
     suspend fun suggest(prefix: String): List<TagSuggestion> {
         val trimmed = prefix.trim().lowercase()
         if (trimmed.length < 2) return emptyList()
+        // A `:` means this is a metatag/operator (score:>1500, rating:e, order:score, user:foo, …),
+        // not a tag name. e621's tag autocomplete can't resolve those and would hand back an
+        // unrelated tag that the search bar might then finalize in place of what was typed - skip
+        // the lookup entirely for anything containing a colon.
+        if (':' in trimmed) return emptyList()
 
         cache[trimmed]?.let { entry ->
             if (System.currentTimeMillis() - entry.cachedAtMs < ttlMs) return entry.results

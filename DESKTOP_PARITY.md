@@ -185,10 +185,13 @@ cosmetic / polish.
   `accumulatePostsUntilVisibleOrEnd`'s `seenIds`; added the missing page-750 hard cap. `CursorPager`
   consumers — forum/messages/feedback/comments — are all default id-desc order, so keyset is correct
   there. `fav:` favorites are also default order.)*
-- [ ] **P2 · Meta operators silently replaced by a tag suggestion** — typing `score:>1500` etc.
+- [x] **P2 · Meta operators silently replaced by a tag suggestion** — typing `score:>1500` etc.
   triggered a live autocomplete fetch and Enter auto-selected a garbage tag. Desktop now skips
   autocomplete whenever the prefix contains `:` and double-checks on the Enter handler. Verify
-  the Android `TagSuggestionRepository` / search bar behaviour.
+  the Android `TagSuggestionRepository` / search bar behaviour. *(Android 2.9.2: `TagSuggestionRepository.suggest()`
+  now returns empty for any prefix containing `:`. The search bar's `submit()` / space-finalize
+  already inserted the literal typed token, never a suggestion, so no Enter-handler change was
+  needed.)*
 - [ ] **P3 · Forum: oldest-first threads + post search** — desktop 1.14.39.
 
 ---
@@ -235,3 +238,5 @@ capability). Listed so we don't keep rediscovering them.
 - _(add an entry each time an item is checked off: date · Android version · item · notes)_
 - 2026-09-01 · 2.9.1 · P1 Pagination for non-default `order:` searches · already handled in
   `PostGridViewModel` (numbered pages + id de-dupe); added the page-750 hard cap to match desktop.
+- 2026-09-01 · 2.9.2 · P2 Meta operators silently replaced · `TagSuggestionRepository.suggest()`
+  now short-circuits any prefix with a `:`; submit already used the literal token.
