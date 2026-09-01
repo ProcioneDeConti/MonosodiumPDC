@@ -28,6 +28,8 @@ import one.proci.e621.ui.NotificationsViewModel
 import one.proci.e621.ui.screens.detail.PostByIdScreen
 import one.proci.e621.ui.screens.downloads.DownloadsScreen
 import one.proci.e621.ui.screens.detail.PostDetailScreen
+import one.proci.e621.ui.screens.favorites.FavoritesAnalysisScreen
+import one.proci.e621.ui.screens.favorites.FavoritesAnalysisViewModel
 import one.proci.e621.ui.screens.favorites.FavoritesScreen
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
 import one.proci.e621.ui.screens.feedback.UserFeedbackScreen
@@ -86,6 +88,7 @@ private object Routes {
     const val WIKI = "wiki"
     const val ADVANCED_SEARCH = "advanced_search"
     const val DOWNLOADS = "downloads"
+    const val FAV_ANALYSIS = "favorites_analysis/{username}"
     const val COLLECTION_CONTENT = "local_collection/{collectionId}"
     const val COLLECTION_DETAIL = "collection_detail/{collectionId}/{index}"
     const val POST_SET_CONTENT = "post_set/{setId}"
@@ -108,6 +111,7 @@ private object Routes {
     fun collectionDetail(id: String, index: Int) = "collection_detail/$id/$index"
     fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
     fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
+    fun favAnalysis(username: String) = "favorites_analysis/${Uri.encode(username)}"
 }
 
 private const val SOURCE_SEARCH = "search"
@@ -313,6 +317,7 @@ fun E621NavGraph(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onSetBlacklistDisabled = favoritesViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = favoritesViewModel::setGridThumbnailSizeDp,
+                onOpenAnalysis = { u -> navController.navigate(Routes.favAnalysis(u)) },
                 onQuickFavorite = favoritesViewModel::quickToggleFavorite,
                 onQuickUpvote = favoritesViewModel::quickUpvote,
                 onQuickDownload = ::enqueueDownload,
@@ -774,6 +779,22 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POPULAR, NO_SEARCH_ID, index)) },
                 onSetBlacklistDisabled = popularViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = popularViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(
+            route = Routes.FAV_ANALYSIS,
+            arguments = listOf(navArgument("username") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val username = Uri.decode(backStackEntry.arguments?.getString("username") ?: "")
+            val analysisFactory = remember(backStackEntry) { factory.favoritesAnalysisViewModelFactory(username) }
+            val analysisViewModel: FavoritesAnalysisViewModel =
+                viewModel(viewModelStoreOwner = backStackEntry, factory = analysisFactory)
+            val state by analysisViewModel.uiState.collectAsStateWithLifecycle()
+            FavoritesAnalysisScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onCancel = analysisViewModel::cancel,
+                onRestart = analysisViewModel::start,
             )
         }
         composable(Routes.DOWNLOADS) {

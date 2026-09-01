@@ -216,11 +216,14 @@ cosmetic / polish.
   favorites ±, votes, downloads + bytes, time in app, per-site splits, daily buckets,
   top viewed artists/characters). All local, nothing sent, opt-out toggle. Desktop:
   `components/Dashboard/`, `state/statsStore.ts`. Charts are hand-rolled — no chart lib.
-- [ ] **P2 · Favorites analysis** — a progressive page-by-page fetch of `fav:<user>` (yours or
+- [x] **P2 · Favorites analysis** — a progressive page-by-page fetch of `fav:<user>` (yours or
   any user's public favorites), rolled up into rating / filetype / score-bucket / year /
   top-artist / top-character breakdowns, with a progress bar + cancel. Structurally
-  rate-limit-safe (one page at a time through the normal path). Desktop: `lib/favoritesAnalysis.ts`,
-  `queries/useFavoritesAnalysis.ts`. 30-min result cache + 30-sec start gap for API courtesy.
+  rate-limit-safe (one page at a time through the normal path). *(Android 2.28.0:
+  `FavoritesAnalysisViewModel` fetches `fav:<user>` one 320-post page at a time (short start +
+  per-page gaps), rolls up the six breakdowns; `FavoritesAnalysisScreen` shows a live count +
+  hand-rolled bar lists, Stop / Re-run. Opened from the favorites top bar. Deliberate divergence:
+  no 30-min result cache — the VM is per-nav-entry and just re-runs.)*
 - [ ] **P3 · Favorites "wrapped" share card** — a generated shareable image (score tiles,
   top-artist bars, ratings bar, character chips, a rating-based one-liner), export as
   PNG/PDF. Desktop: `lib/favoritesCard.ts` + `lib/exportCard.ts`. Heavy; do last.
@@ -348,3 +351,5 @@ capability). Listed so we don't keep rediscovering them.
 - 2026-09-01 · 2.26.0 · P2 Advanced search builder · AdvancedSearchScreen form -> query string.
 - 2026-09-01 · 2.27.0 · P2 Download queue · DownloadQueue (concurrency 2) + DownloadsScreen;
   all download entry points route through it.
+- 2026-09-01 · 2.28.0 · P2 Favorites analysis · progressive fav:<user> fetch + rollup screen
+  (ratings/filetypes/scores/years/artists/characters), opened from the favorites top bar.

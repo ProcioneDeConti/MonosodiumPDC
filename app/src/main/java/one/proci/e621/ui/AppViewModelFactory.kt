@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import one.proci.e621.E621Application
 import one.proci.e621.ui.screens.collections.LocalCollectionContentViewModel
 import one.proci.e621.ui.screens.collections.LocalCollectionsViewModel
+import one.proci.e621.ui.screens.favorites.FavoritesAnalysisViewModel
 import one.proci.e621.ui.screens.favorites.FavoritesViewModel
 import one.proci.e621.ui.screens.feedback.UserFeedbackViewModel
 import one.proci.e621.ui.screens.forum.ForumTopicViewModel
@@ -92,6 +93,14 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 PostSetContentViewModel(setId, app.postSetRepository, app.userPreferences) as T
+        }
+
+    /** Progressive `fav:<username>` breakdown - see [FavoritesAnalysisViewModel]. */
+    fun favoritesAnalysisViewModelFactory(username: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                FavoritesAnalysisViewModel(username, app.postRepository) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory]; null [userId] means "the signed-in user's own profile." */

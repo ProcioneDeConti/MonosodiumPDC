@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -43,6 +44,7 @@ fun FavoritesScreen(
     onOpenSettings: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
+    onOpenAnalysis: (username: String) -> Unit,
     onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
     onQuickUpvote: (one.proci.e621.data.model.Post) -> Unit,
     onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
@@ -73,6 +75,11 @@ fun FavoritesScreen(
                     }
                 },
                 actions = {
+                    if (state.username.isNotBlank()) {
+                        IconButton(onClick = { onOpenAnalysis(state.username) }) {
+                            Icon(Icons.Filled.QueryStats, contentDescription = stringResource(R.string.fav_analysis_open))
+                        }
+                    }
                     IconButton(onClick = { onSetBlacklistDisabled(!state.blacklistDisabled) }) {
                         Icon(
                             if (state.blacklistDisabled) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
