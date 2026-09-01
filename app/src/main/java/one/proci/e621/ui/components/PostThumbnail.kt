@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
@@ -126,17 +128,24 @@ fun PostThumbnail(
             }
         }
 
-        if (selected == true) {
+        // In multi-select mode every thumbnail shows a checkbox: blank when unselected, filled
+        // (accent) when selected. A dark scrim keeps the blank box visible on light images.
+        if (selected != null) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(6.dp)
-                    .size(22.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(FavoriteGold),
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .padding(2.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Star, contentDescription = null, tint = Color.Black, modifier = Modifier.size(14.dp))
+                Icon(
+                    imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+                    contentDescription = null,
+                    tint = if (selected) FavoriteGold else Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
 
