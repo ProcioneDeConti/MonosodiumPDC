@@ -180,6 +180,14 @@ interface E621ApiService {
     @GET("tags/autocomplete.json")
     suspend fun autocompleteTags(@Query("search[name_matches]") name: String): List<TagSuggestion>
 
+    /**
+     * Tags statistically related to [query] (member-only server-side). The response shape has
+     * drifted across e621ng versions, so this returns the raw body for defensive parsing - see
+     * [one.proci.e621.data.repository.PostActionsRepository.fetchRelatedTags].
+     */
+    @GET("related_tag.json")
+    suspend fun getRelatedTags(@Query("search[query]") query: String): ResponseBody
+
     /** Requires Basic Auth. `folder` defaults server-side to the inbox. */
     @GET("dmails.json")
     suspend fun getDmails(

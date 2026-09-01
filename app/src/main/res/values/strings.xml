@@ -177,6 +177,10 @@
     <string name="favorite_failed">Favorite failed: %1$s</string>
 
     <string name="tag_menu_add_blacklist">Add to blacklist</string>
+    <string name="tag_menu_related">Related tags</string>
+    <string name="related_tags_title">Related to %1$s</string>
+    <string name="related_tags_failed">Couldn\'t load related tags (members only).</string>
+    <string name="related_tags_none">No related tags found.</string>
     <string name="tag_menu_search">Search</string>
     <string name="tag_menu_add_to_search">Add to current search</string>
     <string name="tag_menu_exclude_from_search">Exclude from search</string>

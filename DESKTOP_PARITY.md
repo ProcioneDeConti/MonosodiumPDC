@@ -78,10 +78,13 @@ cosmetic / polish.
   model — **verify** whether it's wired to anything; desktop has `ReportPostButton.tsx` +
   `report_post`. *(Android 2.11.1: `PostFlag` was read-only (flag-history box); added `reportPost`
   → `createTicket(qtype:"post")` and a "Report post" action in the info sheet.)*
-- [ ] **P2 · Related tags** — e621's `related_tag.json` (`search[query]=<tag>`, member-only).
+- [x] **P2 · Related tags** — e621's `related_tag.json` (`search[query]=<tag>`, member-only).
   Desktop: `TagChip` menu → "Related tags" → `RelatedTagsPanel` (category-coloured chips with
   search/add/exclude). Parse defensively — the response shape has drifted across e621ng
-  versions (current: bare top-level array of `{name, category_id}`).
+  versions (current: bare top-level array of `{name, category_id}`). *(Android 2.19.0: `getRelatedTags`
+  (raw body) + `fetchRelatedTags` parses bare-array / `{related_tags:[]}` / `[name,cat]` pairs /
+  query-keyed shapes; a "Related tags" item in the tag-chip menu opens a dialog of category-coloured
+  chips, tap a chip for search / + / − actions.)*
 - [ ] **P2 · Post history / versions tab** — `get_post_versions` (`post_versions.json?
   search[post_id]=`). Desktop: a third viewer sidebar tab (Tags / Comments / History).
 - [ ] **P2 · Inline wiki previews** — `[[wiki]]` links currently open the browser. Desktop
@@ -299,3 +302,5 @@ capability). Listed so we don't keep rediscovering them.
   screen (drawer) + set content grid + "Add to set" picker in the viewer.
 - 2026-09-01 · 2.18.0 · P2 Popular posts browser · popular.json + Day/Week/Month screen with
   period steppers, drawer entry.
+- 2026-09-01 · 2.19.0 · P2 Related tags · defensive related_tag.json parse + a Related tags dialog
+  from the tag-chip menu.

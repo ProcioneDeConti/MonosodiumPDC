@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -488,6 +489,7 @@ private fun InfoPanel(
                 onSearch = onSearchTag,
                 onAddToSearch = onAddTagToSearch,
                 onExcludeFromSearch = onExcludeTagFromSearch,
+                onFetchRelated = postActionsRepository::fetchRelatedTags,
                 highlightedTags = highlightedTags,
             )
         }
@@ -1666,6 +1668,7 @@ private fun TagSections(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    onFetchRelated: suspend (String) -> List<CategorizedTag>,
     highlightedTags: Set<String>,
 ) {
     val grouped = tags.groupBy { it.category }
@@ -1680,6 +1683,7 @@ private fun TagSections(
                     onSearch = onSearch,
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
+                    onFetchRelated = onFetchRelated,
                     highlightedTags = highlightedTags,
                 )
             }
@@ -1696,6 +1700,7 @@ private fun TagSection(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    onFetchRelated: suspend (String) -> List<CategorizedTag>,
     highlightedTags: Set<String>,
 ) {
     val headerColor = when (category) {
@@ -1733,6 +1738,7 @@ private fun TagSection(
                     onSearch = onSearch,
                     onAddToSearch = onAddToSearch,
                     onExcludeFromSearch = onExcludeFromSearch,
+                    onFetchRelated = onFetchRelated,
                     isBlacklistMatch = tag.name.lowercase() in highlightedTags,
                 )
             }
@@ -1747,8 +1753,10 @@ private fun TagChip(
     onSearch: (String) -> Unit,
     onAddToSearch: (String) -> Unit,
     onExcludeFromSearch: (String) -> Unit,
+    onFetchRelated: suspend (String) -> List<CategorizedTag>,
     isBlacklistMatch: Boolean = false,
 ) {
+    var showRelated by remember { mutableStateOf(false) }
     val (background, content) = when (tag.category) {
         TagCategory.ARTIST -> TagArtist to Color.Black
         TagCategory.COPYRIGHT -> TagCopyright to Color.White
@@ -1815,6 +1823,14 @@ private fun TagChip(
                 },
             )
             DropdownMenuItem(
+                text = { Text(stringResource(R.string.tag_menu_related)) },
+                leadingIcon = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
+                onClick = {
+                    menuExpanded = false
+                    showRelated = true
+                },
+            )
+            DropdownMenuItem(
                 text = {
                     Text(
                         stringResource(R.string.tag_menu_add_blacklist),
@@ -1836,4 +1852,85 @@ private fun TagChip(
             )
         }
     }
+
+    if (showRelated) {
+        RelatedTagsDialog(
+            tag = tag.name,
+            onFetchRelated = onFetchRelated,
+            onSearch = { onSearch(it); showRelated = false },
+            onAddToSearch = { onAddToSearch(it); showRelated = false },
+            onExcludeFromSearch = { onExcludeFromSearch(it); showRelated = false },
+            onDismiss = { showRelated = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RelatedTagsDialog(
+    tag: String,
+    onFetchRelated: suspend (String) -> List<CategorizedTag>,
+    onSearch: (String) -> Unit,
+    onAddToSearch: (String) -> Unit,
+    onExcludeFromSearch: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var related by remember(tag) { mutableStateOf<List<CategorizedTag>?>(null) }
+    var failed by remember(tag) { mutableStateOf(false) }
+    var selected by remember(tag) { mutableStateOf<CategorizedTag?>(null) }
+
+    LaunchedEffect(tag) {
+        runCatching { onFetchRelated(tag) }
+            .onSuccess { related = it }
+            .onFailure { failed = true }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.related_tags_title, tag.replace('_', ' '))) },
+        text = {
+            Box(modifier = Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
+                when {
+                    failed -> Text(stringResource(R.string.related_tags_failed))
+                    related == null -> CircularProgressIndicator()
+                    related!!.isEmpty() -> Text(stringResource(R.string.related_tags_none))
+                    else -> FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        related!!.forEach { rt ->
+                            val (bg, fg) = when (rt.category) {
+                                TagCategory.ARTIST -> TagArtist to Color.Black
+                                TagCategory.COPYRIGHT -> TagCopyright to Color.White
+                                TagCategory.CHARACTER -> TagCharacter to Color.Black
+                                TagCategory.SPECIES -> TagSpecies to Color.White
+                                else -> TagGeneral to Color.White
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(7.dp))
+                                    .background(bg)
+                                    .clickable { selected = if (selected == rt) null else rt }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Text(rt.name.replace('_', ' '), color = fg, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            val sel = selected
+            if (sel != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { onSearch(sel.name) }) { Text(stringResource(R.string.tag_menu_search)) }
+                    TextButton(onClick = { onAddToSearch(sel.name) }) { Text("+") }
+                    TextButton(onClick = { onExcludeFromSearch(sel.name) }) { Text("−") }
+                }
+            } else {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) }
+            }
+        },
+    )
 }

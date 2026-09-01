@@ -1,7 +1,13 @@
 package one.proci.e621.data.repository
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import one.proci.e621.data.model.CategorizedTag
+import one.proci.e621.data.model.TagCategory
 import one.proci.e621.data.api.E621ApiService
 import one.proci.e621.data.model.Comment
 import one.proci.e621.data.model.CreateCommentFields
@@ -53,6 +59,53 @@ class PostActionsRepository(private val api: E621ApiService) {
     /** A post's active translation/annotation notes (inactive ones are filtered out). */
     suspend fun fetchNotes(postId: Long): List<PostNote> =
         api.getNotes(postId).filter { it.isActive && it.width > 0 && it.height > 0 }
+
+    /**
+     * Tags statistically related to [tag], category-tagged. Parses whichever shape e621ng's
+     * `related_tag.json` currently returns: a bare array of `{name, category_id}`, a
+     * `{"related_tags": [...]}` wrapper, `[name, category]` pairs, or the oldest form keyed by
+     * the query string. Returns empty on any parse failure or when the user isn't a member.
+     */
+    suspend fun fetchRelatedTags(tag: String): List<CategorizedTag> {
+        val raw = api.getRelatedTags(tag).use { it.string() }
+        val root = runCatching { Json.parseToJsonElement(raw) }.getOrNull() ?: return emptyList()
+        val array: JsonArray? = when (root) {
+            is JsonArray -> root
+            is JsonObject -> (root["related_tags"] as? JsonArray)
+                ?: (root[tag] as? JsonArray)
+                ?: (root[tag.lowercase()] as? JsonArray)
+                ?: root.values.filterIsInstance<JsonArray>().firstOrNull()
+            else -> null
+        }
+        return array.orEmpty().mapNotNull(::parseRelatedPair)
+    }
+
+    private fun parseRelatedPair(element: JsonElement): CategorizedTag? {
+        val (name, categoryId) = when (element) {
+            is JsonArray -> {
+                val n = element.getOrNull(0)?.jsonPrimitive?.contentOrNull ?: return null
+                n to (element.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0)
+            }
+            is JsonObject -> {
+                val obj = (element["tag"] as? JsonObject) ?: element
+                val n = obj["name"]?.jsonPrimitive?.contentOrNull ?: return null
+                val c = (obj["category_id"] ?: obj["category"])?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+                n to c
+            }
+            else -> return null
+        }
+        return CategorizedTag(name, tagCategoryFromId(categoryId))
+    }
+
+    private fun tagCategoryFromId(id: Int): TagCategory = when (id) {
+        1 -> TagCategory.ARTIST
+        3 -> TagCategory.COPYRIGHT
+        4 -> TagCategory.CHARACTER
+        5 -> TagCategory.SPECIES
+        6 -> TagCategory.META
+        8 -> TagCategory.LORE
+        else -> TagCategory.GENERAL
+    }
 
     /** A given user's comments across all posts, most recent first; @param beforeId for infinite scroll. */
     suspend fun fetchCommentsByUser(userId: Long, beforeId: Long? = null, limit: Int = 50): List<Comment> {
