@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
@@ -153,6 +154,7 @@ fun PostDetailScreen(
     onLoadMore: () -> Unit,
     onPostUpdated: (Post) -> Unit,
     postActionsRepository: PostActionsRepository,
+    postSetRepository: one.proci.e621.data.repository.PostSetRepository? = null,
     avatarRepository: AvatarRepository,
     onAddTagToBlacklist: (String) -> Unit,
     onSearchTag: (String) -> Unit,
@@ -276,6 +278,7 @@ fun PostDetailScreen(
         PostInfoSheet(
             post = currentPost,
             postActionsRepository = postActionsRepository,
+            postSetRepository = postSetRepository,
             onDismiss = { infoSheetVisible = false },
             onOpenComments = {
                 infoSheetVisible = false
@@ -681,6 +684,7 @@ private fun scoreColor(netScore: Int): Color {
 private fun PostInfoSheet(
     post: Post,
     postActionsRepository: PostActionsRepository,
+    postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     onDismiss: () -> Unit,
     onOpenComments: () -> Unit,
     onSearch: (String) -> Unit,
@@ -701,6 +705,7 @@ private fun PostInfoSheet(
     var flagging by remember(post.id) { mutableStateOf(false) }
     val flagSentMessage = stringResource(R.string.post_flag_sent)
     val flagFailedTemplate = stringResource(R.string.post_flag_failed)
+    var showAddToSetDialog by remember(post.id) { mutableStateOf(false) }
 
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
@@ -787,6 +792,13 @@ private fun PostInfoSheet(
                     label = stringResource(R.string.post_flag_action),
                     onClick = { showFlagDialog = true },
                 )
+                if (postSetRepository != null) {
+                    PillAction(
+                        icon = Icons.Filled.PlaylistAdd,
+                        label = stringResource(R.string.add_to_set_action),
+                        onClick = { showAddToSetDialog = true },
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -927,6 +939,132 @@ private fun PostInfoSheet(
             },
         )
     }
+
+    if (showAddToSetDialog && postSetRepository != null) {
+        AddToSetDialog(
+            postId = post.id,
+            repository = postSetRepository,
+            onDismiss = { showAddToSetDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun AddToSetDialog(
+    postId: Long,
+    repository: one.proci.e621.data.repository.PostSetRepository,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var sets by remember { mutableStateOf<List<one.proci.e621.data.model.PostSet>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busyId by remember { mutableStateOf<Long?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    val addedTemplate = stringResource(R.string.add_to_set_added)
+    val failedTemplate = stringResource(R.string.add_to_set_failed)
+
+    LaunchedEffect(Unit) {
+        runCatching { repository.fetchMySets() }
+            .onSuccess { sets = it }
+            .onFailure { e -> error = e.message ?: e.toString() }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.add_to_set_action)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                when {
+                    error != null -> Text(error.orEmpty())
+                    sets == null -> CircularProgressIndicator()
+                    else -> {
+                        if (sets!!.isEmpty()) {
+                            Text(
+                                stringResource(R.string.post_sets_empty),
+                                color = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
+                        sets!!.forEach { set ->
+                            val alreadyIn = postId in set.postIds
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !alreadyIn && busyId == null) {
+                                        busyId = set.id
+                                        scope.launch {
+                                            val result = runCatching { repository.addPost(set.id, postId) }
+                                            busyId = null
+                                            result
+                                                .onSuccess {
+                                                    sets = sets?.map {
+                                                        if (it.id == set.id) it.copy(postIds = it.postIds + postId) else it
+                                                    }
+                                                    Toast.makeText(context, String.format(addedTemplate, set.name), Toast.LENGTH_SHORT).show()
+                                                }
+                                                .onFailure { e ->
+                                                    Toast.makeText(context, String.format(failedTemplate, e.message ?: e.toString()), Toast.LENGTH_SHORT).show()
+                                                }
+                                        }
+                                    }
+                                    .padding(vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(set.name, modifier = Modifier.weight(1f))
+                                when {
+                                    busyId == set.id -> CircularProgressIndicator(Modifier.size(18.dp))
+                                    alreadyIn -> Icon(Icons.Filled.Star, contentDescription = null, tint = FavoriteGold, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            label = { Text(stringResource(R.string.add_to_set_new)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                if (creating) {
+                                    CircularProgressIndicator(Modifier.size(18.dp))
+                                } else {
+                                    IconButton(
+                                        enabled = newName.isNotBlank(),
+                                        onClick = {
+                                            creating = true
+                                            val shortname = one.proci.e621.data.model.suggestShortname(newName)
+                                            scope.launch {
+                                                val result = runCatching {
+                                                    val created = repository.createSet(newName.trim(), shortname, isPublic = false)
+                                                    repository.addPost(created.id, postId)
+                                                    created
+                                                }
+                                                creating = false
+                                                result
+                                                    .onSuccess { created ->
+                                                        newName = ""
+                                                        sets = (sets.orEmpty() + created.copy(postIds = listOf(postId)))
+                                                        Toast.makeText(context, String.format(addedTemplate, created.name), Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    .onFailure { e ->
+                                                        Toast.makeText(context, String.format(failedTemplate, e.message ?: e.toString()), Toast.LENGTH_SHORT).show()
+                                                    }
+                                            }
+                                        },
+                                    ) {
+                                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_to_set_new))
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_close)) } },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

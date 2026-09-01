@@ -51,6 +51,38 @@ interface E621ApiService {
     @GET("pools/{id}.json")
     suspend fun getPool(@Path("id") id: Long): one.proci.e621.data.model.Pool
 
+    /** Your own post sets require Basic Auth as their creator; public sets are visible to anyone. */
+    @GET("post_sets.json")
+    suspend fun getPostSets(
+        @Query("search[creator_id]") creatorId: Long?,
+        @Query("limit") limit: Int = 100,
+    ): List<one.proci.e621.data.model.PostSet>
+
+    @GET("post_sets/{id}.json")
+    suspend fun getPostSet(@Path("id") id: Long): one.proci.e621.data.model.PostSet
+
+    /** Requires Basic Auth + an e621 member account. */
+    @POST("post_sets.json")
+    suspend fun createPostSet(
+        @Body body: one.proci.e621.data.model.CreatePostSetRequest,
+    ): one.proci.e621.data.model.PostSet
+
+    /** Requires Basic Auth as the set's owner/maintainer. Top-level `post_ids` array. */
+    @POST("post_sets/{id}/add_posts.json")
+    suspend fun addPostsToSet(
+        @Path("id") id: Long,
+        @Body body: one.proci.e621.data.model.SetPostIdsRequest,
+    ): Response<ResponseBody>
+
+    @POST("post_sets/{id}/remove_posts.json")
+    suspend fun removePostsFromSet(
+        @Path("id") id: Long,
+        @Body body: one.proci.e621.data.model.SetPostIdsRequest,
+    ): Response<ResponseBody>
+
+    @DELETE("post_sets/{id}.json")
+    suspend fun deletePostSet(@Path("id") id: Long): Response<ResponseBody>
+
     /** Public; a subset of fields (no blacklisted_tags/mail/etc, those are self-only) but includes avatar_id. */
     @GET("users/{id}.json")
     suspend fun getUser(@Path("id") id: Long): UserProfile

@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
@@ -203,6 +204,7 @@ fun PostGridScreen(
     onOpenMessages: () -> Unit,
     onOpenForum: () -> Unit,
     onOpenSavedSearches: (currentQuery: String) -> Unit,
+    onOpenPostSets: () -> Unit,
     onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
@@ -265,6 +267,7 @@ fun PostGridScreen(
             onOpenForum = onOpenForum,
             onOpenFavorites = onOpenFavorites,
             onOpenSavedSearches = { onOpenSavedSearches(state.activeQuery) },
+            onOpenPostSets = onOpenPostSets,
             onOpenProfile = onOpenProfile,
             onOpenSettings = onOpenSettings,
             site = state.site,
@@ -290,6 +293,7 @@ private fun NavDrawerOverlay(
     onOpenForum: () -> Unit,
     onOpenFavorites: () -> Unit,
     onOpenSavedSearches: () -> Unit,
+    onOpenPostSets: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     site: Site,
@@ -407,6 +411,12 @@ private fun NavDrawerOverlay(
                         label = stringResource(R.string.saved_searches_title),
                         tint = MaterialTheme.colorScheme.primary,
                         onClick = dismissAnd(onOpenSavedSearches),
+                    )
+                    DrawerItem(
+                        icon = Icons.Filled.PhotoLibrary,
+                        label = stringResource(R.string.post_sets_title),
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = dismissAnd(onOpenPostSets),
                     )
                     DrawerItem(
                         icon = Icons.Filled.Settings,

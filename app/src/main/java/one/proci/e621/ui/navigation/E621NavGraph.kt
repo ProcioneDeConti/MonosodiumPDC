@@ -43,6 +43,10 @@ import one.proci.e621.ui.screens.messages.MessagesScreen
 import one.proci.e621.ui.screens.messages.MessagesViewModel
 import one.proci.e621.ui.screens.pool.PoolScreen
 import one.proci.e621.ui.screens.pool.PoolViewModel
+import one.proci.e621.ui.screens.sets.PostSetContentViewModel
+import one.proci.e621.ui.screens.sets.PostSetContentScreen
+import one.proci.e621.ui.screens.sets.PostSetsScreen
+import one.proci.e621.ui.screens.sets.PostSetsViewModel
 import one.proci.e621.ui.screens.profile.ProfileScreen
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesScreen
@@ -66,6 +70,8 @@ private object Routes {
     const val PROFILE = "profile?id={id}"
     const val POST_DETAIL = "post_detail/{postId}"
     const val POOL = "pool/{poolId}"
+    const val POST_SETS = "post_sets"
+    const val POST_SET_CONTENT = "post_set/{setId}"
     const val USER_FEEDBACK = "user_feedback/{id}/{username}"
     const val USER_COMMENTS = "user_comments/{id}/{username}"
 
@@ -80,6 +86,7 @@ private object Routes {
     fun profile(id: Long? = null) = "profile?id=${id ?: -1L}"
     fun postDetail(postId: Long) = "post_detail/$postId"
     fun pool(poolId: Long) = "pool/$poolId"
+    fun postSetContent(setId: Long) = "post_set/$setId"
     fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
     fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
 }
@@ -87,6 +94,7 @@ private object Routes {
 private const val SOURCE_SEARCH = "search"
 private const val SOURCE_FAVORITES = "favorites"
 private const val SOURCE_POOL = "pool"
+private const val SOURCE_POST_SET = "post_set"
 private const val NO_SEARCH_ID = -1
 
 @Composable
@@ -114,6 +122,7 @@ fun E621NavGraph(
     val forumViewModel: ForumViewModel = viewModel(factory = factory)
     val savedSearchesViewModel: SavedSearchesViewModel = viewModel(factory = factory)
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
+    val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
 
     // Every search results screen (whether from the search bar or a post's tag menu) gets its own
     // small integer id and its own PostGridViewModel, registered here by id as each one composes.
@@ -125,6 +134,7 @@ fun E621NavGraph(
     val nextSearchId = remember { AtomicInteger(0) }
     val searchViewModels = remember { mutableMapOf<Int, PostGridViewModel>() }
     val poolViewModels = remember { mutableMapOf<Long, PoolViewModel>() }
+    val postSetContentViewModels = remember { mutableMapOf<Long, PostSetContentViewModel>() }
     val startRoute = remember { Routes.search(nextSearchId.incrementAndGet(), "") }
 
     // Handles a /posts/{id} link (e621.net, e926.net, e6ai.net) that launched or resumed the
@@ -156,6 +166,10 @@ fun E621NavGraph(
 
     fun navigateToPool(poolId: Long) {
         navController.navigate(Routes.pool(poolId))
+    }
+
+    fun navigateToPostSetContent(setId: Long) {
+        navController.navigate(Routes.postSetContent(setId))
     }
 
     // Start destination is a search for everything (empty query) - the app's "home page". Every
@@ -219,6 +233,7 @@ fun E621NavGraph(
                 onOpenMessages = { navController.navigate(Routes.MESSAGES) },
                 onOpenForum = { navController.navigate(Routes.FORUM) },
                 onOpenSavedSearches = { currentQuery -> navController.navigate(Routes.savedSearches(currentQuery)) },
+                onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
                 onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
@@ -285,6 +300,7 @@ fun E621NavGraph(
                         onLoadMore = favoritesViewModel::loadMore,
                         onPostUpdated = favoritesViewModel::updatePost,
                         postActionsRepository = app.postActionsRepository,
+                        postSetRepository = app.postSetRepository,
                         avatarRepository = app.avatarRepository,
                         onAddTagToBlacklist = ::addTagToBlacklist,
                         onSearchTag = ::navigateToSearch,
@@ -302,6 +318,36 @@ fun E621NavGraph(
                         },
                     )
                 }
+                source == SOURCE_POST_SET -> {
+                    val setViewModel = postSetContentViewModels[searchId.toLong()]
+                    if (setViewModel != null) {
+                        val state by setViewModel.uiState.collectAsStateWithLifecycle()
+                        PostDetailScreen(
+                            posts = state.posts,
+                            initialIndex = index,
+                            onBack = { navController.popBackStack() },
+                            onLoadMore = {},
+                            onPostUpdated = setViewModel::updatePost,
+                            postActionsRepository = app.postActionsRepository,
+                            postSetRepository = app.postSetRepository,
+                            avatarRepository = app.avatarRepository,
+                            onAddTagToBlacklist = ::addTagToBlacklist,
+                            onSearchTag = ::navigateToSearch,
+                            onAddTagToSearch = ::navigateToSearch,
+                            onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
+                            onOpenProfile = { id -> navigateToProfile(id) },
+                            onOpenPool = ::navigateToPool,
+                            site = activeSite,
+                            videoLoopEnabled = userSettings.videoLoopEnabled,
+                            videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                            videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                            downloadLocationUri = userSettings.downloadLocationUri,
+                            matchingBlacklistTags = { post ->
+                                if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                            },
+                        )
+                    }
+                }
                 source == SOURCE_POOL -> {
                     val poolViewModel = poolViewModels[searchId.toLong()]
                     if (poolViewModel != null) {
@@ -313,6 +359,7 @@ fun E621NavGraph(
                             onLoadMore = {},
                             onPostUpdated = poolViewModel::updatePost,
                             postActionsRepository = app.postActionsRepository,
+                            postSetRepository = app.postSetRepository,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -342,6 +389,7 @@ fun E621NavGraph(
                             onLoadMore = searchViewModel::loadMore,
                             onPostUpdated = searchViewModel::updatePost,
                             postActionsRepository = app.postActionsRepository,
+                            postSetRepository = app.postSetRepository,
                             avatarRepository = app.avatarRepository,
                             onAddTagToBlacklist = ::addTagToBlacklist,
                             onSearchTag = ::navigateToSearch,
@@ -576,6 +624,7 @@ fun E621NavGraph(
                 postId = postId,
                 postRepository = app.postRepository,
                 postActionsRepository = app.postActionsRepository,
+                postSetRepository = app.postSetRepository,
                 avatarRepository = app.avatarRepository,
                 onBack = { navController.popBackStack() },
                 onAddTagToBlacklist = ::addTagToBlacklist,
@@ -617,6 +666,47 @@ fun E621NavGraph(
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POOL, poolId.toInt(), index)) },
                 onSetBlacklistDisabled = poolViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = poolViewModel::setGridThumbnailSizeDp,
+            )
+        }
+        composable(Routes.POST_SETS) {
+            val state by postSetsViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) { postSetsViewModel.ensureLoaded() }
+            PostSetsScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = postSetsViewModel::refresh,
+                onOpenSet = ::navigateToPostSetContent,
+                onCreate = postSetsViewModel::createSet,
+                onDelete = postSetsViewModel::deleteSet,
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            )
+        }
+        composable(
+            route = Routes.POST_SET_CONTENT,
+            arguments = listOf(navArgument("setId") { type = NavType.LongType }),
+            popEnterTransition = {
+                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+            },
+        ) { backStackEntry ->
+            val setId = backStackEntry.arguments?.getLong("setId") ?: 0L
+            val setFactory = remember(backStackEntry) { factory.postSetContentViewModelFactory(setId) }
+            val setViewModel: PostSetContentViewModel = viewModel(viewModelStoreOwner = backStackEntry, factory = setFactory)
+            SideEffect { postSetContentViewModels[setId] = setViewModel }
+            DisposableEffect(backStackEntry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_DESTROY) postSetContentViewModels.remove(setId)
+                }
+                backStackEntry.lifecycle.addObserver(observer)
+                onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+            }
+            val state by setViewModel.uiState.collectAsStateWithLifecycle()
+            PostSetContentScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = setViewModel::refresh,
+                onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_POST_SET, setId.toInt(), index)) },
+                onSetBlacklistDisabled = setViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = setViewModel::setGridThumbnailSizeDp,
             )
         }
         composable(

@@ -11,6 +11,8 @@ import one.proci.e621.ui.screens.grid.PostGridViewModel
 import one.proci.e621.ui.screens.messages.MessagesViewModel
 import one.proci.e621.ui.screens.pool.PoolViewModel
 import one.proci.e621.ui.screens.profile.ProfileViewModel
+import one.proci.e621.ui.screens.sets.PostSetContentViewModel
+import one.proci.e621.ui.screens.sets.PostSetsViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
 import one.proci.e621.ui.screens.settings.SettingsViewModel
 import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
@@ -32,6 +34,8 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             SavedSearchesViewModel(app.savedSearchStore) as T
         modelClass.isAssignableFrom(NotificationsViewModel::class.java) ->
             NotificationsViewModel(app.userRepository, app.userPreferences) as T
+        modelClass.isAssignableFrom(PostSetsViewModel::class.java) ->
+            PostSetsViewModel(app.postSetRepository, app.userPreferences) as T
         else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 
@@ -62,6 +66,14 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 PoolViewModel(poolId, app.poolRepository, app.userPreferences) as T
+        }
+
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for one post set's fixed post list. */
+    fun postSetContentViewModelFactory(setId: Long): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                PostSetContentViewModel(setId, app.postSetRepository, app.userPreferences) as T
         }
 
     /** Same per-back-stack-entry idea as [searchViewModelFactory]; null [userId] means "the signed-in user's own profile." */

@@ -89,8 +89,10 @@ cosmetic / polish.
   (`get_wiki_page` → `wiki_pages.json?search[title]=&limit=1`, returns null for a missing
   page). Needs `[[wiki]]` to become its own DText node type carrying the raw title, distinct
   from a plain named link.
-- [ ] **P2 · Add current post to a set** — a viewer-toolbar popover (add to an existing set or
-  create one inline). Depends on Post sets (Browsing).
+- [x] **P2 · Add current post to a set** — a viewer-toolbar popover (add to an existing set or
+  create one inline). Depends on Post sets (Browsing). *(Android 2.17.0: "Add to set" pill in the
+  info sheet opens a dialog listing your sets (already-in marked) + an inline "new set from this
+  post" field.)*
 
 ## Browsing & discovery
 
@@ -111,11 +113,16 @@ cosmetic / polish.
   a shuffle mode for the slideshow. *(Android 2.14.0: a shuffle icon in the search bar's trailing
   row runs `withRandomOrder(activeQuery)` through `onSearchSubmit`; an unchanged query hits
   `refresh()` which re-fetches, and e621 re-randomises per request, so each tap re-rolls.)*
-- [ ] **P2 · Post sets** — `post_sets.json`. List your sets, create (name → shortname:
+- [x] **P2 · Post sets** — `post_sets.json`. List your sets, create (name → shortname:
   3–50 `[a-z0-9_]`, ≥1 letter/underscore), open a set into a grid/viewer, add/remove posts.
   Endpoints verified against e621ng source in the desktop `PROGRESS.md` entry
   (`POST /post_sets/:id/{add,remove}_posts` with a top-level `post_ids` array; `create` permits
-  `post_set[name/shortname/description/is_public]`).
+  `post_set[name/shortname/description/is_public]`). *(Android 2.17.0: `PostSet` model + full API
+  (`getPostSets`/`getPostSet`/`createPostSet`/`add`/`remove`/`delete`), `PostSetRepository`,
+  `PostSetsViewModel` (hoisted, shared with the add-to-set picker), `PostSetsScreen` (drawer entry,
+  list + create dialog with shortname validation + delete), `PostSetContentViewModel`/`Screen`
+  (fixed list like pools) + `post_set/{id}` route + `SOURCE_POST_SET` detail branch. Remove-from-set
+  wired in the content VM.)*
 - [ ] **P2 · Local collections** — purely client-side post collections (no e621 account, no
   API). Desktop stores them in their own local store. Distinct from post sets and favorites.
 - [ ] **P2 · Artist pages** — `ArtistPanel`: an artist's wiki/DText + their posts, opened from
@@ -285,3 +292,5 @@ capability). Listed so we don't keep rediscovering them.
   boxes in the image viewer.
 - 2026-09-01 · 2.16.0 · P1 Pools browser + P2 pool chips · Pool model/repo/VM/screen, pool/{id}
   route, SOURCE_POOL detail branch; info-sheet pool chips.
+- 2026-09-01 · 2.17.0 · P2 Post sets + P2 add-to-set · full post_sets API + list/create/delete
+  screen (drawer) + set content grid + "Add to set" picker in the viewer.
