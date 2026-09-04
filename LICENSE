@@ -10,6 +10,11 @@ attributions (including "Procione DeConti") must be retained, strictly
 unaltered and intact, in all copies, modified versions, or substantial
 portions of the Software.
 
+Anything bundled from elsewhere (the ISC icon geometry, MIT deps, ODbL 
+data credits) keeps its own license, independent of this license. It is 
+your responsibility to know what license parts of this project may be
+goverened under. 
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
