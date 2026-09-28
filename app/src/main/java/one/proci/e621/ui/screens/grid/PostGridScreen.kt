@@ -636,7 +636,7 @@ private fun SearchTopBar(
     // repeatedly rewriting the same anchor-only text on consecutive backspaces otherwise left the
     // cursor in front of the anchor - the first chip deleted fine, but a second one wouldn't.
     var fieldValue by remember { mutableStateOf(TextFieldValue(if (tags.isNotEmpty()) BackspaceAnchor else "")) }
-    fun inputText() = fieldValue.text.removePrefix(BackspaceAnchor)
+    fun inputText() = fieldValue.text.replace(BackspaceAnchor, "")
     var isFocused by remember { mutableStateOf(false) }
     var suggestions by remember { mutableStateOf<List<TagSuggestion>>(emptyList()) }
     var almostThereHint by remember { mutableStateOf(false) }
@@ -681,13 +681,14 @@ private fun SearchTopBar(
 
     fun handleFieldChange(new: TextFieldValue) {
         val newText = new.text
-        if (tags.isNotEmpty() && !newText.startsWith(BackspaceAnchor)) {
-            // The anchor itself got deleted - i.e. backspace with nothing else typed - so drop
-            // the last chip; anything left over (only possible via a selection that spanned the
-            // anchor) is treated as freshly typed text.
-            processTyped(tags.dropLast(1), newText.removePrefix(BackspaceAnchor))
+        if (tags.isNotEmpty() && newText.isEmpty()) {
+            // The anchor itself got deleted with nothing else left - a genuine backspace on the
+            // empty input - so drop the last chip. If the anchor vanished but there's still text
+            // (a tablet IME re-sending/replacing a composing word after a search, say), that's
+            // just typing: keep every chip and strip any stray anchors from the text.
+            processTyped(tags.dropLast(1), "")
         } else {
-            processTyped(tags, newText.removePrefix(BackspaceAnchor))
+            processTyped(tags, newText.replace(BackspaceAnchor, ""))
         }
     }
 
