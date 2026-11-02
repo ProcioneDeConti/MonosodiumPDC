@@ -11,6 +11,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.size.Size
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.model.PostNote
 import one.proci.e621.data.repository.PostActionsRepository
@@ -73,8 +76,15 @@ fun MediaViewer(
                         null
                     },
                 ) {
+                    val context = LocalPlatformContext.current
+                    val request = remember(url, post.file.width, post.file.height) {
+                        ImageRequest.Builder(context)
+                            .data(url)
+                            .size(fullResolutionSize(post.file.width, post.file.height))
+                            .build()
+                    }
                     NetworkImage(
-                        model = url,
+                        model = request,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize(),
@@ -92,4 +102,24 @@ fun MediaViewer(
             }
         }
     }
+}
+
+/**
+ * Above this many pixels the decode is scaled down: an ARGB bitmap costs 4 bytes per pixel and
+ * Android refuses to draw bitmaps over ~100MB, so 16MP (~64MB) leaves headroom while still
+ * covering most originals at full size (a 4000x4000 image fits exactly).
+ */
+private const val MAX_VIEWER_PIXELS = 16_000_000L
+
+/**
+ * Decode size for the full-screen viewer. Coil normally decodes to the on-screen box, which
+ * makes zooming in (up to 6x) magnify a screen-sized copy; asking for the file's real size keeps
+ * zoomed detail sharp. Unknown dimensions fall back to Coil's own original-size handling.
+ */
+internal fun fullResolutionSize(width: Int, height: Int): Size {
+    if (width <= 0 || height <= 0) return Size.ORIGINAL
+    val pixels = width.toLong() * height
+    if (pixels <= MAX_VIEWER_PIXELS) return Size(width, height)
+    val factor = kotlin.math.sqrt(MAX_VIEWER_PIXELS.toDouble() / pixels)
+    return Size((width * factor).toInt().coerceAtLeast(1), (height * factor).toInt().coerceAtLeast(1))
 }
