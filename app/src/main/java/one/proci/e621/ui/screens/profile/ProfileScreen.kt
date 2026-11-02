@@ -57,6 +57,7 @@ import one.proci.e621.ui.theme.VoteDownActive
 import one.proci.e621.ui.theme.VoteUpActive
 import one.proci.e621.ui.theme.CardShape
 import one.proci.e621.ui.theme.ChipShape
+import one.proci.e621.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,10 +88,7 @@ fun ProfileScreen(
         },
     ) { padding ->
         when {
-            state.profile == null && state.isLoading -> Box(
-                Modifier.padding(padding).fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+            state.profile == null && state.isLoading -> LoadingState(Modifier.padding(padding))
 
             state.profile == null && state.error != null -> Column(
                 Modifier.padding(padding).fillMaxSize().padding(24.dp),

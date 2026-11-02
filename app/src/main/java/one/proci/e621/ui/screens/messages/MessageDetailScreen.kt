@@ -47,6 +47,7 @@ import one.proci.e621.data.repository.MessagesRepository
 import one.proci.e621.data.util.formatRelativeTime
 import one.proci.e621.ui.components.DTextView
 import one.proci.e621.ui.components.UserAvatar
+import one.proci.e621.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,9 +150,7 @@ fun MessageDetailScreen(
                 Spacer(Modifier.height(12.dp))
                 TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
             }
-            dmail == null -> Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            dmail == null -> LoadingState(Modifier.padding(padding))
             else -> {
                 val d = dmail!!
                 Column(

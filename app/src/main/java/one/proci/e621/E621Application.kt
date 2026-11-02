@@ -3,6 +3,7 @@ package one.proci.e621
 import android.app.Application
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import coil3.request.crossfade
 import coil3.annotation.DelicateCoilApi
 import coil3.disk.DiskCache
 import coil3.disk.directory
@@ -122,6 +123,8 @@ class E621Application : Application(), SingletonImageLoader.Factory {
         val limitMb = userPreferences.settingsState.value.imageCacheLimitMb
 
         return ImageLoader.Builder(context)
+            // Images fade in instead of popping in.
+            .crossfade(180)
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { imageOkHttpClient }))
                 // Animates GIFs via the platform ImageDecoder (minSdk 28 covers this - see

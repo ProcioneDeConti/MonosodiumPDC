@@ -30,10 +30,12 @@ fun NetworkImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
+    /** Shimmer the whole area while loading (grid tiles) instead of the thin top progress bar. */
+    shimmerWhileLoading: Boolean = false,
 ) {
     var loading by remember(model) { mutableStateOf(false) }
     val onState = remember { { state: AsyncImagePainter.State -> loading = state is AsyncImagePainter.State.Loading } }
-    Box(modifier = modifier) {
+    Box(modifier = if (shimmerWhileLoading && loading) modifier.shimmer() else modifier) {
         AsyncImage(
             model = model,
             contentDescription = contentDescription,
@@ -41,7 +43,7 @@ fun NetworkImage(
             onState = onState,
             modifier = Modifier.fillMaxSize(),
         )
-        if (loading) {
+        if (loading && !shimmerWhileLoading) {
             LinearProgressIndicator(
                 modifier = Modifier
                     .align(Alignment.TopCenter)

@@ -51,6 +51,7 @@ import one.proci.e621.data.model.Artist
 import one.proci.e621.data.model.ArtistDnp
 import one.proci.e621.data.settings.Site
 import one.proci.e621.ui.components.DTextView
+import one.proci.e621.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,10 +79,7 @@ fun ArtistScreen(
         },
     ) { padding ->
         when {
-            state.isLoading && state.artist == null -> Box(
-                Modifier.padding(padding).fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+            state.isLoading && state.artist == null -> LoadingState(Modifier.padding(padding))
 
             state.error != null && state.artist == null -> CenteredMessage(
                 message = state.error,

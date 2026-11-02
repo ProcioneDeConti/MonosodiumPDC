@@ -87,7 +87,7 @@ fun PostGridBody(
     onBulkDownload: (List<Post>) -> Unit = {},
     onBulkAddToSet: ((List<Post>) -> Unit)? = null,
     bulkProgress: one.proci.e621.data.util.BulkProgress? = null,
-    emptyContent: @Composable () -> Unit = { DefaultEmptyState() },
+    emptyContent: @Composable () -> Unit = { NoResultsState() },
 ) {
     val gridState = rememberLazyStaggeredGridState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -140,17 +140,17 @@ fun PostGridBody(
             ) {
                 when {
                     error != null && posts.isEmpty() -> ErrorState(error, onRefresh)
-                    // Loading with nothing to show yet - leave this blank rather than a second,
-                    // competing spinner; the pop-down arrow indicator above already says "loading".
-                    posts.isEmpty() && isRefreshing -> Box(Modifier.fillMaxSize())
+                    // Loading with nothing to show yet: shimmering placeholder tiles shaped like the
+                    // grid (no second spinner - the pull indicator above already says "loading").
+                    posts.isEmpty() && isRefreshing -> SkeletonGrid(minCellSize = liveSizeDp.dp)
                     posts.isEmpty() -> emptyContent()
                     else -> {
                         LazyVerticalStaggeredGrid(
                             columns = StaggeredGridCells.Adaptive(minSize = liveSizeDp.dp),
                             state = gridState,
-                            contentPadding = PaddingValues(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalItemSpacing = 6.dp,
+                            contentPadding = PaddingValues(GridEdgePadding),
+                            horizontalArrangement = Arrangement.spacedBy(GridGap),
+                            verticalItemSpacing = GridGap,
                             modifier = Modifier
                                 .fillMaxSize()
                                 // Only intercepts once a second pointer comes down, so ordinary
@@ -318,36 +318,6 @@ private fun BlacklistDisabledBanner(onEnable: () -> Unit) {
         )
         TextButton(onClick = onEnable) {
             Text(stringResource(R.string.blacklist_disabled_re_enable))
-        }
-    }
-}
-
-@Composable
-fun DefaultEmptyState() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = stringResource(R.string.empty_results),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        TextButton(onClick = onRetry) {
-            Text(stringResource(R.string.error_retry))
         }
     }
 }
