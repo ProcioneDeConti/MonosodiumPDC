@@ -554,7 +554,11 @@ private fun VoteFavoriteRow(
         }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+    ) {
         // Two grouped pill containers (Material "assist chip" styling already used for tag
         // chips elsewhere) so voting and favoriting read as distinct clusters rather than one
         // undifferentiated row of icons.
