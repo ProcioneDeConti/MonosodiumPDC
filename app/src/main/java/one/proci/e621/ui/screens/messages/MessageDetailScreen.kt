@@ -40,6 +40,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.CloudOff
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.Dmail
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.repository.MessagesRepository
@@ -140,15 +143,14 @@ fun MessageDetailScreen(
         },
     ) { padding ->
         when {
-            error != null -> Column(
-                Modifier.padding(padding).fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(error.orEmpty(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(12.dp))
-                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
-            }
+            error != null -> EmptyState(
+                icon = Icons.Filled.CloudOff,
+                title = error.orEmpty(),
+                actionLabel = stringResource(R.string.action_back),
+                onAction = onBack,
+                iconTint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(padding),
+            )
             dmail == null -> LoadingState(Modifier.padding(padding))
             else -> {
                 val d = dmail!!
@@ -157,11 +159,11 @@ fun MessageDetailScreen(
                         .padding(padding)
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(20.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     val fromId = d.fromId
                     val profileModifier = if (fromId != null) Modifier.clickable { onOpenProfile(fromId) } else Modifier
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    ListCard { Row(verticalAlignment = Alignment.CenterVertically) {
                         UserAvatar(
                             userId = d.fromId,
                             name = d.fromName,
@@ -186,9 +188,13 @@ fun MessageDetailScreen(
                                 )
                             }
                         }
-                    }
+                    } }
                     Spacer(Modifier.height(16.dp))
-                    DTextView(text = d.body, style = MaterialTheme.typography.bodyLarge)
+                    DTextView(
+                        text = d.body,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
                     Spacer(Modifier.height(72.dp)) // room for the FAB
                 }
             }

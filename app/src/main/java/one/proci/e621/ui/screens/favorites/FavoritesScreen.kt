@@ -30,6 +30,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.AccountCircle
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.ui.components.PostGridBody
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,19 +148,11 @@ fun FavoritesScreen(
 
 @Composable
 private fun NeedsUsernameState(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.favorites_needs_username),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onOpenSettings) {
-            Text(stringResource(R.string.settings))
-        }
-    }
+    EmptyState(
+        icon = Icons.Filled.AccountCircle,
+        title = stringResource(R.string.favorites_needs_username),
+        actionLabel = stringResource(R.string.settings),
+        onAction = onOpenSettings,
+        modifier = modifier,
+    )
 }

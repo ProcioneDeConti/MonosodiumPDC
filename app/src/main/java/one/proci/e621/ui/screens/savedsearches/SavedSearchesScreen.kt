@@ -34,6 +34,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.BookmarkBorder
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.SavedSearch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +70,10 @@ fun SavedSearchesScreen(
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             if (currentQuery.isNotBlank()) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                ListCard(
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                ) {
                     Text(
                         text = stringResource(R.string.saved_search_current, currentQuery),
                         style = MaterialTheme.typography.bodyMedium,
@@ -96,27 +105,21 @@ fun SavedSearchesScreen(
                         }
                     }
                 }
-                HorizontalDivider()
             }
 
             if (savedSearches.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        stringResource(R.string.saved_search_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                EmptyState(icon = Icons.Filled.BookmarkBorder, title = stringResource(R.string.saved_search_empty))
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                     items(savedSearches, key = { it.id }) { entry ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onApply(entry.query) }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        ListCard(
+                            onClick = { onApply(entry.query) },
+                            contentPadding = PaddingValues(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                        ) { Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     entry.label,
@@ -132,8 +135,7 @@ fun SavedSearchesScreen(
                             IconButton(onClick = { onDelete(entry.id) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
                             }
-                        }
-                        HorizontalDivider()
+                        } }
                     }
                 }
             }

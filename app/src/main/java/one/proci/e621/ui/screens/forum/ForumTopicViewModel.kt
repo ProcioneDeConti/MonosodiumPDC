@@ -42,8 +42,9 @@ class ForumTopicViewModel(
     private val pager = CursorPager<ForumPost>(
         scope = viewModelScope,
         idOf = { it.id },
-        fetchInitial = { repository.fetchPosts(topicId) },
-        fetchMore = { cursor -> repository.fetchPosts(topicId, beforeId = cursor) },
+        // Oldest first, like most forums; new replies are appended at the bottom.
+        fetchInitial = { repository.fetchPostsOldestFirst(topicId) },
+        fetchMore = { cursor -> repository.fetchPostsOldestFirst(topicId, afterId = cursor) },
     )
     private val extraState = MutableStateFlow(ExtraState(title = initialTitle))
 

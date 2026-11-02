@@ -36,6 +36,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import one.proci.e621.ui.components.BarChartCard
+import androidx.compose.ui.text.style.TextAlign
+import one.proci.e621.ui.theme.PillShape
+import one.proci.e621.ui.theme.tabular
+import one.proci.e621.ui.components.ListCard
 import one.proci.e621.data.settings.UsageStats
 import one.proci.e621.ui.theme.CardShape
 
@@ -68,22 +73,24 @@ fun DashboardScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            ListCard(onClick = { onSetEnabled(!state.enabled) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.dashboard_enabled),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Switch(checked = state.enabled, onCheckedChange = onSetEnabled)
+                }
                 Text(
-                    stringResource(R.string.dashboard_enabled),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
+                    stringResource(R.string.dashboard_local_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Switch(checked = state.enabled, onCheckedChange = onSetEnabled)
             }
-            Text(
-                stringResource(R.string.dashboard_local_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             val tiles = listOf(
                 stringResource(R.string.dashboard_posts_viewed) to s.postsViewed,
@@ -101,12 +108,14 @@ fun DashboardScreen(
                 }
             }
 
-            BarSection(stringResource(R.string.dashboard_per_site), s.perSitePostsViewed.entries.map { it.key to it.value })
-            BarSection(stringResource(R.string.dashboard_daily), s.dailyPostsViewed.entries.sortedBy { it.key }.takeLast(14).map { it.key.takeLast(5) to it.value })
-            BarSection(stringResource(R.string.dashboard_top_artists), topN(s.topArtists))
-            BarSection(stringResource(R.string.dashboard_top_characters), topN(s.topCharacters))
+            BarChartCard(stringResource(R.string.dashboard_per_site), s.perSitePostsViewed.entries.map { it.key to it.value })
+            BarChartCard(stringResource(R.string.dashboard_daily), s.dailyPostsViewed.entries.sortedBy { it.key }.takeLast(14).map { it.key.takeLast(5) to it.value })
+            BarChartCard(stringResource(R.string.dashboard_top_artists), topN(s.topArtists))
+            BarChartCard(stringResource(R.string.dashboard_top_characters), topN(s.topCharacters))
 
-            TextButton(onClick = { confirmClear = true }) { Text(stringResource(R.string.dashboard_clear)) }
+            TextButton(onClick = { confirmClear = true }) {
+                Text(stringResource(R.string.dashboard_clear), color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 
@@ -133,34 +142,10 @@ private fun StatTile(label: String, value: Int, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(CardShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(14.dp),
     ) {
-        Text("%,d".format(value), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text("%,d".format(value), style = MaterialTheme.typography.titleLarge.tabular(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun BarSection(title: String, rows: List<Pair<String, Int>>) {
-    if (rows.isEmpty()) return
-    val max = rows.maxOf { it.second }.coerceAtLeast(1)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        rows.forEach { (label, count) ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.42f), maxLines = 1)
-                Box(modifier = Modifier.weight(0.48f).padding(end = 8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(count.toFloat() / max)
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                    )
-                }
-                Text(count.toString(), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.1f))
-            }
-        }
     }
 }

@@ -41,6 +41,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.LocalCollection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,37 +86,33 @@ fun LocalCollectionsScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (collections.isEmpty()) {
-                Column(
-                    Modifier.fillMaxSize().padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        stringResource(R.string.collections_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                EmptyState(icon = Icons.Filled.Collections, title = stringResource(R.string.collections_empty))
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
                 ) {
                     items(collections, key = { it.id }) { collection ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpen(collection.id) }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                Icons.Filled.Collections,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = 12.dp),
-                            )
+                        ListCard(
+                            onClick = { onOpen(collection.id) },
+                            contentPadding = PaddingValues(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                        ) { Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 12.dp)
+                                    .size(40.dp)
+                                    .clip(CardShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Filled.Collections,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                             Column(Modifier.weight(1f)) {
                                 Text(collection.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                 Text(
@@ -120,7 +124,7 @@ fun LocalCollectionsScreen(
                             IconButton(onClick = { pendingDelete = collection }) {
                                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.error)
                             }
-                        }
+                        } }
                     }
                 }
             }

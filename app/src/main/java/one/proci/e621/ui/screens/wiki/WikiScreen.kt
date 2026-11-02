@@ -34,6 +34,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.TextFieldDefaults
+import one.proci.e621.ui.theme.PillShape
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.LoadingState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.ui.components.DTextView
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,7 +84,7 @@ fun WikiScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(onClick = { onSearchTag(selected.title) }) {
+                FilledTonalButton(onClick = { onSearchTag(selected.title) }) {
                     Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
                     Text(stringResource(R.string.wiki_view_posts))
                 }
@@ -91,39 +102,41 @@ fun WikiScreen(
                     placeholder = { Text(stringResource(R.string.wiki_search_hint)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     singleLine = true,
+                    shape = PillShape,
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                    ),
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                 )
                 when {
-                    state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        RainbowSpinner()
-                    }
-                    state.error != null -> Text(
-                        state.error,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp),
+                    state.isLoading -> LoadingState()
+                    state.error != null -> EmptyState(
+                        icon = Icons.Filled.CloudOff,
+                        title = state.error,
+                        iconTint = MaterialTheme.colorScheme.error,
                     )
-                    state.query.isBlank() -> Text(
-                        stringResource(R.string.wiki_search_prompt),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
+                    state.query.isBlank() -> EmptyState(
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        title = stringResource(R.string.wiki_search_prompt),
                     )
-                    state.results.isEmpty() -> Text(
-                        stringResource(R.string.wiki_no_results),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
+                    state.results.isEmpty() -> EmptyState(
+                        icon = Icons.Filled.SearchOff,
+                        title = stringResource(R.string.wiki_no_results),
                     )
-                    else -> LazyColumn(contentPadding = PaddingValues(vertical = 4.dp)) {
+                    else -> LazyColumn(
+                        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                        verticalArrangement = ListCardSpacing,
+                    ) {
                         items(state.results, key = { it.id }) { page ->
-                            Text(
-                                page.displayTitle,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onOpen(page) }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                            )
-                            HorizontalDivider()
+                            ListCard(onClick = { onOpen(page) }) {
+                                Text(
+                                    page.displayTitle,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
                     }
                 }

@@ -49,6 +49,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.LoadingState
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.PostSet
 import one.proci.e621.data.model.isValidShortname
 import one.proci.e621.data.model.suggestShortname
@@ -93,23 +105,22 @@ fun PostSetsScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
-                !state.isAuthenticated -> CenteredMessage(
-                    stringResource(R.string.post_sets_needs_account),
+                !state.isAuthenticated -> EmptyState(
+                    icon = Icons.Filled.AccountCircle,
+                    title = stringResource(R.string.post_sets_needs_account),
                     actionLabel = stringResource(R.string.settings),
                     onAction = onOpenSettings,
                 )
-                state.isLoading && state.sets.isEmpty() ->
-                    RainbowSpinner(Modifier.align(Alignment.Center))
-                state.error != null && state.sets.isEmpty() -> CenteredMessage(
-                    state.error,
-                    actionLabel = stringResource(R.string.error_retry),
-                    onAction = onRefresh,
+                state.isLoading && state.sets.isEmpty() -> LoadingState()
+                state.error != null && state.sets.isEmpty() -> ErrorState(message = state.error, onRetry = onRefresh)
+                state.sets.isEmpty() -> EmptyState(
+                    icon = Icons.Filled.CollectionsBookmark,
+                    title = stringResource(R.string.post_sets_empty),
                 )
-                state.sets.isEmpty() -> CenteredMessage(stringResource(R.string.post_sets_empty))
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
                 ) {
                     items(state.sets, key = { it.id }) { set ->
                         PostSetRow(set, onClick = { onOpenSet(set.id) }, onDelete = { pendingDelete = set })
@@ -154,19 +165,25 @@ fun PostSetsScreen(
 
 @Composable
 private fun PostSetRow(set: PostSet, onClick: () -> Unit, onDelete: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            if (set.isPublic) Icons.Filled.Public else Icons.Filled.Lock,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 12.dp),
-        )
+    ListCard(
+        onClick = onClick,
+        contentPadding = PaddingValues(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+    ) { Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .padding(end = 12.dp)
+                .size(40.dp)
+                .clip(CardShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (set.isPublic) Icons.Filled.Public else Icons.Filled.Lock,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         Column(Modifier.weight(1f)) {
             Text(set.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             Text(
@@ -178,7 +195,7 @@ private fun PostSetRow(set: PostSet, onClick: () -> Unit, onDelete: () -> Unit) 
         IconButton(onClick = onDelete) {
             Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.error)
         }
-    }
+    } }
 }
 
 @Composable

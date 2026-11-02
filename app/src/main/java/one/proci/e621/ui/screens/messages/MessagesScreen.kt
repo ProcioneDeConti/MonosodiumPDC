@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -41,6 +42,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.AccountCircle
+import one.proci.e621.ui.components.LoadingMoreFooter
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.Dmail
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.util.formatRelativeTime
@@ -114,36 +122,18 @@ fun MessagesScreen(
                     // Loading with nothing to show yet - leave this blank rather than a second,
                     // competing spinner; the pop-down arrow indicator above already says "loading".
                     state.isRefreshing && state.dmails.isEmpty() -> Box(Modifier.fillMaxSize())
-                    state.error != null && state.dmails.isEmpty() ->
-                        Column(
-                            Modifier.fillMaxSize().padding(24.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(state.error, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(12.dp))
-                            TextButton(onClick = onRefresh) { Text(stringResource(R.string.error_retry)) }
-                        }
-                    state.dmails.isEmpty() ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                stringResource(R.string.messages_none),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                    state.error != null && state.dmails.isEmpty() -> ErrorState(message = state.error, onRetry = onRefresh)
+                    state.dmails.isEmpty() -> EmptyState(icon = Icons.Filled.MailOutline, title = stringResource(R.string.messages_none))
+                    else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                         items(state.dmails, key = { it.id }) { dmail ->
                             DmailRow(dmail, avatarRepository, onClick = { onOpenDmail(dmail) }, onOpenProfile = onOpenProfile)
-                            HorizontalDivider()
                         }
-                        if (state.isLoadingMore) {
-                            item {
-                                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                    RainbowSpinner(modifier = Modifier.size(24.dp))
-                                }
-                            }
-                        }
+                        if (state.isLoadingMore) item { LoadingMoreFooter() }
                     }
                 }
             }
@@ -157,37 +147,40 @@ private fun DmailRow(dmail: Dmail, avatarRepository: AvatarRepository, onClick: 
     // A nested clickable (avatar/name) inside the row's own clickable (open dmail) - taps inside
     // the smaller area resolve to it and never fall through to the outer one.
     val profileModifier = if (fromId != null) Modifier.clickable { onOpenProfile(fromId) } else Modifier
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ListCard(
+        onClick = onClick,
+        color = if (!dmail.isRead) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        else MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        UserAvatar(
-            userId = dmail.fromId,
-            name = dmail.fromName ?: dmail.toName,
-            avatarRepository = avatarRepository,
-            size = 40.dp,
-            modifier = profileModifier,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            // The sender is the most prominent line - bold, accent-colored - so it's immediately
-            // clear who a message is from, with the subject as a secondary line underneath.
-            Text(
-                text = dmail.fromName ?: dmail.toName ?: "?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            UserAvatar(
+                userId = dmail.fromId,
+                name = dmail.fromName ?: dmail.toName,
+                avatarRepository = avatarRepository,
+                size = 40.dp,
                 modifier = profileModifier,
             )
-            Text(
-                text = dmail.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (!dmail.isRead) FontWeight.Bold else FontWeight.Normal,
-            )
-            dmail.createdAt?.let {
-                Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.weight(1f)) {
+                // The sender is the most prominent line - bold, accent-colored - so it's immediately
+                // clear who a message is from, with the subject as a secondary line underneath.
+                Text(
+                    text = dmail.fromName ?: dmail.toName ?: "?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = profileModifier,
+                )
+                Text(
+                    text = dmail.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (!dmail.isRead) FontWeight.Bold else FontWeight.Normal,
+                )
+                dmail.createdAt?.let {
+                    Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }
@@ -195,17 +188,11 @@ private fun DmailRow(dmail: Dmail, avatarRepository: AvatarRepository, onClick: 
 
 @Composable
 private fun NeedsAccountState(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.messages_needs_account),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onOpenSettings) { Text(stringResource(R.string.settings)) }
-    }
+    EmptyState(
+        icon = Icons.Filled.AccountCircle,
+        title = stringResource(R.string.messages_needs_account),
+        actionLabel = stringResource(R.string.settings),
+        onAction = onOpenSettings,
+        modifier = modifier,
+    )
 }

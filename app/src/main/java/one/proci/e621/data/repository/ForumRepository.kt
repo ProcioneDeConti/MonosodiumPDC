@@ -22,6 +22,14 @@ class ForumRepository(private val api: E621ApiService) {
         return api.getForumPosts(topicId = topicId, limit = limit, page = page)
     }
 
+    /**
+     * Oldest-first page of a topic's posts, like a normal forum thread. e621 only sorts newest
+     * first, so this pages forward with "a<id>" (posts after [afterId]; 0 = from the start) and
+     * sorts each batch ascending so the pager's last item is always the newest cursor.
+     */
+    suspend fun fetchPostsOldestFirst(topicId: Long, afterId: Long = 0, limit: Int = 50): List<ForumPost> =
+        api.getForumPosts(topicId = topicId, limit = limit, page = "a$afterId").sortedBy { it.id }
+
     suspend fun reply(topicId: Long, body: String): ForumPost =
         api.createForumPost(CreateForumPostRequest(CreateForumPostFields(topicId, body)))
 }

@@ -30,6 +30,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.Insights
+import one.proci.e621.ui.components.EmptyState
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.BarChartCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,14 +70,16 @@ fun FavoritesAnalysisScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (state.running) {
-                Text(stringResource(R.string.fav_analysis_progress, state.fetched))
-                RainbowLinearIndicator(modifier = Modifier.fillMaxWidth().height(4.dp))
+                ListCard {
+                    Text(stringResource(R.string.fav_analysis_progress, state.fetched))
+                    RainbowLinearIndicator(modifier = Modifier.padding(top = 8.dp).fillMaxWidth().height(4.dp))
+                }
             }
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            state.error?.let { ErrorState(message = it, onRetry = onRestart) }
 
             val a = state.analysis
             if (a != null) {
@@ -81,39 +88,19 @@ fun FavoritesAnalysisScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                BarSection(stringResource(R.string.fav_analysis_ratings), a.ratings.entries.map { it.key to it.value })
-                BarSection(stringResource(R.string.fav_analysis_filetypes), a.filetypes.entries.map { it.key to it.value })
-                BarSection(stringResource(R.string.fav_analysis_scores), a.scoreBuckets.entries.map { it.key to it.value })
-                BarSection(stringResource(R.string.fav_analysis_years), a.years.entries.map { it.key to it.value })
-                BarSection(stringResource(R.string.fav_analysis_artists), a.topArtists.map { it.first.replace('_', ' ') to it.second })
-                BarSection(stringResource(R.string.fav_analysis_characters), a.topCharacters.map { it.first.replace('_', ' ') to it.second })
+                BarChartCard(stringResource(R.string.fav_analysis_ratings), a.ratings.entries.map { it.key to it.value })
+                BarChartCard(stringResource(R.string.fav_analysis_filetypes), a.filetypes.entries.map { it.key to it.value })
+                BarChartCard(stringResource(R.string.fav_analysis_scores), a.scoreBuckets.entries.map { it.key to it.value })
+                BarChartCard(stringResource(R.string.fav_analysis_years), a.years.entries.map { it.key to it.value })
+                BarChartCard(stringResource(R.string.fav_analysis_artists), a.topArtists.map { it.first.replace('_', ' ') to it.second })
+                BarChartCard(stringResource(R.string.fav_analysis_characters), a.topCharacters.map { it.first.replace('_', ' ') to it.second })
             } else if (!state.running && state.error == null) {
-                Text(stringResource(R.string.fav_analysis_start_hint))
-                TextButton(onClick = onRestart) { Text(stringResource(R.string.fav_analysis_start)) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BarSection(title: String, rows: List<Pair<String, Int>>) {
-    if (rows.isEmpty()) return
-    val max = rows.maxOf { it.second }.coerceAtLeast(1)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        rows.forEach { (label, count) ->
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.4f), maxLines = 1)
-                Box(modifier = Modifier.weight(0.5f).padding(end = 8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(count.toFloat() / max)
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                    )
-                }
-                Text(count.toString(), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.1f))
+                EmptyState(
+                    icon = Icons.Filled.Insights,
+                    title = stringResource(R.string.fav_analysis_start_hint),
+                    actionLabel = stringResource(R.string.fav_analysis_start),
+                    onAction = onRestart,
+                )
             }
         }
     }

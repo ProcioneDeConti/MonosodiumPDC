@@ -46,6 +46,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.PersonSearch
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.Artist
 import one.proci.e621.data.model.ArtistDnp
 import one.proci.e621.data.settings.Site
@@ -80,16 +83,17 @@ fun ArtistScreen(
         when {
             state.isLoading && state.artist == null -> LoadingState(Modifier.padding(padding))
 
-            state.error != null && state.artist == null -> CenteredMessage(
-                message = state.error,
-                modifier = Modifier.padding(padding),
-            ) { TextButton(onClick = onRetry) { Text(stringResource(R.string.error_retry)) } }
+            state.error != null && state.artist == null ->
+                ErrorState(message = state.error, onRetry = onRetry, modifier = Modifier.padding(padding))
 
             // Plenty of artist tags have no artist record; still let the user see their posts.
-            state.notFound || state.artist == null -> CenteredMessage(
-                message = stringResource(R.string.artist_not_found),
+            state.notFound || state.artist == null -> EmptyState(
+                icon = Icons.Filled.PersonSearch,
+                title = stringResource(R.string.artist_not_found),
+                actionLabel = stringResource(R.string.artist_view_posts_anyway),
+                onAction = { onSearch(state.name) },
                 modifier = Modifier.padding(padding),
-            ) { OutlinedButton(onClick = { onSearch(state.name) }) { Text(stringResource(R.string.artist_view_posts_anyway)) } }
+            )
 
             else -> ArtistContent(
                 artist = state.artist,
@@ -100,19 +104,6 @@ fun ArtistScreen(
                 modifier = Modifier.padding(padding),
             )
         }
-    }
-}
-
-@Composable
-private fun CenteredMessage(message: String, modifier: Modifier = Modifier, action: @Composable () -> Unit) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(message, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(12.dp))
-        action()
     }
 }
 

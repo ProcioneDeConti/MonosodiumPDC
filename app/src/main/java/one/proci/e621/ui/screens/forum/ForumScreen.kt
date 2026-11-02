@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,12 @@ import one.proci.e621.R
 import one.proci.e621.data.model.ForumTopic
 import one.proci.e621.data.util.formatRelativeTime
 import one.proci.e621.ui.components.RainbowRefreshIndicator
+import one.proci.e621.ui.components.EmptyState
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.LoadingMoreFooter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,35 +101,21 @@ fun ForumScreen(
                 // competing spinner; the pop-down arrow indicator above already says "loading".
                 state.isRefreshing && state.topics.isEmpty() -> Box(Modifier.fillMaxSize())
                 state.error != null && state.topics.isEmpty() ->
-                    Column(
-                        Modifier.fillMaxSize().padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(state.error, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = onRefresh) { Text(stringResource(R.string.error_retry)) }
-                    }
-                state.topics.isEmpty() ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            stringResource(R.string.forum_no_topics),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                    ErrorState(message = state.error, onRetry = onRefresh)
+                state.topics.isEmpty() -> EmptyState(
+                    icon = Icons.Filled.Forum,
+                    title = stringResource(R.string.forum_no_topics),
+                )
+                else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                     items(state.topics, key = { it.id }) { topic ->
                         TopicRow(topic, onClick = { onOpenTopic(topic) })
-                        HorizontalDivider()
                     }
-                    if (state.isLoadingMore) {
-                        item {
-                            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                RainbowSpinner(modifier = Modifier.size(24.dp))
-                            }
-                        }
-                    }
+                    if (state.isLoadingMore) item { LoadingMoreFooter() }
                 }
             }
         }
@@ -131,11 +124,10 @@ fun ForumScreen(
 
 @Composable
 private fun TopicRow(topic: ForumTopic, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ListCard(
+        onClick = onClick,
+        color = if (topic.isSticky) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        else MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (topic.isSticky) {

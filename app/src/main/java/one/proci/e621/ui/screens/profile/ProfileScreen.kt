@@ -46,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import one.proci.e621.ui.theme.tabular
+import one.proci.e621.ui.components.ErrorState
 import one.proci.e621.data.model.UserProfile
 import one.proci.e621.data.model.levelLabel
 import one.proci.e621.data.model.uploadKarmaProgress
@@ -89,20 +91,11 @@ fun ProfileScreen(
         when {
             state.profile == null && state.isLoading -> LoadingState(Modifier.padding(padding))
 
-            state.profile == null && state.error != null -> Column(
-                Modifier.padding(padding).fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    String.format(stringResource(R.string.profile_load_failed), state.error),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(12.dp))
-                TextButton(onClick = onRetry) { Text(stringResource(R.string.error_retry)) }
-            }
+            state.profile == null && state.error != null -> ErrorState(
+                message = String.format(stringResource(R.string.profile_load_failed), state.error),
+                onRetry = onRetry,
+                modifier = Modifier.padding(padding),
+            )
 
             state.profile != null -> ProfileContent(
                 profile = state.profile,
@@ -355,7 +348,7 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     ) {
         Text(
             "%,d".format(value),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.tabular(),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )

@@ -45,6 +45,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import one.proci.e621.ui.components.LoadingMoreFooter
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.ForumPost
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.util.formatRelativeTime
@@ -82,6 +90,7 @@ fun ForumTopicScreen(
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             val listState = rememberLazyListState()
+            val scope = rememberCoroutineScope()
             val shouldLoadMore by remember {
                 derivedStateOf {
                     val layoutInfo = listState.layoutInfo
@@ -108,28 +117,17 @@ fun ForumTopicScreen(
                         // Loading with nothing to show yet - leave this blank rather than a second,
                         // competing spinner; the pop-down arrow indicator above already says "loading".
                         state.isRefreshing && state.posts.isEmpty() -> Box(Modifier.fillMaxSize())
-                        state.error != null && state.posts.isEmpty() ->
-                            Column(
-                                Modifier.fillMaxSize().padding(24.dp),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(state.error, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                                Spacer(Modifier.height(12.dp))
-                                TextButton(onClick = onRefresh) { Text(stringResource(R.string.error_retry)) }
-                            }
-                        else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                        state.error != null && state.posts.isEmpty() -> ErrorState(message = state.error, onRetry = onRefresh)
+                        else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                             items(state.posts, key = { it.id }) { post ->
                                 ForumPostRow(post, avatarRepository, onOpenProfile)
-                                HorizontalDivider()
                             }
-                            if (state.isLoadingMore) {
-                                item {
-                                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                        RainbowSpinner(modifier = Modifier.size(24.dp))
-                                    }
-                                }
-                            }
+                            if (state.isLoadingMore) item { LoadingMoreFooter() }
                         }
                     }
                 }
@@ -169,7 +167,13 @@ fun ForumTopicScreen(
                         RainbowSpinner(modifier = Modifier.size(24.dp))
                     } else {
                         IconButton(
-                            onClick = { onReply(draft) { success -> if (success) draft = "" } },
+                            onClick = { onReply(draft) { success ->
+                                    if (success) {
+                                        draft = ""
+                                        // Oldest-first, so the new reply lands at the bottom - bring it into view.
+                                        scope.launch { listState.animateScrollToItem(state.posts.size) }
+                                    }
+                                } },
                             enabled = draft.isNotBlank(),
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.forum_reply_send))
@@ -185,32 +189,34 @@ fun ForumTopicScreen(
 private fun ForumPostRow(post: ForumPost, avatarRepository: AvatarRepository, onOpenProfile: (Long) -> Unit) {
     val creatorId = post.creatorId
     val profileModifier = if (creatorId != null) Modifier.clickable { onOpenProfile(creatorId) } else Modifier
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        UserAvatar(
-            userId = post.creatorId,
-            name = post.creatorName,
-            avatarRepository = avatarRepository,
-            size = 32.dp,
-            modifier = profileModifier,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    post.creatorName ?: "?",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = profileModifier,
-                )
-                post.createdAt?.let {
-                    Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    ListCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            UserAvatar(
+                userId = post.creatorId,
+                name = post.creatorName,
+                avatarRepository = avatarRepository,
+                size = 32.dp,
+                modifier = profileModifier,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        post.creatorName ?: "?",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = profileModifier,
+                    )
+                    post.createdAt?.let {
+                        Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
+                Spacer(Modifier.height(4.dp))
+                DTextView(text = post.body, style = MaterialTheme.typography.bodyMedium)
             }
-            Spacer(Modifier.height(4.dp))
-            DTextView(text = post.body, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

@@ -35,6 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.ui.draw.clip
+import one.proci.e621.ui.theme.ChipShape
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.download.DownloadJob
 import one.proci.e621.data.download.DownloadState
 import one.proci.e621.ui.components.NetworkImage
@@ -69,21 +76,24 @@ fun DownloadsScreen(
         },
     ) { padding ->
         if (jobs.isEmpty()) {
-            Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.downloads_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            EmptyState(
+                icon = Icons.Filled.Download,
+                title = stringResource(R.string.downloads_empty),
+                modifier = Modifier.padding(padding),
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.padding(padding).fillMaxSize(),
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = ListCardContentPadding,
+                verticalArrangement = ListCardSpacing,
             ) {
                 items(jobs, key = { it.id }) { job ->
+                    ListCard(contentPadding = PaddingValues(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         NetworkImage(
                             model = job.thumbnailUrl,
                             contentDescription = null,
-                            modifier = Modifier.size(44.dp).padding(end = 10.dp),
+                            modifier = Modifier.padding(end = 10.dp).size(48.dp).clip(ChipShape),
                         )
                         Column(Modifier.weight(1f)) {
                             Text(job.fileName, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
@@ -126,6 +136,7 @@ fun DownloadsScreen(
                                 Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.action_clear))
                             }
                         }
+                    }
                     }
                 }
             }

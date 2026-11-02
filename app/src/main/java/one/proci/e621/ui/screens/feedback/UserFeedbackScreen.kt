@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +40,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import one.proci.e621.ui.components.LoadingMoreFooter
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.UserFeedback
 import one.proci.e621.data.repository.AvatarRepository
 import one.proci.e621.data.util.formatRelativeTime
@@ -99,36 +106,18 @@ fun UserFeedbackScreen(
         ) {
             when {
                 state.isRefreshing && state.feedbacks.isEmpty() -> Box(Modifier.fillMaxSize())
-                state.error != null && state.feedbacks.isEmpty() ->
-                    Column(
-                        Modifier.fillMaxSize().padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(state.error, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = onRefresh) { Text(stringResource(R.string.error_retry)) }
-                    }
-                !state.isRefreshing && state.feedbacks.isEmpty() ->
-                    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            stringResource(R.string.user_feedback_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                state.error != null && state.feedbacks.isEmpty() -> ErrorState(message = state.error, onRetry = onRefresh)
+                !state.isRefreshing && state.feedbacks.isEmpty() -> EmptyState(icon = Icons.Filled.RateReview, title = stringResource(R.string.user_feedback_empty))
+                else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                     items(state.feedbacks, key = { it.id }) { feedback ->
                         FeedbackRow(feedback, avatarRepository, onOpenProfile)
-                        HorizontalDivider()
                     }
-                    if (state.isLoadingMore) {
-                        item {
-                            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                RainbowSpinner(modifier = Modifier.size(24.dp))
-                            }
-                        }
-                    }
+                    if (state.isLoadingMore) item { LoadingMoreFooter() }
                 }
             }
         }
@@ -139,33 +128,35 @@ fun UserFeedbackScreen(
 private fun FeedbackRow(feedback: UserFeedback, avatarRepository: AvatarRepository, onOpenProfile: (Long) -> Unit) {
     val creatorId = feedback.creatorId
     val profileModifier = if (creatorId != null) Modifier.clickable { onOpenProfile(creatorId) } else Modifier
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        UserAvatar(
-            userId = feedback.creatorId,
-            name = feedback.creatorName,
-            avatarRepository = avatarRepository,
-            size = 32.dp,
-            modifier = profileModifier,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    feedback.creatorName ?: "?",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = profileModifier,
-                )
-                CategoryChip(feedback.category)
-                feedback.createdAt?.let {
-                    Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    ListCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            UserAvatar(
+                userId = feedback.creatorId,
+                name = feedback.creatorName,
+                avatarRepository = avatarRepository,
+                size = 32.dp,
+                modifier = profileModifier,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        feedback.creatorName ?: "?",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = profileModifier,
+                    )
+                    CategoryChip(feedback.category)
+                    feedback.createdAt?.let {
+                        Text(formatRelativeTime(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
+                Spacer(Modifier.height(4.dp))
+                DTextView(text = feedback.body, style = MaterialTheme.typography.bodyMedium)
             }
-            Spacer(Modifier.height(4.dp))
-            DTextView(text = feedback.body, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

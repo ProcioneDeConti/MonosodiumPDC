@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +39,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import one.proci.e621.ui.components.LoadingMoreFooter
+import one.proci.e621.ui.components.ListCardSpacing
+import one.proci.e621.ui.components.ListCardContentPadding
+import one.proci.e621.ui.components.ListCard
+import one.proci.e621.ui.components.ErrorState
+import one.proci.e621.ui.components.EmptyState
 import one.proci.e621.data.model.Comment
 import one.proci.e621.data.util.formatRelativeTime
 import one.proci.e621.ui.components.DTextView
@@ -90,36 +97,18 @@ fun UserCommentsScreen(
         ) {
             when {
                 state.isRefreshing && state.comments.isEmpty() -> Box(Modifier.fillMaxSize())
-                state.error != null && state.comments.isEmpty() ->
-                    Column(
-                        Modifier.fillMaxSize().padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(state.error, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = onRefresh) { Text(stringResource(R.string.error_retry)) }
-                    }
-                !state.isRefreshing && state.comments.isEmpty() ->
-                    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            stringResource(R.string.user_comments_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                state.error != null && state.comments.isEmpty() -> ErrorState(message = state.error, onRetry = onRefresh)
+                !state.isRefreshing && state.comments.isEmpty() -> EmptyState(icon = Icons.Filled.ChatBubbleOutline, title = stringResource(R.string.user_comments_empty))
+                else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = ListCardContentPadding,
+                    verticalArrangement = ListCardSpacing,
+                ) {
                     items(state.comments, key = { it.id }) { comment ->
                         CommentRow(comment, onOpenPost)
-                        HorizontalDivider()
                     }
-                    if (state.isLoadingMore) {
-                        item {
-                            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                RainbowSpinner(modifier = Modifier.size(24.dp))
-                            }
-                        }
-                    }
+                    if (state.isLoadingMore) item { LoadingMoreFooter() }
                 }
             }
         }
@@ -128,12 +117,7 @@ fun UserCommentsScreen(
 
 @Composable
 private fun CommentRow(comment: Comment, onOpenPost: (Long) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpenPost(comment.postId) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-    ) {
+    ListCard(onClick = { onOpenPost(comment.postId) }) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 String.format(stringResource(R.string.user_comments_post_label), comment.postId),
