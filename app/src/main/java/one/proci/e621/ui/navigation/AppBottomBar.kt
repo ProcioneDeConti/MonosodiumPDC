@@ -1,7 +1,15 @@
 package one.proci.e621.ui.navigation
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -54,6 +62,7 @@ fun AppBottomBar(
     current: AppTab,
     youBadgeCount: Int,
     youBadgeDot: Boolean,
+    avatarUrl: String?,
     onSelect: (AppTab) -> Unit,
 ) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
@@ -74,7 +83,22 @@ fun AppBottomBar(
                             }
                         },
                     ) {
-                        Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null)
+                        if (tab == AppTab.YOU && avatarUrl != null) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .then(
+                                        if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        else Modifier,
+                                    ),
+                            )
+                        } else {
+                            Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null)
+                        }
                     }
                 },
             )

@@ -149,6 +149,14 @@ fun E621NavGraph(
     // "open in browser"/"share post link" always point at the right domain.
     val userSettings by app.userPreferences.settingsState.collectAsStateWithLifecycle()
     val activeSite = userSettings.site
+    // The You tab shows the logged-in account's avatar; re-resolved on site/account switch.
+    var ownAvatarUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(activeSite, userSettings.username, userSettings.apiKey) {
+        ownAvatarUrl = null
+        if (userSettings.username.isNotBlank() && userSettings.apiKey.isNotBlank()) {
+            ownAvatarUrl = app.avatarRepository.fetchOwnAvatarUrl()
+        }
+    }
 
     val navController = rememberNavController()
     // Favorites, Settings, Messages, Forum, Saved Searches, and Notifications are all hoisted
@@ -291,6 +299,7 @@ fun E621NavGraph(
                     current = currentTab,
                     youBadgeCount = notifications.unreadMessageCount,
                     youBadgeDot = notifications.forumUnread,
+                    avatarUrl = ownAvatarUrl,
                     onSelect = ::navigateToTab,
                 )
             }

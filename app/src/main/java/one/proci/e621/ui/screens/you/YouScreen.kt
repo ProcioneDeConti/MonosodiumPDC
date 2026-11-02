@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import one.proci.e621.R
 import one.proci.e621.data.repository.HealthCheckRepository
@@ -240,11 +241,19 @@ private fun Tile(
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
-        Text(
+        // One line on every tile so a long label ("Saved searches") can't make its tile - and
+        // its whole row - taller than the others; shrinks the text to fit instead of wrapping.
+        androidx.compose.foundation.text.BasicText(
             label,
-            style = MaterialTheme.typography.labelLarge,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
+            style = MaterialTheme.typography.labelLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            ),
+            maxLines = 1,
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                minFontSize = 9.sp,
+                maxFontSize = MaterialTheme.typography.labelLarge.fontSize,
+            ),
         )
     }
 }

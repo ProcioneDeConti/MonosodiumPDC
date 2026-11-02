@@ -24,6 +24,12 @@ class AvatarRepository(private val api: E621ApiService) {
 
     private val cache = ConcurrentHashMap<Long, String>()
 
+    /** The logged-in account's avatar URL, or null if logged out / unset / the request fails. */
+    suspend fun fetchOwnAvatarUrl(): String? {
+        val id = runCatching { api.getCurrentUser().id }.getOrNull() ?: return null
+        return fetchAvatarUrl(id)
+    }
+
     suspend fun fetchAvatarUrl(userId: Long): String? {
         cache[userId]?.let { return it.ifEmpty { null } }
         val url = runCatching {
