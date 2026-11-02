@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.model.PostNote
 import kotlin.math.min
+import one.proci.e621.ui.theme.ChipShape
 
 private val NoteYellow = Color(0xFFFFE082)
 
@@ -99,9 +100,9 @@ fun NoteBodyBubble(note: PostNote, index: Int, onDismiss: () -> Unit, modifier: 
         modifier = modifier
             .fillMaxWidth()
             .padding(12.dp)
-            .clip(RoundedCornerShape(7.dp))
+            .clip(ChipShape)
             .background(Color.Black.copy(alpha = 0.88f))
-            .border(1.dp, NoteYellow, RoundedCornerShape(7.dp))
+            .border(1.dp, NoteYellow, ChipShape)
             .clickable(onClick = onDismiss)
             .padding(12.dp),
     ) {

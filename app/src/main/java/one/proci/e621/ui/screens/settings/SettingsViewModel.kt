@@ -92,6 +92,10 @@ class SettingsViewModel(
         viewModelScope.launch { userPreferences.updateAccentColor(color) }
     }
 
+    fun setSurfaceStyle(style: one.proci.e621.data.settings.DarkSurfaceStyle) {
+        viewModelScope.launch { userPreferences.setSurfaceStyle(style) }
+    }
+
     fun setThemePreference(preference: ThemePreference) {
         viewModelScope.launch { userPreferences.setThemePreference(preference) }
     }

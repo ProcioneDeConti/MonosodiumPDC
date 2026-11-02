@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -45,6 +44,7 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import one.proci.e621.R
 import one.proci.e621.data.util.loadEulaText
+import one.proci.e621.ui.theme.DialogShape
 
 @Composable
 private fun rememberEulaText(): String {
@@ -134,7 +134,7 @@ fun EulaReadOnlyDialog(onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(7.dp),
+            shape = DialogShape,
             color = MaterialTheme.colorScheme.surface,
         ) {
             Column(modifier = Modifier.heightIn(max = 480.dp).padding(20.dp)) {

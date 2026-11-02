@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +49,7 @@ import one.proci.e621.ui.theme.VoteDownActive
 import one.proci.e621.ui.theme.VoteDownPale
 import one.proci.e621.ui.theme.VoteUpActive
 import one.proci.e621.ui.theme.VoteUpPale
+import one.proci.e621.ui.theme.ChipShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,7 +181,7 @@ private fun CategoryChip(category: String) {
             stringResource(R.string.profile_feedback_neutral),
         )
     }
-    Box(modifier = Modifier.background(bg, RoundedCornerShape(7.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+    Box(modifier = Modifier.background(bg, ChipShape).padding(horizontal = 8.dp, vertical = 2.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = fg)
     }
 }

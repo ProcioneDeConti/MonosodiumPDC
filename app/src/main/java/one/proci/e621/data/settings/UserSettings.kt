@@ -28,6 +28,8 @@ data class UserSettings(
     val accentColor: Int? = null,
     /** Light/dark override; [ThemePreference.SYSTEM] follows the device. */
     val themePreference: ThemePreference = ThemePreference.SYSTEM,
+    /** Base palette for surfaces (dark mode, and light mode for [DarkSurfaceStyle.WARM]). */
+    val surfaceStyle: DarkSurfaceStyle = DarkSurfaceStyle.CHARCOAL,
     /** The hash (see [one.proci.e621.data.util.eulaHash]) of whichever EULA text the user last agreed to; null means never agreed. */
     val eulaAcceptedHash: String? = null,
     /** Max on-disk size, in MB, for cached post images/thumbnails. See [one.proci.e621.data.util.ImageCacheLimits]. */

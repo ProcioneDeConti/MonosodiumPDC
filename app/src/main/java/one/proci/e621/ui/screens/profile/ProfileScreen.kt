@@ -55,6 +55,8 @@ import one.proci.e621.ui.components.DTextView
 import one.proci.e621.ui.components.UserAvatar
 import one.proci.e621.ui.theme.VoteDownActive
 import one.proci.e621.ui.theme.VoteUpActive
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.theme.ChipShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -241,7 +243,7 @@ private fun ProfileHeader(profile: UserProfile, avatarRepository: AvatarReposito
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(gradient, RoundedCornerShape(7.dp))
+            .background(gradient, CardShape)
             .padding(vertical = 28.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -270,7 +272,7 @@ private fun ProfileHeader(profile: UserProfile, avatarRepository: AvatarReposito
             Spacer(Modifier.height(6.dp))
             Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(7.dp))
+                    .background(MaterialTheme.colorScheme.primary, ChipShape)
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
@@ -298,7 +300,7 @@ private fun ActivityRow(icon: ImageVector, label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surface, CardShape)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -325,7 +327,7 @@ private fun ProfileSection(title: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, CardShape)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -350,7 +352,7 @@ private fun StatsGrid(stats: List<Pair<String, Int>>) {
 private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surface, CardShape)
             .padding(vertical = 14.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -402,7 +404,7 @@ private fun UploadKarmaBar(karma: Int) {
 private fun ProfilePill(label: String) {
     Box(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.primary, ChipShape)
             .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
         Text(

@@ -152,6 +152,9 @@ import one.proci.e621.ui.theme.VoteDownPale
 import one.proci.e621.ui.theme.VoteUpActive
 import one.proci.e621.ui.theme.VoteUpPale
 import one.proci.e621.ui.theme.ViewerBackground
+import one.proci.e621.ui.theme.ChipShape
+import one.proci.e621.ui.theme.PillShape
+import one.proci.e621.ui.theme.SheetShape
 
 @Composable
 fun PostDetailScreen(
@@ -559,7 +562,7 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp)),
+                .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape),
         ) {
             VoteTooltipIconButton(
                 tooltipText = "${post.score.up} upvotes",
@@ -600,7 +603,7 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
                 .padding(end = 8.dp),
         ) {
             IconButton(
@@ -656,7 +659,7 @@ private fun CommentCountPill(count: Int, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(PillHeight)
-            .clip(RoundedCornerShape(7.dp))
+            .clip(ChipShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp),
@@ -744,7 +747,7 @@ private fun PostInfoSheet(
     // The sheet's own Surface is painted in the accent color and shaped with the standard
     // rounded-top corners; the actual content sits in an inner surface inset by a few dp, which
     // leaves a ring of accent color tracing that curve rather than a flat bar sitting inside it.
-    val sheetShape = RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
+    val sheetShape = SheetShape
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -756,7 +759,7 @@ private fun PostInfoSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 5.dp)
-                .clip(RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp))
+                .clip(SheetShape)
                 .background(ViewerBackground),
         ) {
             Box(
@@ -764,7 +767,7 @@ private fun PostInfoSheet(
                     .padding(top = 10.dp)
                     .align(Alignment.CenterHorizontally)
                     .size(width = 32.dp, height = 4.dp)
-                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(7.dp)),
+                    .background(Color.White.copy(alpha = 0.4f), PillShape),
             )
         Column(
             modifier = Modifier
@@ -1231,7 +1234,7 @@ private fun CommentsSheet(
         }
     }
 
-    val sheetShape = RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
+    val sheetShape = SheetShape
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -1243,7 +1246,7 @@ private fun CommentsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 5.dp)
-                .clip(RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp))
+                .clip(SheetShape)
                 .background(ViewerBackground),
         ) {
             Box(
@@ -1251,7 +1254,7 @@ private fun CommentsSheet(
                     .padding(top = 10.dp)
                     .align(Alignment.CenterHorizontally)
                     .size(width = 32.dp, height = 4.dp)
-                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(7.dp)),
+                    .background(Color.White.copy(alpha = 0.4f), PillShape),
             )
             Text(
                 text = "${stringResource(R.string.comments_title)} (${comments?.size ?: post.commentCount})",
@@ -1456,7 +1459,7 @@ private fun CommentRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp)
-                        .clip(RoundedCornerShape(7.dp))
+                        .clip(ChipShape)
                         .background(RatingExplicit.copy(alpha = 0.15f))
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1532,7 +1535,7 @@ private fun PillAction(icon: androidx.compose.ui.graphics.vector.ImageVector, la
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
@@ -1587,7 +1590,7 @@ private fun StatusInfoRow(post: Post) {
         Text(stringResource(R.string.info_status), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium)
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(7.dp))
+                .clip(ChipShape)
                 .background(color)
                 .padding(horizontal = 10.dp, vertical = 3.dp),
         ) {
@@ -1639,7 +1642,7 @@ private fun RelationshipsRow(post: Post, onSearch: (String) -> Unit) {
 private fun RelationshipChip(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(7.dp))
+            .clip(ChipShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp),
@@ -1668,9 +1671,9 @@ private fun FlagReasonBox(postId: Long, postActionsRepository: PostActionsReposi
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 6.dp)
-                .clip(RoundedCornerShape(7.dp))
+                .clip(ChipShape)
                 .background(RatingExplicit.copy(alpha = 0.2f))
-                .border(1.dp, RatingExplicit, RoundedCornerShape(7.dp))
+                .border(1.dp, RatingExplicit, ChipShape)
                 .padding(10.dp),
         ) {
             Text(
@@ -1848,7 +1851,7 @@ private fun TagChip(
         TagCategory.SPECIES -> TagSpecies to Color.White
         TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> TagGeneral to Color.White
     }
-    val shape = RoundedCornerShape(7.dp)
+    val shape = ChipShape
     var menuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val addedToBlacklistTemplate = stringResource(R.string.tag_added_to_blacklist)
@@ -2051,7 +2054,7 @@ private fun RelatedTagsDialog(
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(7.dp))
+                                    .clip(ChipShape)
                                     .background(bg)
                                     .clickable { selected = if (selected == rt) null else rt }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),

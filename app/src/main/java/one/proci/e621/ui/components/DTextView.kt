@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,6 +49,7 @@ import one.proci.e621.data.dtext.DBlock
 import one.proci.e621.data.dtext.DInline
 import one.proci.e621.data.dtext.DSegment
 import one.proci.e621.data.dtext.parseDText
+import one.proci.e621.ui.theme.ChipShape
 
 /** Renders e621 DText (see [one.proci.e621.data.dtext.parseDText]) - used for comment/dmail/forum post bodies. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -95,7 +95,7 @@ private fun WikiPreviewCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -135,7 +135,7 @@ private fun DBlockView(block: DBlock, style: TextStyle, linkColor: Color, onWiki
             style = style.copy(fontFamily = FontFamily.Monospace),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
                 .padding(8.dp)
                 .horizontalScroll(rememberScrollState()),
         )
@@ -144,7 +144,7 @@ private fun DBlockView(block: DBlock, style: TextStyle, linkColor: Color, onWiki
                 modifier = Modifier
                     .width(3.dp)
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(7.dp)),
+                    .background(MaterialTheme.colorScheme.outline, ChipShape),
             )
             Spacer(Modifier.width(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -196,7 +196,7 @@ private fun SpoilerText(nodes: List<DInline>, style: TextStyle, linkColor: Color
     var revealed by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(7.dp))
+            .clip(ChipShape)
             .let {
                 if (revealed) {
                     it

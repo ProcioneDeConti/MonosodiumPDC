@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
 import one.proci.e621.data.settings.UsageStats
+import one.proci.e621.ui.theme.CardShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,7 +132,7 @@ private fun topN(map: Map<String, Int>): List<Pair<String, Int>> =
 private fun StatTile(label: String, value: Int, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(7.dp))
+            .clip(CardShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(14.dp),
     ) {

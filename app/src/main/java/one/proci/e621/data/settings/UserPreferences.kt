@@ -52,6 +52,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         val BLACKLIST = stringPreferencesKey("blacklist")
         val ACCENT_COLOR = intPreferencesKey("accent_color")
         val THEME_PREFERENCE = stringPreferencesKey("theme_preference")
+        val SURFACE_STYLE = stringPreferencesKey("surface_style")
         // A distinct name from any earlier boolean "eula_accepted" key - DataStore ties a key's
         // type to its name, so reusing the old name with a new (string) type could crash reading
         // stale data written under the old type.
@@ -88,6 +89,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             blacklist = prefs[Keys.BLACKLIST].orEmpty(),
             accentColor = prefs[Keys.ACCENT_COLOR],
             themePreference = ThemePreference.fromName(prefs[Keys.THEME_PREFERENCE]),
+            surfaceStyle = DarkSurfaceStyle.fromName(prefs[Keys.SURFACE_STYLE]),
             eulaAcceptedHash = prefs[Keys.EULA_ACCEPTED_HASH],
             imageCacheLimitMb = prefs[Keys.IMAGE_CACHE_LIMIT_MB]?.let { ImageCacheLimits.clamp(it) }
                 ?: ImageCacheLimits.DEFAULT_MB,
@@ -176,6 +178,10 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
         dataStore.edit { prefs -> prefs[Keys.THEME_PREFERENCE] = preference.name }
     }
 
+    suspend fun setSurfaceStyle(style: DarkSurfaceStyle) {
+        dataStore.edit { prefs -> prefs[Keys.SURFACE_STYLE] = style.name }
+    }
+
     /** Pass the hash of the EULA text just agreed to, or null to clear (un-accept). */
     suspend fun setEulaAccepted(hash: String?) {
         dataStore.edit { prefs ->
@@ -242,6 +248,7 @@ class UserPreferences(context: Context, scope: CoroutineScope) {
             prefs[Keys.BLACKLIST] = backup.blacklist
             if (backup.accentColor == null) prefs.remove(Keys.ACCENT_COLOR) else prefs[Keys.ACCENT_COLOR] = backup.accentColor
             prefs[Keys.THEME_PREFERENCE] = ThemePreference.fromName(backup.themePreference).name
+            prefs[Keys.SURFACE_STYLE] = DarkSurfaceStyle.fromName(backup.surfaceStyle).name
             if (backup.eulaAcceptedHash == null) {
                 prefs.remove(Keys.EULA_ACCEPTED_HASH)
             } else {

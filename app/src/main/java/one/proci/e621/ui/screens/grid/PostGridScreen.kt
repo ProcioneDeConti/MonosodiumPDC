@@ -47,7 +47,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -146,6 +145,10 @@ import one.proci.e621.ui.theme.TagCopyright
 import one.proci.e621.ui.theme.TagGeneral
 import one.proci.e621.ui.theme.TagSpecies
 import one.proci.e621.ui.theme.ViewerBackground
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.theme.ChipShape
+import one.proci.e621.ui.theme.DialogShape
+import one.proci.e621.ui.theme.PillShape
 
 /** Shared height for the search field and its icon row, for a unified look. */
 private val SearchBarHeight = 48.dp
@@ -796,7 +799,7 @@ private fun SearchTopBar(
                 modifier = Modifier
                     .weight(1f)
                     .height(SearchBarHeight)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, PillShape)
                     .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
                         focusRequester.requestFocus()
                     }
@@ -912,7 +915,7 @@ private fun SearchTopBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CardShape)
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                 ) {
                     Text(
@@ -937,7 +940,7 @@ private fun SearchTopBar(
                         .padding(horizontal = 8.dp)
                         .heightIn(max = SuggestionsMaxHeight)
                         .verticalScroll(rememberScrollState())
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CardShape)
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -978,7 +981,7 @@ private fun SuggestionChip(suggestion: TagSuggestion, isNegative: Boolean, onCli
     val background = categoryColor(suggestion.tagCategory)
     val content = categoryContentColor(suggestion.tagCategory)
     val borderColor = if (isNegative) RatingExplicit else RatingSafe
-    val shape = RoundedCornerShape(7.dp)
+    val shape = ChipShape
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -1032,7 +1035,7 @@ private fun SearchTagChip(
 ) {
     val borderColor = if (tag.negative) RatingExplicit else RatingSafe
     val catColor = categoryColor(tag.category)
-    val shape = RoundedCornerShape(7.dp)
+    val shape = ChipShape
     Box(
         modifier = Modifier
             .clip(shape)
@@ -1061,7 +1064,7 @@ private fun EasterEggDialog(onDismiss: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(7.dp))
+                .clip(DialogShape)
                 .background(ViewerBackground)
                 .padding(16.dp),
         ) {
@@ -1069,7 +1072,7 @@ private fun EasterEggDialog(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(7.dp)),
+                    .clip(CardShape),
                 contentAlignment = Alignment.Center,
             ) {
                 ScrollingRainbowBackground(modifier = Modifier.fillMaxSize())

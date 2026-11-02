@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import one.proci.e621.R
+import one.proci.e621.ui.theme.DialogShape
 
 /**
  * A hand-curated release history, newest first, capped at 10 entries by convention (see
@@ -41,7 +41,7 @@ fun WhatsNewDialog(onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(7.dp),
+            shape = DialogShape,
             color = MaterialTheme.colorScheme.surface,
         ) {
             Column(modifier = Modifier.heightIn(max = 520.dp).padding(20.dp)) {

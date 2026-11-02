@@ -19,6 +19,8 @@ data class SettingsBackup(
     val accentColor: Int? = null,
     /** [one.proci.e621.data.settings.ThemePreference] name; absent/unknown restores as SYSTEM. */
     val themePreference: String? = null,
+    /** [one.proci.e621.data.settings.DarkSurfaceStyle] name; absent/unknown restores as CHARCOAL. */
+    val surfaceStyle: String? = null,
     val eulaAcceptedHash: String? = null,
     val imageCacheLimitMb: Int,
     val gridThumbnailSizeDp: Int,
@@ -39,6 +41,7 @@ fun UserSettings.toBackup() = SettingsBackup(
     blacklist = blacklist,
     accentColor = accentColor,
     themePreference = themePreference.name,
+    surfaceStyle = surfaceStyle.name,
     eulaAcceptedHash = eulaAcceptedHash,
     imageCacheLimitMb = imageCacheLimitMb,
     gridThumbnailSizeDp = gridThumbnailSizeDp,

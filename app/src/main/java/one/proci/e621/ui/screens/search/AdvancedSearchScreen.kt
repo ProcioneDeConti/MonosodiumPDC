@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import one.proci.e621.R
+import one.proci.e621.ui.theme.ChipShape
 
 private val ORDERS = listOf(
     "" to "Default", "score" to "Score", "favcount" to "Favorites", "comment_count" to "Comments",
@@ -178,7 +178,7 @@ private fun ChipRow(options: List<Pair<String, String>>, selected: String, onSel
                 selected = value == selected,
                 onClick = { onSelect(value) },
                 label = { Text(label) },
-                shape = RoundedCornerShape(7.dp),
+                shape = ChipShape,
             )
         }
     }

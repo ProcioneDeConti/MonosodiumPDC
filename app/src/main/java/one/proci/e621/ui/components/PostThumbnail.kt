@@ -49,8 +49,10 @@ import one.proci.e621.ui.theme.FavoriteGold
 import one.proci.e621.ui.theme.RatingExplicit
 import one.proci.e621.ui.theme.RatingQuestionable
 import one.proci.e621.ui.theme.RatingSafe
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.theme.ChipShape
 
-private val ThumbnailShape = RoundedCornerShape(7.dp)
+private val ThumbnailShape = CardShape
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -115,7 +117,7 @@ fun PostThumbnail(
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
                     .size(20.dp)
-                    .clip(RoundedCornerShape(7.dp))
+                    .clip(ChipShape)
                     .background(Color.Black.copy(alpha = 0.55f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -135,7 +137,7 @@ fun PostThumbnail(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(6.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(ChipShape)
                     .background(Color.Black.copy(alpha = 0.4f))
                     .padding(2.dp),
                 contentAlignment = Alignment.Center,

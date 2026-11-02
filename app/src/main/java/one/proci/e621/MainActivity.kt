@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
             E621Theme(
                 darkTheme = darkTheme,
                 accentColor = settings.accentColor?.let { Color(it) },
+                surfaceStyle = settings.surfaceStyle,
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when {

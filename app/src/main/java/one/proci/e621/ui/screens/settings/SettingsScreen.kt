@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -98,6 +97,7 @@ import one.proci.e621.R
 import one.proci.e621.data.model.Rating
 import one.proci.e621.data.repository.RateLimitInfo
 import one.proci.e621.data.repository.UpdateCheckStatus
+import one.proci.e621.data.settings.DarkSurfaceStyle
 import one.proci.e621.data.settings.ThemePreference
 import one.proci.e621.data.settings.UserSettings
 import one.proci.e621.data.util.ImageCacheLimits
@@ -105,6 +105,9 @@ import one.proci.e621.data.util.VideoPlaybackSpeeds
 import one.proci.e621.ui.screens.eula.EulaReadOnlyDialog
 import one.proci.e621.ui.screens.whatsnew.WhatsNewDialog
 import one.proci.e621.ui.theme.AccentPresets
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.theme.ChipShape
+import one.proci.e621.ui.theme.PillShape
 
 /** Fixed regardless of the user's accent color - a beta badge should always read as gold, not blend in. */
 private val BetaGold = Color(0xFFFFD700)
@@ -133,6 +136,7 @@ fun SettingsScreen(
     onTestBlacklist: suspend (postRef: String, blacklistText: String) -> Result<BlacklistTestResult>,
     onSetAccentColor: (Int?) -> Unit,
     onSetThemePreference: (ThemePreference) -> Unit,
+    onSetSurfaceStyle: (DarkSurfaceStyle) -> Unit,
     onSetImageCacheLimitMb: (Int) -> Unit,
     onSetVideoLoopEnabled: (Boolean) -> Unit,
     onSetVideoPlaybackSpeed: (Float) -> Unit,
@@ -314,6 +318,14 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 ThemePreferenceSelector(current = settings.themePreference, onSelect = onSetThemePreference)
+
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    stringResource(R.string.settings_surface_style),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SurfaceStyleSelector(current = settings.surfaceStyle, onSelect = onSetSurfaceStyle)
 
                 Spacer(Modifier.height(16.dp))
                 Text(
@@ -956,7 +968,7 @@ private fun SettingsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, CardShape)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -1103,7 +1115,7 @@ private fun BlacklistTester(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(7.dp))
+                .clip(ChipShape)
                 .background(bg)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1125,15 +1137,38 @@ private fun BlacklistTester(
 /** System / Light / Dark segmented selector for [ThemePreference]. */
 @Composable
 private fun ThemePreferenceSelector(current: ThemePreference, onSelect: (ThemePreference) -> Unit) {
-    val options = listOf(
-        ThemePreference.SYSTEM to stringResource(R.string.settings_theme_system),
-        ThemePreference.LIGHT to stringResource(R.string.settings_theme_light),
-        ThemePreference.DARK to stringResource(R.string.settings_theme_dark),
+    SegmentedSelector(
+        options = listOf(
+            ThemePreference.SYSTEM to stringResource(R.string.settings_theme_system),
+            ThemePreference.LIGHT to stringResource(R.string.settings_theme_light),
+            ThemePreference.DARK to stringResource(R.string.settings_theme_dark),
+        ),
+        current = current,
+        onSelect = onSelect,
     )
+}
+
+/** Charcoal / OLED / Navy / Warm selector for [DarkSurfaceStyle]. */
+@Composable
+private fun SurfaceStyleSelector(current: DarkSurfaceStyle, onSelect: (DarkSurfaceStyle) -> Unit) {
+    SegmentedSelector(
+        options = listOf(
+            DarkSurfaceStyle.CHARCOAL to stringResource(R.string.settings_surface_charcoal),
+            DarkSurfaceStyle.OLED to stringResource(R.string.settings_surface_oled),
+            DarkSurfaceStyle.NAVY to stringResource(R.string.settings_surface_navy),
+            DarkSurfaceStyle.WARM to stringResource(R.string.settings_surface_warm),
+        ),
+        current = current,
+        onSelect = onSelect,
+    )
+}
+
+@Composable
+private fun <T> SegmentedSelector(options: List<Pair<T, String>>, current: T, onSelect: (T) -> Unit) {
     Row(
         modifier = Modifier
             .padding(top = 8.dp)
-            .clip(RoundedCornerShape(7.dp))
+            .clip(PillShape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         options.forEach { (pref, label) ->
@@ -1176,7 +1211,13 @@ private fun AccentColorPicker(currentColor: Int?, onSelect: (Int?) -> Unit) {
             ) {
                 Icon(
                     Icons.Filled.AutoAwesome,
-                    contentDescription = stringResource(R.string.settings_accent_default),
+                    contentDescription = stringResource(
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                            R.string.settings_accent_wallpaper
+                        } else {
+                            R.string.settings_accent_default
+                        },
+                    ),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
                 )
@@ -1188,6 +1229,17 @@ private fun AccentColorPicker(currentColor: Int?, onSelect: (Int?) -> Unit) {
                     onClick = { onSelect(preset.toArgb()) },
                 )
             }
+        }
+
+        if (currentColor == null) {
+            // The "auto" swatch means wallpaper colors on Android 12+, and the default blue before that.
+            val wallpaper = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+            Text(
+                stringResource(if (wallpaper) R.string.settings_accent_wallpaper_hint else R.string.settings_accent_default_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))

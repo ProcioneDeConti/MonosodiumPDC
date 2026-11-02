@@ -544,6 +544,7 @@ fun E621NavGraph(
                 onTestBlacklist = settingsViewModel::testBlacklist,
                 onSetAccentColor = settingsViewModel::setAccentColor,
                 onSetThemePreference = settingsViewModel::setThemePreference,
+                onSetSurfaceStyle = settingsViewModel::setSurfaceStyle,
                 onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,
                 onSetVideoLoopEnabled = settingsViewModel::setVideoLoopEnabled,
                 onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,

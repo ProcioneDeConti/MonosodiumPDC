@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -35,6 +34,7 @@ import java.time.format.DateTimeFormatter
 import one.proci.e621.R
 import one.proci.e621.data.repository.PopularScale
 import one.proci.e621.ui.components.PostGridBody
+import one.proci.e621.ui.theme.PillShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,7 +91,7 @@ fun PopularScreen(
                 )
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(7.dp))
+                        .clip(PillShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .fillMaxWidth(),
                 ) {
