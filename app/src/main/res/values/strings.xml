@@ -409,10 +409,7 @@
         <item>2.6.3</item>
     </string-array>
     <string-array name="whats_new_entries">
-        <item>• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.
-• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.
-• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.
-• Analyze any user's favorites straight from their profile.</item>
+        <item>• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.</item>
         <item>A big feature pass bringing the app in line with the desktop version:\n• Pools and Popular browsers, plus post sets, on-device collections, a wiki browser and an advanced search builder (all in the menu).\n• Post viewer: translation-note overlay, parent/child links, edit history, related tags, inline wiki previews, and Add to set / collection.\n• Comments: vote, edit or delete your own, and report others\'.\n• Long-press a thumbnail for quick favourite / upvote / download, or enter multi-select for bulk actions.\n• A download queue, a Light/Dark theme override, a blacklist tester, and an optional on-device usage Dashboard.\n• Shuffle button, delete dmails, upload-level on profiles.</item>
         <item>• Smoother grid scrolling and lower memory use while browsing.\n• Fixed a bug that could prevent saving images/videos to your device on Android 9.\n• Various under-the-hood efficiency and cleanup improvements.</item>
         <item>• New Cloud Backup toggle (Settings &gt; Backup &amp; Restore) - turn off Android\'s automatic Google account backup if you\'d rather your account/settings never leave this device, with a warning if your device has no screen lock (which weakens that backup\'s encryption).\n• Uninstalling now offers a \"Keep app data\" option.</item>
