@@ -2,6 +2,18 @@
     <string name="app_name">e621</string>
     <string name="search_hint">Search tags…</string>
     <string name="settings">Settings</string>
+    <string name="settings_page_account">Account</string>
+    <string name="settings_page_account_summary">Username and API key for %1$s</string>
+    <string name="settings_page_content">Content &amp; filtering</string>
+    <string name="settings_page_content_summary">18+ mode, ratings, blacklist, e6AI</string>
+    <string name="settings_page_appearance">Appearance</string>
+    <string name="settings_page_appearance_summary">Theme, dark surfaces, accent color</string>
+    <string name="settings_page_media">Media &amp; storage</string>
+    <string name="settings_page_media_summary">Video playback, image cache, downloads</string>
+    <string name="settings_page_backup">Backup &amp; restore</string>
+    <string name="settings_page_backup_summary">Export, import, cloud backup</string>
+    <string name="settings_page_about">About</string>
+    <string name="settings_page_about_summary">Version %1$s, updates, legal</string>
     <string name="settings_adult_mode">18+ Mode</string>
     <string name="settings_adult_mode_disclaimer">Enabling this setting allows access to mature material. By proceeding, you confirm that you are at least 18 years of age or of adult age in your jurisdiction and consent to viewing adult content.</string>
     <string name="settings_account">Account</string>
@@ -419,7 +431,7 @@
         <item>2.6.3</item>
     </string-array>
     <string-array name="whats_new_entries">
-        <item>• New bottom bar: Browse, Popular, Favorites and You. Everything from the old side menu (messages, forum, sets, collections, downloads, settings, the e6AI switch and more) now lives in the You tab, which shows your profile picture.\n• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• Livelier grid: thumbnails shimmer while loading, fade in, and press in when tapped; a softer info bar; and a placeholder grid instead of a blank screen while searching.\n• Opening a post grows it out of its thumbnail, and swiping back shrinks it home - with a live preview of the grid as you swipe.\n• A cleaner post viewer: a raised info panel with big Download and Share buttons, counts that roll when you vote or favourite, a little pop on the star, and the post details grouped into a card.
+        <item>• New bottom bar: Browse, Popular, Favorites and You. Everything from the old side menu (messages, forum, sets, collections, downloads, settings, the e6AI switch and more) now lives in the You tab, which shows your profile picture.\n• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• Livelier grid: thumbnails shimmer while loading, fade in, and press in when tapped; a softer info bar; and a placeholder grid instead of a blank screen while searching.\n• Opening a post grows it out of its thumbnail, and swiping back shrinks it home - with a live preview of the grid as you swipe.\n• A cleaner post viewer: a raised info panel with big Download and Share buttons, counts that roll when you vote or favourite, a little pop on the star, and the post details grouped into a card.\n• Settings is now split into pages - Account, Content &amp; filtering, Appearance, Media &amp; storage, Backup &amp; restore and About - instead of one long scroll.
 • Zooming into a post now stays sharp - images load at full resolution.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.</item>
         <item>A big feature pass bringing the app in line with the desktop version:\n• Pools and Popular browsers, plus post sets, on-device collections, a wiki browser and an advanced search builder (all in the menu).\n• Post viewer: translation-note overlay, parent/child links, edit history, related tags, inline wiki previews, and Add to set / collection.\n• Comments: vote, edit or delete your own, and report others\'.\n• Long-press a thumbnail for quick favourite / upvote / download, or enter multi-select for bulk actions.\n• A download queue, a Light/Dark theme override, a blacklist tester, and an optional on-device usage Dashboard.\n• Shuffle button, delete dmails, upload-level on profiles.</item>
         <item>• Smoother grid scrolling and lower memory use while browsing.\n• Fixed a bug that could prevent saving images/videos to your device on Android 9.\n• Various under-the-hood efficiency and cleanup improvements.</item>

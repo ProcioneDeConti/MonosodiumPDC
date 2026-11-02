@@ -34,9 +34,18 @@ private fun contrastingOn(color: Color): Color {
  */
 fun ColorScheme.withAccent(accent: Color, isDark: Boolean): ColorScheme {
     val onAccent = contrastingOn(accent)
-    val blendTarget = if (isDark) Color.Black else Color.White
-    val container = Color(ColorUtils.blendARGB(accent.toArgb(), blendTarget.toArgb(), if (isDark) 0.6f else 0.75f))
-    val onContainer = contrastingOn(container)
+    // Dark: darkening an accent toward black turns yellows/golds into mud-brown, so the container
+    // is instead a faint wash of the accent over the dark surface, with the (lightened) accent
+    // itself as the content color - reads as "gold on dark" rather than "brown".
+    val container: Color
+    val onContainer: Color
+    if (isDark) {
+        container = Color(ColorUtils.blendARGB(surface.toArgb(), accent.toArgb(), 0.24f))
+        onContainer = Color(ColorUtils.blendARGB(accent.toArgb(), Color.White.toArgb(), 0.3f))
+    } else {
+        container = Color(ColorUtils.blendARGB(accent.toArgb(), Color.White.toArgb(), 0.75f))
+        onContainer = contrastingOn(container)
+    }
     return copy(
         primary = accent,
         onPrimary = onAccent,

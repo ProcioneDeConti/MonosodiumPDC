@@ -72,6 +72,7 @@ import one.proci.e621.ui.screens.profile.ProfileScreen
 import one.proci.e621.ui.screens.profile.ProfileViewModel
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesScreen
 import one.proci.e621.ui.screens.savedsearches.SavedSearchesViewModel
+import one.proci.e621.ui.screens.settings.SettingsPage
 import one.proci.e621.ui.screens.settings.SettingsScreen
 import one.proci.e621.ui.screens.settings.SettingsViewModel
 import one.proci.e621.ui.screens.search.AdvancedSearchScreen
@@ -85,6 +86,8 @@ internal object Routes {
     const val FAVORITES = "favorites"
     const val DETAIL = "detail/{source}/{searchId}/{index}"
     const val SETTINGS = "settings"
+    const val SETTINGS_PAGE = "settings/{page}"
+    fun settingsPage(page: String) = "settings/$page"
     const val MESSAGES = "messages"
     const val MESSAGE_DETAIL = "message_detail/{id}"
     const val MESSAGE_COMPOSE = "message_compose?toName={toName}&respondToId={respondToId}&subject={subject}&toEditable={toEditable}"
@@ -309,6 +312,44 @@ fun E621NavGraph(
     ) { shellPadding ->
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+    @Composable
+    fun SettingsRoute(page: SettingsPage?) {
+            val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+            val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
+            val updateCheckStatus by settingsViewModel.updateCheckStatus.collectAsStateWithLifecycle()
+            val rateLimitInfo by settingsViewModel.rateLimitInfo.collectAsStateWithLifecycle()
+            SettingsScreen(
+                page = page,
+                onOpenPage = { navController.navigate(Routes.settingsPage(it.key)) },
+                settings = settings,
+                isSyncing = isSyncing,
+                updateCheckStatus = updateCheckStatus,
+                rateLimitInfo = rateLimitInfo,
+                onCheckForUpdate = settingsViewModel::checkForUpdate,
+                onBack = { navController.popBackStack() },
+                onSaveAccount = settingsViewModel::saveAccount,
+                onSetAdultModeEnabled = settingsViewModel::setAdultModeEnabled,
+                onSetRatingEnabled = settingsViewModel::setRatingEnabled,
+                onSaveBlacklist = settingsViewModel::saveBlacklist,
+                onImportBlacklist = settingsViewModel::importBlacklistFromE621,
+                onPushBlacklist = settingsViewModel::pushBlacklistToE621,
+                onTestBlacklist = settingsViewModel::testBlacklist,
+                onSetAccentColor = settingsViewModel::setAccentColor,
+                onSetThemePreference = settingsViewModel::setThemePreference,
+                onSetSurfaceStyle = settingsViewModel::setSurfaceStyle,
+                onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,
+                onSetVideoLoopEnabled = settingsViewModel::setVideoLoopEnabled,
+                onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,
+                onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
+                onSetDownloadLocationUri = settingsViewModel::setDownloadLocationUri,
+                onSetCloudBackupEnabled = settingsViewModel::setCloudBackupEnabled,
+                onPermanentlyDisableE6ai = settingsViewModel::permanentlyDisableE6ai,
+                onExportBackupJson = settingsViewModel::exportBackupJson,
+                onIsBackupEncrypted = settingsViewModel::isBackupEncrypted,
+                onImportBackup = settingsViewModel::importBackup,
+            )
+    }
+
     NavHost(
         navController = navController,
         startDestination = startRoute,
@@ -587,38 +628,14 @@ fun E621NavGraph(
             }
         }
         sharedComposable(Routes.SETTINGS) {
-            val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
-            val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
-            val updateCheckStatus by settingsViewModel.updateCheckStatus.collectAsStateWithLifecycle()
-            val rateLimitInfo by settingsViewModel.rateLimitInfo.collectAsStateWithLifecycle()
-            SettingsScreen(
-                settings = settings,
-                isSyncing = isSyncing,
-                updateCheckStatus = updateCheckStatus,
-                rateLimitInfo = rateLimitInfo,
-                onCheckForUpdate = settingsViewModel::checkForUpdate,
-                onBack = { navController.popBackStack() },
-                onSaveAccount = settingsViewModel::saveAccount,
-                onSetAdultModeEnabled = settingsViewModel::setAdultModeEnabled,
-                onSetRatingEnabled = settingsViewModel::setRatingEnabled,
-                onSaveBlacklist = settingsViewModel::saveBlacklist,
-                onImportBlacklist = settingsViewModel::importBlacklistFromE621,
-                onPushBlacklist = settingsViewModel::pushBlacklistToE621,
-                onTestBlacklist = settingsViewModel::testBlacklist,
-                onSetAccentColor = settingsViewModel::setAccentColor,
-                onSetThemePreference = settingsViewModel::setThemePreference,
-                onSetSurfaceStyle = settingsViewModel::setSurfaceStyle,
-                onSetImageCacheLimitMb = settingsViewModel::setImageCacheLimitMb,
-                onSetVideoLoopEnabled = settingsViewModel::setVideoLoopEnabled,
-                onSetVideoPlaybackSpeed = settingsViewModel::setVideoPlaybackSpeed,
-                onSetVideoAutoplayEnabled = settingsViewModel::setVideoAutoplayEnabled,
-                onSetDownloadLocationUri = settingsViewModel::setDownloadLocationUri,
-                onSetCloudBackupEnabled = settingsViewModel::setCloudBackupEnabled,
-                onPermanentlyDisableE6ai = settingsViewModel::permanentlyDisableE6ai,
-                onExportBackupJson = settingsViewModel::exportBackupJson,
-                onIsBackupEncrypted = settingsViewModel::isBackupEncrypted,
-                onImportBackup = settingsViewModel::importBackup,
-            )
+            SettingsRoute(page = null)
+        }
+        sharedComposable(
+            route = Routes.SETTINGS_PAGE,
+            arguments = listOf(navArgument("page") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val page = SettingsPage.fromKey(backStackEntry.arguments?.getString("page"))
+            SettingsRoute(page = page)
         }
         sharedComposable(Routes.MESSAGES) {
             val state by messagesViewModel.uiState.collectAsStateWithLifecycle()

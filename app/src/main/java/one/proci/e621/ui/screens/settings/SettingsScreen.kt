@@ -29,6 +29,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PermMedia
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -118,9 +126,30 @@ private val UpdateStatusGreen = Color(0xFF4CAF50)
 private val UpdateStatusAmber = Color(0xFFFFC107)
 private val UpdateStatusPurple = Color(0xFF9C27B0)
 
+/** One sub-page of Settings; [key] is the nav argument in `settings/{page}`. */
+enum class SettingsPage(val key: String, val titleRes: Int, val icon: ImageVector) {
+    ACCOUNT("account", R.string.settings_page_account, Icons.Filled.Person),
+    CONTENT("content", R.string.settings_page_content, Icons.Filled.FilterList),
+    APPEARANCE("appearance", R.string.settings_page_appearance, Icons.Filled.Palette),
+    MEDIA("media", R.string.settings_page_media, Icons.Filled.PermMedia),
+    BACKUP("backup", R.string.settings_page_backup, Icons.Filled.Backup),
+    ABOUT("about", R.string.settings_page_about, Icons.Filled.Info),
+    ;
+
+    companion object {
+        fun fromKey(key: String?): SettingsPage? = entries.firstOrNull { it.key == key }
+    }
+}
+
+/**
+ * Settings is split into an index ([page] == null) listing [SettingsPage]s, and one screen per
+ * page. Both are this composable so the launchers, dialogs and snackbar stay shared code.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    page: SettingsPage?,
+    onOpenPage: (SettingsPage) -> Unit,
     settings: UserSettings,
     isSyncing: Boolean,
     updateCheckStatus: UpdateCheckStatus,
@@ -229,7 +258,7 @@ fun SettingsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
+                title = { Text(stringResource(page?.titleRes ?: R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -246,6 +275,12 @@ fun SettingsScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (page == null) {
+                SettingsIndex(settings = settings, onOpenPage = onOpenPage)
+                CreditsFooter()
+            }
+
+            if (page == SettingsPage.CONTENT) {
             SettingsSection(stringResource(R.string.settings_adult_mode), titleTrailing = {
                 Switch(checked = settings.adultModeEnabled, onCheckedChange = onSetAdultModeEnabled)
             }) {
@@ -255,8 +290,10 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            }
 
-            SettingsSection(stringResource(R.string.settings_account)) {
+            if (page == SettingsPage.ACCOUNT) {
+            SettingsSection(null) {
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
@@ -310,8 +347,10 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_save))
                 }
             }
+            }
 
-            SettingsSection(stringResource(R.string.settings_appearance)) {
+            if (page == SettingsPage.APPEARANCE) {
+            SettingsSection(null) {
                 Text(
                     stringResource(R.string.settings_theme),
                     style = MaterialTheme.typography.bodyMedium,
@@ -335,7 +374,9 @@ fun SettingsScreen(
                 )
                 AccentColorPicker(currentColor = settings.accentColor, onSelect = onSetAccentColor)
             }
+            }
 
+            if (page == SettingsPage.MEDIA) {
             SettingsSection(stringResource(R.string.settings_cache)) {
                 Text(
                     stringResource(R.string.settings_cache_hint),
@@ -436,7 +477,9 @@ fun SettingsScreen(
                     onSpeedChanged = onSetVideoPlaybackSpeed,
                 )
             }
+            }
 
+            if (page == SettingsPage.CONTENT) {
             SettingsSection(stringResource(R.string.settings_content)) {
                 // Without 18+ Mode, content is locked to safe regardless of what's stored here.
                 RatingRow(
@@ -526,8 +569,10 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 BlacklistTester(blacklistText = blacklist, onTest = onTestBlacklist)
             }
+            }
 
-            SettingsSection(stringResource(R.string.settings_backup)) {
+            if (page == SettingsPage.BACKUP) {
+            SettingsSection(null) {
                 Text(
                     stringResource(R.string.settings_backup_hint),
                     style = MaterialTheme.typography.bodyMedium,
@@ -565,7 +610,9 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
 
+            if (page == SettingsPage.CONTENT) {
             SettingsSection(stringResource(R.string.settings_e6ai_section)) {
                 if (settings.e6aiPermanentlyDisabled) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -592,7 +639,9 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
 
+            if (page == SettingsPage.ABOUT) {
             SettingsSection(stringResource(R.string.settings_legal)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -661,6 +710,7 @@ fun SettingsScreen(
             }
 
             CreditsFooter()
+            }
         }
     }
 
@@ -961,7 +1011,7 @@ private fun CreditsFooter() {
 
 @Composable
 private fun SettingsSection(
-    title: String,
+    title: String?,
     titleTrailing: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -972,7 +1022,10 @@ private fun SettingsSection(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (titleTrailing != null) {
+        // Single-section pages pass null: the top bar already names the page.
+        if (title == null) {
+            Unit
+        } else if (titleTrailing != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -985,6 +1038,70 @@ private fun SettingsSection(
             Text(title, style = MaterialTheme.typography.titleMedium)
         }
         content()
+    }
+}
+
+/** The Settings landing page: one tappable row per [SettingsPage], grouped in a single card. */
+@Composable
+private fun SettingsIndex(settings: UserSettings, onOpenPage: (SettingsPage) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        SettingsPage.entries.forEachIndexed { i, page ->
+            if (i > 0) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 72.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+            }
+            val summary = when (page) {
+                SettingsPage.ACCOUNT -> stringResource(R.string.settings_page_account_summary, settings.site.displayName)
+                SettingsPage.CONTENT -> stringResource(R.string.settings_page_content_summary)
+                SettingsPage.APPEARANCE -> stringResource(R.string.settings_page_appearance_summary)
+                SettingsPage.MEDIA -> stringResource(R.string.settings_page_media_summary)
+                SettingsPage.BACKUP -> stringResource(R.string.settings_page_backup_summary)
+                SettingsPage.ABOUT -> stringResource(R.string.settings_page_about_summary, BuildConfig.VERSION_NAME)
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenPage(page) }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        page.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(page.titleRes), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
