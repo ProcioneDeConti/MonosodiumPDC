@@ -27,6 +27,7 @@ class PostActionsRepository(
     private val api: E621ApiService,
     private val usageStats: one.proci.e621.data.settings.UsageStatsStore? = null,
     private val appScope: kotlinx.coroutines.CoroutineScope? = null,
+    private val seenPosts: one.proci.e621.data.settings.SeenPostsStore? = null,
 ) {
 
     private val prettyJson = Json { prettyPrint = true; prettyPrintIndent = "  " }
@@ -37,8 +38,11 @@ class PostActionsRepository(
     }
 
     /** Records that [post] was viewed (for the on-device Dashboard). No-op when stats are off. */
-    fun recordPostView(post: Post, siteName: String) =
+    fun recordPostView(post: Post, siteName: String) {
+        one.proci.e621.data.settings.Site.entries.firstOrNull { it.name == siteName }
+            ?.let { seenPosts?.markSeen(it, post.id) }
         stat { recordPostView(siteName, post.tags.artist, post.tags.character) }
+    }
 
     /** [direction] is always the button's fixed intent (1 or -1); the server toggles it off if already at that value. */
     suspend fun vote(post: Post, direction: Int): Post {

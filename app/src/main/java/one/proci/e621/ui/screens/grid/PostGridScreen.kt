@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Clear
@@ -217,6 +218,8 @@ fun PostGridScreen(
     postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     tagSuggestionRepository: TagSuggestionRepository,
     modifier: Modifier = Modifier,
+    /** "Show seen posts" from the seen-it-all empty state (switches hide mode back to dim). */
+    onShowSeen: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectionMode by remember { mutableStateOf(false) }
@@ -253,6 +256,22 @@ fun PostGridScreen(
                 blacklistDisabled = state.blacklistDisabled,
                 blacklistedIds = state.blacklistedIds,
                 onEnableBlacklist = { onSetBlacklistDisabled(false) },
+                seenIds = state.seenIds,
+                emptyContent = {
+                    when {
+                        state.allSeen && state.isLoadingMore -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            one.proci.e621.ui.components.RainbowSpinner()
+                        }
+                        state.allSeen -> one.proci.e621.ui.components.EmptyState(
+                            icon = Icons.Filled.DoneAll,
+                            title = stringResource(R.string.seen_all_title),
+                            message = stringResource(R.string.seen_all_message),
+                            actionLabel = stringResource(R.string.seen_show_anyway),
+                            onAction = onShowSeen,
+                        )
+                        else -> one.proci.e621.ui.components.NoResultsState()
+                    }
+                },
                 thumbnailSizeDp = state.gridThumbnailSizeDp,
                 onThumbnailSizeChange = onThumbnailSizeChange,
                 onQuickFavorite = onQuickFavorite,

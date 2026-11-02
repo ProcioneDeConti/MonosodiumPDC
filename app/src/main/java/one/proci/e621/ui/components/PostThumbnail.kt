@@ -83,6 +83,8 @@ fun PostThumbnail(
     onEnterSelection: (() -> Unit)? = null,
     /** When non-null the thumbnail is in multi-select mode; the value is whether this post is selected. */
     selected: Boolean? = null,
+    /** Already opened before (seen-post tracking, dim mode): drawn faded so new posts stand out. */
+    dimmed: Boolean = false,
 ) {
     val aspect = if (post.preview.width > 0 && post.preview.height > 0) {
         post.preview.width.toFloat() / post.preview.height.toFloat()
@@ -132,13 +134,23 @@ fun PostThumbnail(
                 },
             ),
     ) {
-        NetworkImage(
-            model = post.preview.url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            shimmerWhileLoading = true,
-            modifier = Modifier.fillMaxSize(),
-        )
+        if (post.preview.url == null && post.isDeleted) {
+            // e621 drops a deleted post's file URLs, which used to leave a blank, broken-looking tile.
+            DeletedGhost(
+                post = post,
+                compact = true,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            NetworkImage(
+                model = post.preview.url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                shimmerWhileLoading = true,
+                modifier = Modifier.fillMaxSize().then(if (dimmed) Modifier.graphicsLayer { alpha = 0.35f } else Modifier),
+            )
+        }
 
         InfoDock(post = post, modifier = Modifier.align(Alignment.BottomCenter))
 

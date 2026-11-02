@@ -68,6 +68,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -349,6 +350,10 @@ fun SettingsScreen(
             }
             }
 
+            if (page == SettingsPage.ACCOUNT) {
+                SourceLoginsSection()
+            }
+
             if (page == SettingsPage.APPEARANCE) {
             SettingsSection(null) {
                 Text(
@@ -610,6 +615,10 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+
+            if (page == SettingsPage.CONTENT) {
+                SeenPostsSection()
             }
 
             if (page == SettingsPage.CONTENT) {
@@ -1038,6 +1047,92 @@ private fun SettingsSection(
             Text(title, style = MaterialTheme.typography.titleMedium)
         }
         content()
+    }
+}
+
+/**
+ * Optional sign-ins for deleted-post recovery (Fur Affinity's Mature/Adult pages are login-gated).
+ * The session lives encrypted on this device only - see [one.proci.e621.data.recovery.SourceLogins].
+ */
+@Composable
+private fun SourceLoginsSection() {
+    val site = one.proci.e621.data.recovery.SourceLogins.Site.FUR_AFFINITY
+    val signedIn by one.proci.e621.data.recovery.SourceLogins.signedIn.collectAsState()
+    val isSignedIn = site in signedIn
+    var showLogin by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    SettingsSection(stringResource(R.string.source_logins_title)) {
+        Text(
+            stringResource(R.string.source_logins_help),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Fur Affinity", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(if (isSignedIn) R.string.source_logins_signed_in else R.string.source_logins_signed_out),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (isSignedIn) {
+                androidx.compose.material3.OutlinedButton(onClick = {
+                    scope.launch { one.proci.e621.data.recovery.SourceLogins.signOut(site) }
+                }) { Text(stringResource(R.string.source_logins_sign_out)) }
+            } else {
+                Button(onClick = { showLogin = true }) { Text(stringResource(R.string.source_logins_sign_in)) }
+            }
+        }
+    }
+    if (showLogin) {
+        SourceLoginDialog(site = site, onDone = { showLogin = false })
+    }
+}
+
+/** Seen-post tracking: how opened posts show in search results, plus a count and a clear button. */
+@Composable
+private fun SeenPostsSection() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val store = remember(context) { (context.applicationContext as one.proci.e621.E621Application).seenPostsStore }
+    val mode by store.mode.collectAsState()
+    val seen by store.seen.collectAsState()
+    val count = seen.values.sumOf { it.size }
+
+    SettingsSection(stringResource(R.string.seen_settings_title)) {
+        Text(
+            stringResource(R.string.seen_settings_help),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SegmentedSelector(
+            options = listOf(
+                one.proci.e621.data.settings.SeenMode.DIM to stringResource(R.string.seen_mode_dim),
+                one.proci.e621.data.settings.SeenMode.HIDE to stringResource(R.string.seen_mode_hide),
+                one.proci.e621.data.settings.SeenMode.OFF to stringResource(R.string.seen_mode_off),
+            ),
+            current = mode,
+            onSelect = store::setMode,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                androidx.compose.ui.res.pluralStringResource(R.plurals.seen_count, count, count),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedButton(onClick = store::clear, enabled = count > 0) {
+                Text(stringResource(R.string.seen_clear))
+            }
+        }
     }
 }
 

@@ -8,12 +8,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import one.proci.e621.data.model.Post
 import one.proci.e621.data.repository.PostActionsRepository
 import one.proci.e621.data.repository.PostRepository
+import one.proci.e621.data.settings.SeenMode
+import one.proci.e621.data.settings.SeenPostsStore
 import one.proci.e621.data.settings.Site
 import one.proci.e621.data.settings.UserPreferences
 import one.proci.e621.data.util.BulkProgress
@@ -40,6 +43,11 @@ data class PostGridUiState(
     val gridThumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     val site: Site = Site.E621,
     val bulkProgress: BulkProgress? = null,
+    /** Ids to draw dimmed - only non-empty in [SeenMode.DIM]. */
+    val seenIds: Set<Long> = emptySet(),
+    val seenMode: SeenMode = SeenMode.DIM,
+    /** Results exist but every one was hidden as already seen (the "seen it all" empty state). */
+    val allSeen: Boolean = false,
 )
 
 class PostGridViewModel(
@@ -48,6 +56,7 @@ class PostGridViewModel(
     private val postActionsRepository: PostActionsRepository,
     private val usageStats: one.proci.e621.data.settings.UsageStatsStore? = null,
     initialQuery: String = "",
+    private val seenPosts: SeenPostsStore? = null,
 ) : ViewModel() {
 
     /** Everything actually fetched from the API, unfiltered; blacklist filtering happens reactively below. */
@@ -61,6 +70,11 @@ class PostGridViewModel(
         val error: String? = null,
         val nextPage: Int = 2,
         val bulkProgress: BulkProgress? = null,
+        /**
+         * Seen ids hidden in [SeenMode.HIDE], snapshotted per search/mode change - filtering
+         * against the live set would yank a just-opened post out from under the viewer.
+         */
+        val hiddenSeen: Set<Long> = emptySet(),
     )
 
     private val internalState = MutableStateFlow(InternalState(query = initialQuery))
@@ -71,12 +85,16 @@ class PostGridViewModel(
         internalState,
         userPreferences.settingsState,
         userPreferences.blacklistDisabled,
-    ) { s, settings, blacklistDisabled ->
+        seenPosts?.seen ?: MutableStateFlow(emptyMap()),
+        seenPosts?.mode ?: MutableStateFlow(SeenMode.OFF),
+    ) { s, settings, blacklistDisabled, seen, seenMode ->
         val blacklistedIds = s.rawPosts.filter(settings::isBlacklisted).mapTo(mutableSetOf()) { it.id }
+        val unblacklisted = if (blacklistDisabled) s.rawPosts else s.rawPosts.filterNot { it.id in blacklistedIds }
+        val visible = if (s.hiddenSeen.isEmpty()) unblacklisted else unblacklisted.filterNot { it.id in s.hiddenSeen }
         PostGridUiState(
             query = s.query,
             activeQuery = s.activeQuery,
-            posts = if (blacklistDisabled) s.rawPosts else s.rawPosts.filterNot { it.id in blacklistedIds },
+            posts = visible,
             blacklistedIds = blacklistedIds,
             isRefreshing = s.isRefreshing,
             isLoadingMore = s.isLoadingMore,
@@ -87,6 +105,9 @@ class PostGridViewModel(
             gridThumbnailSizeDp = settings.gridThumbnailSizeDp,
             site = settings.site,
             bulkProgress = s.bulkProgress,
+            seenIds = if (seenMode == SeenMode.DIM) seen[settings.site].orEmpty() else emptySet(),
+            seenMode = seenMode,
+            allSeen = visible.isEmpty() && unblacklisted.isNotEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PostGridUiState())
 
@@ -94,6 +115,21 @@ class PostGridViewModel(
 
     init {
         refresh()
+        seenPosts?.let { store ->
+            viewModelScope.launch {
+                store.mode.drop(1).collect { internalState.update { it.copy(hiddenSeen = seenSnapshot()) } }
+            }
+        }
+    }
+
+    private fun seenSnapshot(): Set<Long> {
+        val store = seenPosts ?: return emptySet()
+        if (store.mode.value != SeenMode.HIDE) return emptySet()
+        return store.seen.value[userPreferences.settingsState.value.site].orEmpty()
+    }
+
+    fun setSeenMode(mode: SeenMode) {
+        seenPosts?.setMode(mode)
     }
 
     fun onQueryChange(query: String) {
@@ -167,11 +203,21 @@ class PostGridViewModel(
         viewModelScope.launch { runCatching { usageStats?.recordSearch() } }
         loadJob = viewModelScope.launch {
             internalState.update {
-                it.copy(isRefreshing = true, error = null, activeQuery = query, rawPosts = emptyList(), endReached = false, nextPage = 2)
+                it.copy(
+                    isRefreshing = true, error = null, activeQuery = query, rawPosts = emptyList(),
+                    endReached = false, nextPage = 2, hiddenSeen = seenSnapshot(),
+                )
             }
             runCatching { repository.fetchPosts(tags = query) }
                 .onSuccess { raw ->
                     internalState.update { it.copy(rawPosts = raw, isRefreshing = false, endReached = raw.isEmpty()) }
+                    // A fully-seen first page: hop forward (loadMore caps itself at a few pages)
+                    // rather than showing an empty grid while unseen results may be just beyond.
+                    val hidden = internalState.value.hiddenSeen
+                    if (raw.isNotEmpty() && hidden.isNotEmpty() && raw.all { it.id in hidden }) {
+                        loadJob = null
+                        loadMore()
+                    }
                 }
                 .onFailure { e ->
                     internalState.update { it.copy(isRefreshing = false, error = e.messageOrDefault()) }
@@ -205,8 +251,10 @@ class PostGridViewModel(
             try {
                 val (accumulated, reachedEnd) = accumulatePostsUntilVisibleOrEnd(
                     seenIds = seenIds,
-                    blacklistDisabled = blacklistDisabled,
-                    isBlacklisted = settings::isBlacklisted,
+                    blacklistDisabled = false,
+                    isBlacklisted = { post ->
+                        (!blacklistDisabled && settings.isBlacklisted(post)) || post.id in current.hiddenSeen
+                    },
                 ) {
                     val page = if (useCustomOrder) {
                         if (pageNumber > MAX_NUMBERED_PAGE) emptyList()

@@ -434,7 +434,8 @@
         <item>• New bottom bar: Browse, Popular, Favorites and You. Everything from the old side menu (messages, forum, sets, collections, downloads, settings, the e6AI switch and more) now lives in the You tab, which shows your profile picture.\n• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• Livelier grid: thumbnails shimmer while loading, fade in, and press in when tapped; a softer info bar; and a placeholder grid instead of a blank screen while searching.\n• Opening a post grows it out of its thumbnail, and swiping back shrinks it home - with a live preview of the grid as you swipe.\n• A cleaner post viewer: a raised info panel with big Download and Share buttons, counts that roll when you vote or favourite, a little pop on the star, and the post details grouped into a card.\n• Settings is now split into pages - Account, Content &amp; filtering, Appearance, Media &amp; storage, Backup &amp; restore and About - instead of one long scroll.
 • Forum, messages, comments, sets, collections, downloads, saved searches and the wiki now use rounded cards, with friendlier empty and error screens; the Dashboard and favourites analysis get cleaner charts.
 • Forum threads now read oldest to newest, like most forums, and your reply scrolls into view at the bottom.
-• Zooming into a post now stays sharp - images load at full resolution.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.</item>
+• Zooming into a post now stays sharp - images load at full resolution.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.\n• Deleted posts: tap \"Try to load from source\" to fetch the image from the post\'s sources (X, Bluesky, Pixiv, DeviantArt, Fur Affinity and more, or the Wayback Machine), graded against the original. It\'s unreliable and usually fails, so treat any success as a bonus. Sign in to Fur Affinity under Settings &gt; Account for Mature/Adult works.
+• Seen posts: posts you\'ve opened are faded in search results, or hidden entirely - choose under Settings &gt; Content &amp; filtering.</item>
         <item>A big feature pass bringing the app in line with the desktop version:\n• Pools and Popular browsers, plus post sets, on-device collections, a wiki browser and an advanced search builder (all in the menu).\n• Post viewer: translation-note overlay, parent/child links, edit history, related tags, inline wiki previews, and Add to set / collection.\n• Comments: vote, edit or delete your own, and report others\'.\n• Long-press a thumbnail for quick favourite / upvote / download, or enter multi-select for bulk actions.\n• A download queue, a Light/Dark theme override, a blacklist tester, and an optional on-device usage Dashboard.\n• Shuffle button, delete dmails, upload-level on profiles.</item>
         <item>• Smoother grid scrolling and lower memory use while browsing.\n• Fixed a bug that could prevent saving images/videos to your device on Android 9.\n• Various under-the-hood efficiency and cleanup improvements.</item>
         <item>• New Cloud Backup toggle (Settings &gt; Backup &amp; Restore) - turn off Android\'s automatic Google account backup if you\'d rather your account/settings never leave this device, with a warning if your device has no screen lock (which weakens that backup\'s encryption).\n• Uninstalling now offers a \"Keep app data\" option.</item>
@@ -494,4 +495,54 @@
 
     <string name="post_load_failed">Couldn\'t load post: %1$s</string>
     <string name="post_not_found">Post not found.</string>
+
+    <!-- Deleted-post recovery -->
+    <string name="deleted_post_message">This post has been deleted.</string>
+    <string name="deleted_ghost_by">by %1$s</string>
+    <string name="recover_button">Try to load from source</string>
+    <string name="recover_retry">Try again</string>
+    <string name="recover_explainer">Fetches the image from the post\'s source links on other sites. Don\'t count on it: most attempts fail (sources get deleted, locked behind logins or changed), and what it does find may not be the original file.</string>
+    <string name="recover_no_sources">It has no web sources to recover from.</string>
+    <string name="recover_none">No source yielded an image.</string>
+    <string name="recover_progress_fetching">Fetching post from %1$s (source %2$d of %3$d)</string>
+    <string name="recover_progress_downloading">Downloading image from %1$s</string>
+    <string name="recover_progress_downloading_n">Downloading image %2$d of %3$d from %1$s</string>
+    <string name="recover_progress_comparing">Comparing %1$s to the original</string>
+    <string name="recover_progress_archive">Checking the Wayback Machine for an archived copy</string>
+    <string name="recover_grade_exact">Exact match</string>
+    <string name="recover_grade_same">Same dimensions, different file</string>
+    <string name="recover_grade_rescaled">Different resolution</string>
+    <string name="recover_grade_mismatch">Doesn\'t match the original</string>
+    <string name="recover_from">From %1$s</string>
+    <string name="recover_from_archive">From %1$s, via the Wayback Machine</string>
+    <string name="recover_note_format">%1$s instead of %2$s</string>
+    <string name="recover_note_dims">%1$d×%2$d instead of %3$d×%4$d</string>
+    <string name="recover_note_smaller">smaller file than the original</string>
+    <string name="recover_note_larger">larger file than the original</string>
+    <string name="recover_note_shape">shape differs from the original</string>
+
+    <!-- Seen posts (Settings > Content, search grid) -->
+    <string name="seen_settings_title">Seen posts</string>
+    <string name="seen_settings_help">Posts you open are remembered on this device, separately for each site, so search results can fade or hide them. Not included in backups.</string>
+    <string name="seen_mode_dim">Dim</string>
+    <string name="seen_mode_hide">Hide</string>
+    <string name="seen_mode_off">Off</string>
+    <plurals name="seen_count">
+        <item quantity="one">%d post seen</item>
+        <item quantity="other">%d posts seen</item>
+    </plurals>
+    <string name="seen_clear">Clear</string>
+    <string name="seen_all_title">You\'ve seen all of these</string>
+    <string name="seen_all_message">Every result loaded so far is one you\'ve already opened.</string>
+    <string name="seen_show_anyway">Show seen posts</string>
+
+    <!-- Source logins (Settings > Account) -->
+    <string name="source_logins_title">Source logins</string>
+    <string name="source_logins_help">Optional. Lets deleted-post recovery reach sources that need an account. You sign in on the site\'s own page; only its session is kept, encrypted on this device, and never included in backups.</string>
+    <string name="source_logins_signed_in">Signed in</string>
+    <string name="source_logins_signed_out">Not signed in. Needed for Mature/Adult submissions (enable them on your FA account too).</string>
+    <string name="source_logins_sign_in">Sign in</string>
+    <string name="source_logins_sign_out">Sign out</string>
+    <string name="source_login_title_fa">Sign in to Fur Affinity</string>
+    <string name="close">Close</string>
 </resources>

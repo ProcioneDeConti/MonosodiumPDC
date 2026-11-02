@@ -415,6 +415,7 @@ fun E621NavGraph(
                 onBulkFavorite = searchViewModel::bulkSetFavorite,
                 postSetRepository = app.postSetRepository,
                 tagSuggestionRepository = app.tagSuggestionRepository,
+                onShowSeen = { searchViewModel.setSeenMode(one.proci.e621.data.settings.SeenMode.DIM) },
             )
         }
         sharedComposable(

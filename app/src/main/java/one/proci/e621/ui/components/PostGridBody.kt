@@ -69,6 +69,8 @@ fun PostGridBody(
     /** Ids in [posts] that would normally be hidden - bordered with a caution stripe while [blacklistDisabled] is showing them anyway. */
     blacklistedIds: Set<Long> = emptySet(),
     onEnableBlacklist: () -> Unit = {},
+    /** Already-opened posts to draw dimmed (seen-post tracking). */
+    seenIds: Set<Long> = emptySet(),
     thumbnailSizeDp: Int = GridThumbnailSize.DEFAULT_DP,
     onThumbnailSizeChange: (Int) -> Unit = {},
     /** Long-press quick actions from the grid; null means that action isn't offered. */
@@ -195,6 +197,7 @@ fun PostGridBody(
                                     onQuickDownload = if (selectionMode) null else onQuickDownload?.let { cb -> { cb(post) } },
                                     onEnterSelection = if (selectionMode) null else onEnterSelection?.let { cb -> { cb(post) } },
                                     selected = if (selectionMode) post.id in selectedIds else null,
+                                    dimmed = post.id in seenIds,
                                 )
                             }
                             if (isLoadingMore) {

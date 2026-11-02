@@ -51,7 +51,8 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     val postRepository by lazy { PostRepository(apiService, userPreferences.settingsState) }
     val userRepository by lazy { UserRepository(apiService) }
     val usageStatsStore by lazy { one.proci.e621.data.settings.UsageStatsStore(this) }
-    val postActionsRepository by lazy { PostActionsRepository(apiService, usageStatsStore, applicationScope) }
+    val seenPostsStore by lazy { one.proci.e621.data.settings.SeenPostsStore(this, applicationScope) }
+    val postActionsRepository by lazy { PostActionsRepository(apiService, usageStatsStore, applicationScope, seenPostsStore) }
     val poolRepository by lazy { PoolRepository(apiService) }
     val popularRepository by lazy { PopularRepository(apiService) }
     val postSetRepository by lazy { PostSetRepository(apiService) }
@@ -80,6 +81,7 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     // still null, crashing with an NPE. onCreate() is guaranteed to run after attachBaseContext().
     override fun onCreate() {
         super.onCreate()
+        one.proci.e621.data.recovery.SourceLogins.init(this)
 
         applicationScope.launch {
             userPreferences.settingsState
