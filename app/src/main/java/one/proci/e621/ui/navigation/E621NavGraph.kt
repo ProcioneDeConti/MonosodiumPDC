@@ -26,7 +26,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import java.util.concurrent.atomic.AtomicInteger
@@ -136,6 +137,7 @@ private const val SOURCE_POST_SET = "post_set"
 private const val SOURCE_POPULAR = "popular"
 private const val NO_SEARCH_ID = -1
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun E621NavGraph(
     pendingDeepLinkPostId: Long? = null,
@@ -305,12 +307,14 @@ fun E621NavGraph(
             }
         },
     ) { shellPadding ->
+    SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(
         navController = navController,
         startDestination = startRoute,
         modifier = Modifier.padding(shellPadding).consumeWindowInsets(shellPadding),
     ) {
-        composable(
+        sharedComposable(
             route = Routes.SEARCH,
             arguments = listOf(
                 navArgument("id") { type = NavType.IntType },
@@ -322,7 +326,7 @@ fun E621NavGraph(
             // whole transition, leaving the exiting Detail screen frozen on top for that entire
             // stretch before it vanishes. That reads as the back button doing nothing for a beat.
             popEnterTransition = {
-                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+                if (initialState.destination.route == Routes.DETAIL && DetailTransition.showingVideo) EnterTransition.None else null
             },
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getInt("id") ?: 0
@@ -372,11 +376,11 @@ fun E621NavGraph(
                 tagSuggestionRepository = app.tagSuggestionRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.FAVORITES,
             // Same reasoning as Routes.SEARCH above - Detail can also be opened from Favorites.
             popEnterTransition = {
-                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+                if (initialState.destination.route == Routes.DETAIL && DetailTransition.showingVideo) EnterTransition.None else null
             },
         ) {
             val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
@@ -399,19 +403,18 @@ fun E621NavGraph(
                 postSetRepository = app.postSetRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.DETAIL,
             arguments = listOf(
                 navArgument("source") { type = NavType.StringType },
                 navArgument("searchId") { type = NavType.IntType },
                 navArgument("index") { type = NavType.IntType },
             ),
-            // The default pop transition fades this screen out over the transition's duration -
-            // fine for a static image, but a paused video's last frame stays visible throughout,
-            // reading as "the video is still there" for a moment after backing out. Popping (and
-            // leaving, for symmetry) is instant instead.
+            // Images morph back into their thumbnail (see SharedTransitions.kt) while the rest of
+            // the viewer fades. Videos pop instantly instead: a paused video's last frame would
+            // otherwise stay visible throughout the fade, reading as "still there" after backing out.
             exitTransition = { ExitTransition.None },
-            popExitTransition = { ExitTransition.None },
+            popExitTransition = { if (DetailTransition.showingVideo) ExitTransition.None else androidx.compose.animation.fadeOut() },
         ) { backStackEntry ->
             val source = backStackEntry.arguments?.getString("source") ?: SOURCE_SEARCH
             val searchId = backStackEntry.arguments?.getInt("searchId") ?: NO_SEARCH_ID
@@ -583,7 +586,7 @@ fun E621NavGraph(
                 }
             }
         }
-        composable(Routes.SETTINGS) {
+        sharedComposable(Routes.SETTINGS) {
             val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
             val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
             val updateCheckStatus by settingsViewModel.updateCheckStatus.collectAsStateWithLifecycle()
@@ -617,7 +620,7 @@ fun E621NavGraph(
                 onImportBackup = settingsViewModel::importBackup,
             )
         }
-        composable(Routes.MESSAGES) {
+        sharedComposable(Routes.MESSAGES) {
             val state by messagesViewModel.uiState.collectAsStateWithLifecycle()
             MessagesScreen(
                 state = state,
@@ -631,7 +634,7 @@ fun E621NavGraph(
                 avatarRepository = app.avatarRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.MESSAGE_DETAIL,
             arguments = listOf(navArgument("id") { type = NavType.LongType }),
         ) { backStackEntry ->
@@ -656,7 +659,7 @@ fun E621NavGraph(
                 },
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.MESSAGE_COMPOSE,
             arguments = listOf(
                 navArgument("toName") { type = NavType.StringType; defaultValue = "" },
@@ -683,7 +686,7 @@ fun E621NavGraph(
                 },
             )
         }
-        composable(Routes.FORUM) {
+        sharedComposable(Routes.FORUM) {
             val state by forumViewModel.uiState.collectAsStateWithLifecycle()
             ForumScreen(
                 state = state,
@@ -693,7 +696,7 @@ fun E621NavGraph(
                 onOpenTopic = { topic -> navController.navigate(Routes.forumTopic(topic.id, topic.title)) },
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.FORUM_TOPIC,
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType },
@@ -717,7 +720,7 @@ fun E621NavGraph(
                 avatarRepository = app.avatarRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.PROFILE,
             arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L }),
             // Mirrors Routes.SEARCH's reasoning above - Post-by-id (opened from here, via the
@@ -747,7 +750,7 @@ fun E621NavGraph(
                 avatarRepository = app.avatarRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.USER_FEEDBACK,
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType },
@@ -769,7 +772,7 @@ fun E621NavGraph(
                 avatarRepository = app.avatarRepository,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.USER_COMMENTS,
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType },
@@ -790,7 +793,7 @@ fun E621NavGraph(
                 onOpenPost = { postId -> navController.navigate(Routes.postDetail(postId)) },
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.POST_DETAIL,
             arguments = listOf(navArgument("postId") { type = NavType.LongType }),
             exitTransition = { ExitTransition.None },
@@ -821,11 +824,11 @@ fun E621NavGraph(
                 downloadLocationUri = userSettings.downloadLocationUri,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.POOL,
             arguments = listOf(navArgument("poolId") { type = NavType.LongType }),
             popEnterTransition = {
-                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+                if (initialState.destination.route == Routes.DETAIL && DetailTransition.showingVideo) EnterTransition.None else null
             },
         ) { backStackEntry ->
             val poolId = backStackEntry.arguments?.getLong("poolId") ?: 0L
@@ -852,7 +855,7 @@ fun E621NavGraph(
                 onQuickDownload = ::enqueueDownload,
             )
         }
-        composable(Routes.POPULAR) {
+        sharedComposable(Routes.POPULAR) {
             val state by popularViewModel.uiState.collectAsStateWithLifecycle()
             PopularScreen(
                 state = state,
@@ -870,7 +873,7 @@ fun E621NavGraph(
                 onQuickDownload = ::enqueueDownload,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.FAV_ANALYSIS,
             arguments = listOf(navArgument("username") { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -886,7 +889,7 @@ fun E621NavGraph(
                 onRestart = analysisViewModel::start,
             )
         }
-        composable(Routes.DASHBOARD) {
+        sharedComposable(Routes.DASHBOARD) {
             val state by dashboardViewModel.uiState.collectAsStateWithLifecycle()
             DashboardScreen(
                 state = state,
@@ -895,7 +898,7 @@ fun E621NavGraph(
                 onClear = dashboardViewModel::clear,
             )
         }
-        composable(Routes.DOWNLOADS) {
+        sharedComposable(Routes.DOWNLOADS) {
             val jobs by app.downloadQueue.jobs.collectAsStateWithLifecycle()
             DownloadsScreen(
                 jobs = jobs,
@@ -905,7 +908,7 @@ fun E621NavGraph(
                 onClearFinished = app.downloadQueue::clearFinished,
             )
         }
-        composable(Routes.ADVANCED_SEARCH) {
+        sharedComposable(Routes.ADVANCED_SEARCH) {
             AdvancedSearchScreen(
                 onBack = { navController.popBackStack() },
                 onSearch = { query ->
@@ -914,7 +917,7 @@ fun E621NavGraph(
                 },
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.ARTIST,
             arguments = listOf(navArgument("name") { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -932,7 +935,7 @@ fun E621NavGraph(
                 onOpenProfile = { id -> navigateToProfile(id) },
             )
         }
-        composable(Routes.YOU) {
+        sharedComposable(Routes.YOU) {
             val notifications by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { notificationsViewModel.refresh() }
             YouScreen(
@@ -967,7 +970,7 @@ fun E621NavGraph(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
-        composable(Routes.WIKI) {
+        sharedComposable(Routes.WIKI) {
             val state by wikiViewModel.uiState.collectAsStateWithLifecycle()
             WikiScreen(
                 state = state,
@@ -979,7 +982,7 @@ fun E621NavGraph(
                 wikiPreview = { title -> app.wikiRepository.fetchPage(title)?.body },
             )
         }
-        composable(Routes.COLLECTIONS) {
+        sharedComposable(Routes.COLLECTIONS) {
             val collections by localCollectionsViewModel.collections.collectAsStateWithLifecycle()
             LocalCollectionsScreen(
                 collections = collections,
@@ -989,11 +992,11 @@ fun E621NavGraph(
                 onDelete = localCollectionsViewModel::delete,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.COLLECTION_CONTENT,
             arguments = listOf(navArgument("collectionId") { type = NavType.StringType }),
             popEnterTransition = {
-                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+                if (initialState.destination.route == Routes.DETAIL && DetailTransition.showingVideo) EnterTransition.None else null
             },
         ) { backStackEntry ->
             val collectionId = backStackEntry.arguments?.getString("collectionId").orEmpty()
@@ -1018,7 +1021,7 @@ fun E621NavGraph(
                 onThumbnailSizeChange = collectionViewModel::setGridThumbnailSizeDp,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.COLLECTION_DETAIL,
             arguments = listOf(
                 navArgument("collectionId") { type = NavType.StringType },
@@ -1062,7 +1065,7 @@ fun E621NavGraph(
                 )
             }
         }
-        composable(Routes.POST_SETS) {
+        sharedComposable(Routes.POST_SETS) {
             val state by postSetsViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { postSetsViewModel.ensureLoaded() }
             PostSetsScreen(
@@ -1075,11 +1078,11 @@ fun E621NavGraph(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.POST_SET_CONTENT,
             arguments = listOf(navArgument("setId") { type = NavType.LongType }),
             popEnterTransition = {
-                if (initialState.destination.route == Routes.DETAIL) EnterTransition.None else null
+                if (initialState.destination.route == Routes.DETAIL && DetailTransition.showingVideo) EnterTransition.None else null
             },
         ) { backStackEntry ->
             val setId = backStackEntry.arguments?.getLong("setId") ?: 0L
@@ -1106,7 +1109,7 @@ fun E621NavGraph(
                 onQuickDownload = ::enqueueDownload,
             )
         }
-        composable(
+        sharedComposable(
             route = Routes.SAVED_SEARCHES,
             arguments = listOf(navArgument("query") { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -1121,6 +1124,8 @@ fun E621NavGraph(
                 onDelete = savedSearchesViewModel::remove,
             )
         }
+    }
+    }
     }
     }
 }

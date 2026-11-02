@@ -1,5 +1,6 @@
 package one.proci.e621.ui.components
 
+import one.proci.e621.ui.navigation.postSharedBounds
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -104,6 +105,7 @@ fun PostThumbnail(
     Box(
         modifier = modifier
             .aspectRatio(aspect.coerceIn(0.5f, 2f))
+            .postSharedBounds(post.id, enabled = !post.isVideo)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale

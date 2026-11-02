@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
+import one.proci.e621.ui.navigation.postSharedBounds
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.expandVertically
@@ -210,7 +210,12 @@ fun PostDetailScreen(
         onBack()
     }
 
-    BackHandler(onBack = ::handleBack)
+    // No BackHandler: system back is left to the NavHost so the predictive back gesture can scrub
+    // the shrink-into-thumbnail transition. The nav transition's target flips to PostExit as soon
+    // as that gesture starts, which pauses a playing video just like tapping back does.
+    val navScope = one.proci.e621.ui.navigation.LocalNavAnimatedScope.current
+    val leaving = navScope?.transition?.targetState == androidx.compose.animation.EnterExitState.PostExit
+    val active = screenActive && !leaving
 
     val shouldLoadMore by remember {
         derivedStateOf { pagerState.currentPage >= posts.size - 3 }
@@ -220,6 +225,9 @@ fun PostDetailScreen(
     }
 
     val currentPost = posts.getOrNull(pagerState.currentPage)
+    androidx.compose.runtime.SideEffect {
+        one.proci.e621.ui.navigation.DetailTransition.showingVideo = currentPost?.isVideo == true
+    }
 
     // A weighted Column (rather than layering everything in one full-bleed Box) so the info
     // panel occupies its own space below the pager instead of covering the bottom of the
@@ -237,7 +245,7 @@ fun PostDetailScreen(
                 val post = posts.getOrNull(page) ?: return@HorizontalPager
                 MediaViewer(
                     post = post,
-                    isActive = screenActive && pagerState.currentPage == page,
+                    isActive = active && pagerState.currentPage == page,
                     videoLoopEnabled = videoLoopEnabled,
                     videoPlaybackSpeed = videoPlaybackSpeed,
                     videoAutoplayEnabled = videoAutoplayEnabled,
@@ -245,7 +253,11 @@ fun PostDetailScreen(
                     onDismiss = ::handleBack,
                     postActionsRepository = postActionsRepository,
                     siteName = site.name,
-                    modifier = Modifier.fillMaxSize(),
+                    // Only the visible page morphs to/from its grid thumbnail.
+                    modifier = Modifier.fillMaxSize().postSharedBounds(
+                        post.id,
+                        enabled = page == pagerState.currentPage && !post.isVideo,
+                    ),
                 )
             }
 
