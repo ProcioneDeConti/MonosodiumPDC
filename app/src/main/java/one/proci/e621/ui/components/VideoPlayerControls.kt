@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -65,8 +64,7 @@ fun VideoPlayerControls(
 ) {
     Box(modifier = modifier) {
         if (isBuffering && !showPlayAffordance) {
-            CircularProgressIndicator(
-                color = Color.White,
+            RainbowSpinner(
                 modifier = Modifier.align(Alignment.Center).size(48.dp),
             )
         }

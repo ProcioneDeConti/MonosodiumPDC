@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.downloads
 
+import one.proci.e621.ui.components.RainbowSpinner
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -99,7 +99,7 @@ fun DownloadsScreen(
                             )
                         }
                         when (job.state) {
-                            DownloadState.ACTIVE -> CircularProgressIndicator(Modifier.size(20.dp))
+                            DownloadState.ACTIVE -> RainbowSpinner(Modifier.size(20.dp))
                             DownloadState.ERROR -> IconButton(onClick = { onRetry(job.id) }) {
                                 Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.downloads_retry))
                             }

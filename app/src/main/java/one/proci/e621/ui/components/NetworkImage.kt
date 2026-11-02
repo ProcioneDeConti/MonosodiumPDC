@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,13 +43,11 @@ fun NetworkImage(
             modifier = Modifier.fillMaxSize(),
         )
         if (loading && !shimmerWhileLoading) {
-            LinearProgressIndicator(
+            RainbowLinearIndicator(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .height(2.dp),
-                color = Color.White.copy(alpha = 0.85f),
-                trackColor = Color.White.copy(alpha = 0.15f),
+                    .height(3.dp),
             )
         }
     }

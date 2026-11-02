@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.settings
 
+import one.proci.e621.ui.components.RainbowSpinner
 import android.app.KeyguardManager
 import android.content.Intent
 import android.net.Uri
@@ -43,7 +44,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -519,7 +519,7 @@ fun SettingsScreen(
                         Text(stringResource(R.string.settings_blacklist_push, settings.site.displayName))
                     }
                     if (isSyncing) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        RainbowSpinner(modifier = Modifier.size(24.dp))
                     }
                 }
 
@@ -874,7 +874,7 @@ private fun ImportBackupPasswordDialog(onDismiss: () -> Unit, onSubmit: suspend 
         },
         confirmButton = {
             if (submitting) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                RainbowSpinner(modifier = Modifier.size(20.dp))
             } else {
                 TextButton(enabled = password.isNotEmpty(), onClick = ::submit) {
                     Text(stringResource(R.string.settings_backup_unlock))
@@ -1106,7 +1106,7 @@ private fun BlacklistTester(
                 }
             },
         ) {
-            if (testing) CircularProgressIndicator(Modifier.size(18.dp)) else Text(stringResource(R.string.settings_blacklist_tester_run))
+            if (testing) RainbowSpinner(Modifier.size(18.dp)) else Text(stringResource(R.string.settings_blacklist_tester_run))
         }
     }
     error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }

@@ -3,7 +3,6 @@ package one.proci.e621.ui.components
 import android.widget.ImageView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -89,7 +88,7 @@ fun ApngImage(url: String, modifier: Modifier = Modifier) {
                 )
             }
             failed -> Text("Couldn't load image")
-            else -> CircularProgressIndicator()
+            else -> RainbowSpinner()
         }
     }
 }

@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -204,7 +203,7 @@ fun PostGridBody(
                                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                        RainbowSpinner(modifier = Modifier.size(28.dp))
                                     }
                                 }
                             }
@@ -253,9 +252,9 @@ private fun SelectionBar(
                 stringResource(R.string.bulk_progress, bulkProgress.done, bulkProgress.total),
                 style = MaterialTheme.typography.bodySmall,
             )
-            androidx.compose.material3.LinearProgressIndicator(
+            RainbowLinearIndicator(
                 progress = { bulkProgress.fraction },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).height(4.dp),
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

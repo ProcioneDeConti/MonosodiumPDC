@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.sets
 
+import one.proci.e621.ui.components.RainbowSpinner
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +24,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -99,7 +99,7 @@ fun PostSetsScreen(
                     onAction = onOpenSettings,
                 )
                 state.isLoading && state.sets.isEmpty() ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    RainbowSpinner(Modifier.align(Alignment.Center))
                 state.error != null && state.sets.isEmpty() -> CenteredMessage(
                     state.error,
                     actionLabel = stringResource(R.string.error_retry),

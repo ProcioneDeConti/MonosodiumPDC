@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.detail
 
+import one.proci.e621.ui.components.RainbowSpinner
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -72,7 +73,6 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -155,6 +155,18 @@ import one.proci.e621.ui.theme.ViewerBackground
 import one.proci.e621.ui.theme.ChipShape
 import one.proci.e621.ui.theme.PillShape
 import one.proci.e621.ui.theme.SheetShape
+import one.proci.e621.ui.theme.CardShape
+import one.proci.e621.ui.theme.tabular
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @Composable
 fun PostDetailScreen(
@@ -352,10 +364,14 @@ private fun TopBar(onBack: () -> Unit, index: Int, total: Int, rating: String?, 
         IconButton(onClick = onBack) {
             Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
         }
+        // Tabular figures keep the pill from jittering in width as the index ticks over.
         Text(
             text = "${index + 1} / $total",
             color = Color.White,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelLarge.tabular(),
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.35f), PillShape)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         )
         Spacer(modifier = Modifier.weight(1f))
         if (rating != null) {
@@ -390,6 +406,18 @@ private fun InfoPanel(
     val scope = rememberCoroutineScope()
     var isDownloading by remember(post.id) { mutableStateOf(false) }
     var shareMenuExpanded by remember { mutableStateOf(false) }
+    var isSharing by remember(post.id) { mutableStateOf(false) }
+    // Queued downloads return immediately, so the spinner follows this post's job in the shared
+    // queue (waiting or running) rather than the local flag, which only covers the no-queue path.
+    val jobsFlow = remember(downloadQueue) {
+        downloadQueue?.jobs ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+    }
+    val queueJobs by jobsFlow.collectAsState()
+    val queueBusy = queueJobs.any {
+        it.postId == post.id &&
+            (it.state == one.proci.e621.data.download.DownloadState.QUEUED ||
+                it.state == one.proci.e621.data.download.DownloadState.ACTIVE)
+    }
     val downloadStartedMessage = stringResource(R.string.download_started)
     val downloadSavedMessage = stringResource(R.string.download_saved)
     val downloadFailedTemplate = stringResource(R.string.download_failed)
@@ -444,30 +472,35 @@ private fun InfoPanel(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 420.dp)
-            .background(ViewerBackground)
+            // A slightly raised, rounded-top surface so the panel reads as a sheet resting under
+            // the media rather than a flat continuation of the black viewer background.
+            .clip(InfoPanelShape)
+            .background(InfoPanelSurface)
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        VoteFavoriteRow(
-            post = post,
-            postActionsRepository = postActionsRepository,
-            onPostUpdated = onPostUpdated,
-            onOpenComments = onOpenComments,
-        )
+        // Keyed so a swipe to another post resets the row instead of animating its counts.
+        androidx.compose.runtime.key(post.id) {
+            VoteFavoriteRow(
+                post = post,
+                postActionsRepository = postActionsRepository,
+                onPostUpdated = onPostUpdated,
+                onOpenComments = onOpenComments,
+            )
+        }
 
         Row(
             modifier = Modifier
-                .padding(top = 8.dp)
+                .padding(top = 10.dp)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (isDownloading) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-            } else {
+            Box(modifier = Modifier.weight(1f)) {
                 TextAction(
                     icon = Icons.Filled.Download,
                     label = stringResource(R.string.download),
+                    busy = isDownloading || queueBusy,
                     onClick = {
                         val url = post.playableUrl ?: return@TextAction
                         if (downloadNeedsRuntimePermission()) {
@@ -479,10 +512,11 @@ private fun InfoPanel(
                     },
                 )
             }
-            Box {
+            Box(modifier = Modifier.weight(1f)) {
                 TextAction(
                     icon = Icons.Filled.Share,
                     label = stringResource(R.string.action_share),
+                    busy = isSharing,
                     onClick = { shareMenuExpanded = true },
                 )
                 DropdownMenu(expanded = shareMenuExpanded, onDismissRequest = { shareMenuExpanded = false }) {
@@ -492,8 +526,10 @@ private fun InfoPanel(
                             shareMenuExpanded = false
                             val url = post.playableUrl
                             if (url != null) {
+                                isSharing = true
                                 scope.launch {
                                     MediaSharer(context).shareFile(url, post.downloadFileName, post.mimeType)
+                                        .also { isSharing = false }
                                         .onFailure { e ->
                                             Toast.makeText(
                                                 context,
@@ -552,9 +588,21 @@ private fun VoteFavoriteRow(
     var isFavoriting by remember(post.id) { mutableStateOf(false) }
     val voteFailedTemplate = stringResource(R.string.vote_failed)
     val favoriteFailedTemplate = stringResource(R.string.favorite_failed)
+    val haptics = LocalHapticFeedback.current
+    // Pops the star when it flips to favorited (not on page change, hence keyed on post.id).
+    val starScale = remember(post.id) { Animatable(1f) }
+    var lastFavorited by remember(post.id) { mutableStateOf(post.isFavorited) }
+    LaunchedEffect(post.isFavorited) {
+        if (post.isFavorited && !lastFavorited) {
+            starScale.snapTo(0.6f)
+            starScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+        }
+        lastFavorited = post.isFavorited
+    }
 
     fun castVote(direction: Int) {
         if (isVoting) return
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         isVoting = true
         scope.launch {
             runCatching { postActionsRepository.vote(post, direction) }
@@ -578,7 +626,7 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape),
+                .background(PanelPillColor, ChipShape),
         ) {
             VoteTooltipIconButton(
                 tooltipText = "${post.score.up} upvotes",
@@ -592,12 +640,11 @@ private fun VoteFavoriteRow(
                     modifier = Modifier.size(40.dp),
                 )
             }
-            Text(
-                text = formatCount(post.score.total),
+            AnimatedCount(
+                value = post.score.total,
                 color = scoreColor(post.score.total),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                softWrap = false,
             )
             VoteTooltipIconButton(
                 tooltipText = "${post.score.down} downvotes",
@@ -619,7 +666,7 @@ private fun VoteFavoriteRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(PillHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
+                .background(PanelPillColor, ChipShape)
                 .padding(end = 8.dp),
         ) {
             IconButton(
@@ -627,6 +674,7 @@ private fun VoteFavoriteRow(
                 modifier = Modifier.size(48.dp),
                 onClick = {
                     if (isFavoriting) return@IconButton
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     isFavoriting = true
                     scope.launch {
                         runCatching {
@@ -654,14 +702,18 @@ private fun VoteFavoriteRow(
                     if (post.isFavorited) Icons.Filled.Star else Icons.Filled.StarBorder,
                     contentDescription = "Favorite",
                     tint = FavoriteGold,
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier
+                        .size(30.dp)
+                        .graphicsLayer {
+                            scaleX = starScale.value
+                            scaleY = starScale.value
+                        },
                 )
             }
-            Text(
-                formatCount(post.favCount),
+            AnimatedCount(
+                value = post.favCount,
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium,
-                softWrap = false,
             )
         }
     }
@@ -670,22 +722,62 @@ private fun VoteFavoriteRow(
 /** Shared height so the rating, vote, comment-count, and favorite pills all line up. */
 private val PillHeight = 52.dp
 
+/** Pill fill for the panel; the viewer is always dark, so this doesn't follow the light theme. */
+private val PanelPillColor = Color.White.copy(alpha = 0.08f)
+
 @Composable
 private fun CommentCountPill(count: Int, onClick: () -> Unit) {
-    Box(
+    Row(
         modifier = Modifier
             .height(PillHeight)
             .clip(ChipShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(PanelPillColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        Icon(
+            Icons.AutoMirrored.Filled.Comment,
+            contentDescription = stringResource(R.string.action_comments),
+            tint = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier.size(20.dp),
+        )
         Text(
             text = formatCount(count),
             color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.tabular(),
             fontWeight = FontWeight.Bold,
+            softWrap = false,
+        )
+    }
+}
+
+/**
+ * A count that rolls up or down when it changes (a vote or favorite landing) - but not when the
+ * pager moves to another post, which would otherwise make every swipe animate.
+ */
+@Composable
+private fun AnimatedCount(
+    value: Int,
+    color: Color,
+    style: androidx.compose.ui.text.TextStyle,
+    fontWeight: FontWeight? = null,
+) {
+    AnimatedContent(
+        targetState = value,
+        transitionSpec = {
+            val up = targetState > initialState
+            (slideInVertically { h -> if (up) h else -h } + fadeIn()) togetherWith
+                (slideOutVertically { h -> if (up) -h else h } + fadeOut())
+        },
+        label = "count",
+    ) { v ->
+        Text(
+            text = formatCount(v),
+            color = color,
+            style = style.tabular(),
+            fontWeight = fontWeight,
             softWrap = false,
         )
     }
@@ -867,6 +959,15 @@ private fun PostInfoSheet(
             }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Rows grouped on a card so the facts read as one block, distinct from the actions above
+            // and the relationships/sources/description below.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(CardShape)
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+            ) {
             InfoRow(stringResource(R.string.info_post_id), "#${post.id}")
             InfoRow(stringResource(R.string.info_dimensions), "${post.file.width} × ${post.file.height}")
             InfoRow(stringResource(R.string.info_file_size), formatFileSize(post.file.size))
@@ -880,6 +981,7 @@ private fun PostInfoSheet(
             InfoRow(stringResource(R.string.info_favorites), "${post.favCount}")
             InfoRow(stringResource(R.string.score), "+${post.score.up} / ${post.score.down} / ${post.score.total}")
             StatusInfoRow(post)
+            }
             if (post.flags.flagged) {
                 FlagReasonBox(postId = post.id, postActionsRepository = postActionsRepository)
             }
@@ -953,7 +1055,7 @@ private fun PostInfoSheet(
             text = {
                 Box(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                     when {
-                        jsonLoading -> CircularProgressIndicator()
+                        jsonLoading -> RainbowSpinner()
                         jsonError != null -> Text(jsonError.orEmpty())
                         jsonText != null -> Text(
                             text = jsonText.orEmpty(),
@@ -1051,7 +1153,7 @@ private fun PostHistoryDialog(
             Box(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                 when {
                     error -> Text(stringResource(R.string.post_history_failed))
-                    versions == null -> CircularProgressIndicator()
+                    versions == null -> RainbowSpinner()
                     versions!!.isEmpty() -> Text(stringResource(R.string.post_history_empty))
                     else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         versions!!.forEach { v ->
@@ -1287,7 +1389,7 @@ private fun CommentsSheet(
             ) {
                 when {
                     loading -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        RainbowSpinner()
                     }
                     loadError != null -> Text(
                         loadError.orEmpty(),
@@ -1334,7 +1436,7 @@ private fun CommentsSheet(
                     maxLines = 4,
                 )
                 if (posting) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    RainbowSpinner(modifier = Modifier.size(24.dp))
                 } else {
                     IconButton(onClick = ::submitComment, enabled = draft.isNotBlank()) {
                         Icon(
@@ -1551,7 +1653,7 @@ private fun PillAction(icon: androidx.compose.ui.graphics.vector.ImageVector, la
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, ChipShape)
+            .background(PanelPillColor, ChipShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
@@ -1579,8 +1681,12 @@ private fun InfoRow(label: String, value: String) {
         Text(
             value,
             color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.tabular(),
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            modifier = Modifier.weight(1f, fill = false).padding(start = 16.dp),
         )
     }
 }
@@ -1709,15 +1815,35 @@ private fun formatFileSize(bytes: Long): String {
     return "%.2f MB".format(kb / 1024.0)
 }
 
+/** Raised surface + shape for the viewer's bottom info panel. */
+private val InfoPanelSurface = Color(0xFF1C1C1C)
+private val InfoPanelShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+
+/** Full-width tonal pill button for the panel's primary actions (download, share). */
 @Composable
-private fun TextAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+private fun TextAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    busy: Boolean = false,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(PillShape)
+            .background(Color.White.copy(alpha = 0.08f))
+            .clickable(enabled = !busy, onClick = onClick)
+            .padding(horizontal = 16.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.padding(2.dp))
-        Text(label, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+        if (busy) {
+            RainbowSpinner(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+        }
+        Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -1730,8 +1856,8 @@ private fun RatingChip(rating: String) {
     }
     Box(
         modifier = Modifier
-            .size(26.dp)
-            .background(color, RoundedCornerShape(2.dp)),
+            .size(28.dp)
+            .background(color, ChipShape),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -2017,7 +2143,7 @@ private fun WikiPageDialog(
             Box(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                 when {
                     missing -> Text(stringResource(R.string.wiki_no_page))
-                    body == null -> CircularProgressIndicator()
+                    body == null -> RainbowSpinner()
                     else -> DTextView(text = body!!, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -2054,7 +2180,7 @@ private fun RelatedTagsDialog(
             Box(modifier = Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
                 when {
                     failed -> Text(stringResource(R.string.related_tags_failed))
-                    related == null -> CircularProgressIndicator()
+                    related == null -> RainbowSpinner()
                     related!!.isEmpty() -> Text(stringResource(R.string.related_tags_none))
                     else -> FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),

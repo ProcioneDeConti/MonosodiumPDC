@@ -10,7 +10,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -48,36 +50,122 @@ fun RainbowRefreshIndicator(isRefreshing: Boolean, modifier: Modifier = Modifier
         exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
         modifier = modifier,
     ) {
-        val transition = rememberInfiniteTransition(label = "rainbowRefresh")
-        val rotation by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing)),
-            label = "rainbowRefreshRotation",
-        )
-        val n = RainbowStripeColors.size
-        val cycle by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = n.toFloat(),
-            animationSpec = infiniteRepeatable(animation = tween(n * 350, easing = LinearEasing)),
-            label = "rainbowRefreshCycle",
-        )
-        val color = RainbowStripeColors[cycle.toInt().coerceIn(0, n - 1)]
-
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 4.dp,
         ) {
-            Icon(
-                Icons.Filled.Refresh,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(24.dp)
-                    .graphicsLayer { rotationZ = rotation },
+            RainbowSpinner(
+                strokeWidth = 3.dp,
+                modifier = Modifier.padding(8.dp).size(24.dp),
             )
+        }
+    }
+}
+
+/**
+ * The app's standard indeterminate spinner: a Material-style arc that spins while its length
+ * breathes in and out, drawn as consecutive ROYGBIV bands (red at the tail, violet at the head)
+ * using the same [RainbowStripeColors] as [RainbowRefreshIndicator].
+ */
+@Composable
+fun RainbowSpinner(
+    modifier: Modifier = Modifier,
+    strokeWidth: androidx.compose.ui.unit.Dp = androidx.compose.material3.ProgressIndicatorDefaults.CircularStrokeWidth,
+) {
+    val transition = rememberInfiniteTransition(label = "rainbowSpinner")
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(animation = tween(1100, easing = LinearEasing)),
+        label = "rainbowSpinnerRotation",
+    )
+    val sweep by transition.animateFloat(
+        initialValue = 90f,
+        targetValue = 290f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "rainbowSpinnerSweep",
+    )
+    androidx.compose.foundation.Canvas(
+        modifier = modifier
+            .defaultMinSize(40.dp, 40.dp)
+            .progressSemantics(),
+    ) {
+        val stroke = strokeWidth.toPx()
+        val inset = stroke / 2
+        val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
+        val n = RainbowStripeColors.size
+        val seg = sweep / n
+        RainbowStripeColors.forEachIndexed { i, color ->
+            drawArc(
+                color = color,
+                // Each band overlaps the next by a hair so no seams show between them.
+                startAngle = rotation - 90f + i * seg,
+                sweepAngle = seg + if (i < n - 1) 0.8f else 0f,
+                useCenter = false,
+                topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                size = arcSize,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Butt),
+            )
+        }
+    }
+}
+
+
+/**
+ * The app's loading stripe. Indeterminate (no [progress]): ROYGBIV bands, each [bandWidth] wide,
+ * repeating across the width and sliding steadily right. Determinate: the seven bands span the
+ * full width as a fixed red-to-violet meter, revealed up to the current fraction over a faint track.
+ */
+@Composable
+fun RainbowLinearIndicator(
+    modifier: Modifier = Modifier,
+    progress: (() -> Float)? = null,
+    bandWidth: androidx.compose.ui.unit.Dp = 24.dp,
+    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+) {
+    val n = RainbowStripeColors.size
+    if (progress != null) {
+        androidx.compose.foundation.Canvas(modifier = modifier.progressSemantics(progress().coerceIn(0f, 1f))) {
+            drawRect(trackColor)
+            val filled = size.width * progress().coerceIn(0f, 1f)
+            val band = size.width / n
+            for (i in 0 until n) {
+                val left = i * band
+                if (left >= filled) break
+                drawRect(
+                    color = RainbowStripeColors[i],
+                    topLeft = androidx.compose.ui.geometry.Offset(left, 0f),
+                    size = androidx.compose.ui.geometry.Size(minOf(band + 0.5f, filled - left), size.height),
+                )
+            }
+        }
+        return
+    }
+    val transition = rememberInfiniteTransition(label = "rainbowLinear")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(animation = tween(1200, easing = LinearEasing)),
+        label = "rainbowLinearPhase",
+    )
+    androidx.compose.foundation.Canvas(modifier = modifier.progressSemantics()) {
+        val band = bandWidth.toPx()
+        val period = band * n
+        // Start one full period off-screen so the left edge is always covered while sliding.
+        var x = -period + phase * period
+        var i = 0
+        while (x < size.width) {
+            drawRect(
+                color = RainbowStripeColors[i % n],
+                topLeft = androidx.compose.ui.geometry.Offset(x, 0f),
+                size = androidx.compose.ui.geometry.Size(band + 0.5f, size.height),
+            )
+            x += band
+            i++
         }
     }
 }

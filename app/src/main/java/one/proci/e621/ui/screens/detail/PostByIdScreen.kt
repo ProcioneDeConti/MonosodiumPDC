@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.detail
 
+import one.proci.e621.ui.components.RainbowSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -116,7 +116,7 @@ fun PostByIdScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
             }
             when (val message = error) {
-                null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                null -> RainbowSpinner(modifier = Modifier.align(Alignment.Center))
                 else -> Column(modifier = Modifier.align(Alignment.Center).padding(24.dp)) {
                     Text(message, color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
                 }

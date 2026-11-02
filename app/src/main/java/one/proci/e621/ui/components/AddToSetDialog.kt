@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -101,7 +100,7 @@ fun AddToSetDialog(
             Column(modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
                 when {
                     error != null -> Text(error.orEmpty())
-                    sets == null -> CircularProgressIndicator()
+                    sets == null -> RainbowSpinner()
                     else -> {
                         if (sets!!.isEmpty()) {
                             Text(
@@ -121,7 +120,7 @@ fun AddToSetDialog(
                             ) {
                                 Text(set.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 when {
-                                    busyId == set.id -> CircularProgressIndicator(Modifier.size(18.dp))
+                                    busyId == set.id -> RainbowSpinner(Modifier.size(18.dp))
                                     allIn -> Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                 }
                             }
@@ -135,7 +134,7 @@ fun AddToSetDialog(
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
                                 if (creating) {
-                                    CircularProgressIndicator(Modifier.size(18.dp))
+                                    RainbowSpinner(Modifier.size(18.dp))
                                 } else {
                                     IconButton(
                                         enabled = newName.isNotBlank(),

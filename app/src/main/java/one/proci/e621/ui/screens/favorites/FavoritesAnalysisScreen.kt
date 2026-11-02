@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.favorites
 
+import one.proci.e621.ui.components.RainbowLinearIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -70,7 +70,7 @@ fun FavoritesAnalysisScreen(
         ) {
             if (state.running) {
                 Text(stringResource(R.string.fav_analysis_progress, state.fetched))
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                RainbowLinearIndicator(modifier = Modifier.fillMaxWidth().height(4.dp))
             }
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 

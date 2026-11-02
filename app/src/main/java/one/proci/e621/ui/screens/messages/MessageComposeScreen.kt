@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.messages
 
+import one.proci.e621.ui.components.RainbowSpinner
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -79,7 +79,7 @@ fun MessageComposeScreen(
                 },
                 actions = {
                     if (sending) {
-                        CircularProgressIndicator(modifier = Modifier.padding(12.dp).height(24.dp))
+                        RainbowSpinner(modifier = Modifier.padding(12.dp).height(24.dp))
                     } else {
                         IconButton(onClick = ::send, enabled = canSend) {
                             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.message_send))
