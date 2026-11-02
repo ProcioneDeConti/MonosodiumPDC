@@ -88,6 +88,7 @@ private object Routes {
     const val POPULAR = "popular"
     const val COLLECTIONS = "local_collections"
     const val WIKI = "wiki"
+    const val ARTIST = "artist/{name}"
     const val ADVANCED_SEARCH = "advanced_search"
     const val DOWNLOADS = "downloads"
     const val DASHBOARD = "dashboard"
@@ -115,6 +116,7 @@ private object Routes {
     fun userFeedback(id: Long, username: String) = "user_feedback/$id/${Uri.encode(username)}"
     fun userComments(id: Long, username: String) = "user_comments/$id/${Uri.encode(username)}"
     fun favAnalysis(username: String) = "favorites_analysis/${Uri.encode(username)}"
+    fun artist(name: String) = "artist/${Uri.encode(name)}"
 }
 
 private const val SOURCE_SEARCH = "search"
@@ -203,6 +205,10 @@ fun E621NavGraph(
 
     fun navigateToPool(poolId: Long) {
         navController.navigate(Routes.pool(poolId))
+    }
+
+    fun navigateToArtist(name: String) {
+        navController.navigate(Routes.artist(name))
     }
 
     fun navigateToPostSetContent(setId: Long) {
@@ -371,6 +377,7 @@ fun E621NavGraph(
                         onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                         onOpenProfile = { id -> navigateToProfile(id) },
                         onOpenPool = ::navigateToPool,
+                        onOpenArtist = ::navigateToArtist,
                         site = activeSite,
                         videoLoopEnabled = userSettings.videoLoopEnabled,
                         videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -401,6 +408,7 @@ fun E621NavGraph(
                         onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                         onOpenProfile = { id -> navigateToProfile(id) },
                         onOpenPool = ::navigateToPool,
+                        onOpenArtist = ::navigateToArtist,
                         site = activeSite,
                         videoLoopEnabled = userSettings.videoLoopEnabled,
                         videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -433,6 +441,7 @@ fun E621NavGraph(
                             onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                             onOpenProfile = { id -> navigateToProfile(id) },
                             onOpenPool = ::navigateToPool,
+                            onOpenArtist = ::navigateToArtist,
                             site = activeSite,
                             videoLoopEnabled = userSettings.videoLoopEnabled,
                             videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -466,6 +475,7 @@ fun E621NavGraph(
                             onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                             onOpenProfile = { id -> navigateToProfile(id) },
                             onOpenPool = ::navigateToPool,
+                            onOpenArtist = ::navigateToArtist,
                             site = activeSite,
                             videoLoopEnabled = userSettings.videoLoopEnabled,
                             videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -499,6 +509,7 @@ fun E621NavGraph(
                             onExcludeTagFromSearch = { tag -> navigateToSearch("${state.activeQuery} -$tag".trim()) },
                             onOpenProfile = { id -> navigateToProfile(id) },
                             onOpenPool = ::navigateToPool,
+                            onOpenArtist = ::navigateToArtist,
                             site = activeSite,
                             videoLoopEnabled = userSettings.videoLoopEnabled,
                             videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -669,6 +680,7 @@ fun E621NavGraph(
                 onOpenPost = { postId -> navController.navigate(Routes.postDetail(postId)) },
                 onOpenPosts = { username -> navigateToSearch("user:$username") },
                 onOpenFavorites = { username -> navigateToSearch("fav:$username") },
+                onOpenAnalysis = { username -> navController.navigate(Routes.favAnalysis(username)) },
                 onOpenComments = { id, username -> navController.navigate(Routes.userComments(id, username)) },
                 onOpenFeedback = { id, username -> navController.navigate(Routes.userFeedback(id, username)) },
                 avatarRepository = app.avatarRepository,
@@ -740,6 +752,7 @@ fun E621NavGraph(
                 onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                 onOpenProfile = { id -> navigateToProfile(id) },
                 onOpenPool = ::navigateToPool,
+                onOpenArtist = ::navigateToArtist,
                 site = activeSite,
                 videoLoopEnabled = userSettings.videoLoopEnabled,
                 videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
@@ -840,6 +853,24 @@ fun E621NavGraph(
                 },
             )
         }
+        composable(
+            route = Routes.ARTIST,
+            arguments = listOf(navArgument("name") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val name = Uri.decode(backStackEntry.arguments?.getString("name") ?: "")
+            val artistFactory = remember(backStackEntry) { factory.artistViewModelFactory(name) }
+            val artistViewModel: one.proci.e621.ui.screens.artist.ArtistViewModel =
+                viewModel(viewModelStoreOwner = backStackEntry, factory = artistFactory)
+            val state by artistViewModel.uiState.collectAsStateWithLifecycle()
+            one.proci.e621.ui.screens.artist.ArtistScreen(
+                state = state,
+                site = activeSite,
+                onBack = { navController.popBackStack() },
+                onRetry = artistViewModel::refresh,
+                onSearch = ::navigateToSearch,
+                onOpenProfile = { id -> navigateToProfile(id) },
+            )
+        }
         composable(Routes.WIKI) {
             val state by wikiViewModel.uiState.collectAsStateWithLifecycle()
             WikiScreen(
@@ -923,6 +954,7 @@ fun E621NavGraph(
                     onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
                     onOpenProfile = { id -> navigateToProfile(id) },
                     onOpenPool = ::navigateToPool,
+                    onOpenArtist = ::navigateToArtist,
                     site = activeSite,
                     videoLoopEnabled = userSettings.videoLoopEnabled,
                     videoPlaybackSpeed = userSettings.videoPlaybackSpeed,

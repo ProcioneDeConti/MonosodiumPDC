@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,6 +65,7 @@ fun ProfileScreen(
     onOpenPost: (Long) -> Unit,
     onOpenPosts: (String) -> Unit,
     onOpenFavorites: (String) -> Unit,
+    onOpenAnalysis: (String) -> Unit,
     onOpenComments: (Long, String) -> Unit,
     onOpenFeedback: (Long, String) -> Unit,
     avatarRepository: AvatarRepository,
@@ -109,6 +111,7 @@ fun ProfileScreen(
                 onOpenPost = onOpenPost,
                 onOpenPosts = onOpenPosts,
                 onOpenFavorites = onOpenFavorites,
+                onOpenAnalysis = onOpenAnalysis,
                 onOpenComments = onOpenComments,
                 onOpenFeedback = onOpenFeedback,
                 modifier = Modifier.padding(padding),
@@ -124,6 +127,7 @@ private fun ProfileContent(
     onOpenPost: (Long) -> Unit,
     onOpenPosts: (String) -> Unit,
     onOpenFavorites: (String) -> Unit,
+    onOpenAnalysis: (String) -> Unit,
     onOpenComments: (Long, String) -> Unit,
     onOpenFeedback: (Long, String) -> Unit,
     modifier: Modifier = Modifier,
@@ -148,6 +152,11 @@ private fun ProfileContent(
                     icon = Icons.Filled.Favorite,
                     label = stringResource(R.string.profile_action_favorites),
                     onClick = { onOpenFavorites(profile.name) },
+                )
+                ActivityRow(
+                    icon = Icons.Filled.QueryStats,
+                    label = stringResource(R.string.fav_analysis_open),
+                    onClick = { onOpenAnalysis(profile.name) },
                 )
                 ActivityRow(
                     icon = Icons.AutoMirrored.Filled.Comment,

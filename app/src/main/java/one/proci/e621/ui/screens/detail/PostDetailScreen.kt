@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
@@ -171,6 +172,8 @@ fun PostDetailScreen(
     onExcludeTagFromSearch: (String) -> Unit,
     onOpenProfile: (Long) -> Unit,
     onOpenPool: (Long) -> Unit = {},
+    /** Opens the artist page for an artist tag; null hides the menu item. */
+    onOpenArtist: ((String) -> Unit)? = null,
     site: Site,
     videoLoopEnabled: Boolean,
     videoPlaybackSpeed: Float,
@@ -277,6 +280,7 @@ fun PostDetailScreen(
                     onSearchTag = onSearchTag,
                     onAddTagToSearch = onAddTagToSearch,
                     onExcludeTagFromSearch = onExcludeTagFromSearch,
+                    onOpenArtist = onOpenArtist,
                     onOpenComments = { commentsSheetVisible = true },
                     site = site,
                     downloadLocationUri = downloadLocationUri,
@@ -361,6 +365,7 @@ private fun InfoPanel(
     onSearchTag: (String) -> Unit,
     onAddTagToSearch: (String) -> Unit,
     onExcludeTagFromSearch: (String) -> Unit,
+    onOpenArtist: ((String) -> Unit)?,
     onOpenComments: () -> Unit,
     site: Site,
     downloadLocationUri: String?,
@@ -512,6 +517,7 @@ private fun InfoPanel(
                 onExcludeFromSearch = onExcludeTagFromSearch,
                 onFetchRelated = postActionsRepository::fetchRelatedTags,
                 onFetchWiki = wikiRepository?.let { repo -> { title -> repo.fetchPage(title)?.body } },
+                onOpenArtist = onOpenArtist,
                 highlightedTags = highlightedTags,
             )
         }
@@ -1737,6 +1743,7 @@ private fun TagSections(
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
     onFetchWiki: (suspend (String) -> String?)?,
+    onOpenArtist: ((String) -> Unit)?,
     highlightedTags: Set<String>,
 ) {
     val grouped = tags.groupBy { it.category }
@@ -1753,6 +1760,7 @@ private fun TagSections(
                     onExcludeFromSearch = onExcludeFromSearch,
                     onFetchRelated = onFetchRelated,
                     onFetchWiki = onFetchWiki,
+                    onOpenArtist = onOpenArtist,
                     highlightedTags = highlightedTags,
                 )
             }
@@ -1771,6 +1779,7 @@ private fun TagSection(
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
     onFetchWiki: (suspend (String) -> String?)?,
+    onOpenArtist: ((String) -> Unit)?,
     highlightedTags: Set<String>,
 ) {
     val headerColor = when (category) {
@@ -1810,6 +1819,7 @@ private fun TagSection(
                     onExcludeFromSearch = onExcludeFromSearch,
                     onFetchRelated = onFetchRelated,
                     onFetchWiki = onFetchWiki,
+                    onOpenArtist = onOpenArtist,
                     isBlacklistMatch = tag.name.lowercase() in highlightedTags,
                 )
             }
@@ -1826,6 +1836,7 @@ private fun TagChip(
     onExcludeFromSearch: (String) -> Unit,
     onFetchRelated: suspend (String) -> List<CategorizedTag>,
     onFetchWiki: (suspend (String) -> String?)?,
+    onOpenArtist: ((String) -> Unit)?,
     isBlacklistMatch: Boolean = false,
 ) {
     var showRelated by remember { mutableStateOf(false) }
@@ -1903,15 +1914,19 @@ private fun TagChip(
                     showRelated = true
                 },
             )
+            if (tag.category == TagCategory.ARTIST && onOpenArtist != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.tag_menu_artist_page)) },
+                    leadingIcon = { Icon(Icons.Filled.Brush, contentDescription = null) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenArtist(tag.name)
+                    },
+                )
+            }
             if (onFetchWiki != null) {
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(
-                                if (tag.category == TagCategory.ARTIST) R.string.tag_menu_artist_page else R.string.tag_menu_wiki,
-                            ),
-                        )
-                    },
+                    text = { Text(stringResource(R.string.tag_menu_wiki)) },
                     leadingIcon = { Icon(Icons.Filled.MenuBook, contentDescription = null) },
                     onClick = {
                         menuExpanded = false

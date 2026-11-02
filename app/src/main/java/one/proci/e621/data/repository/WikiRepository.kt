@@ -2,6 +2,7 @@ package one.proci.e621.data.repository
 
 import one.proci.e621.data.api.E621ApiService
 import one.proci.e621.data.model.Artist
+import one.proci.e621.data.model.ArtistDnp
 import one.proci.e621.data.model.WikiPage
 
 class WikiRepository(private val api: E621ApiService) {
@@ -20,4 +21,8 @@ class WikiRepository(private val api: E621ApiService) {
     /** The artist record for [name], or null. */
     suspend fun fetchArtist(name: String): Artist? =
         api.getArtistByName(name.trim().replace(' ', '_')).firstOrNull()
+
+    /** The artist's active "do not post" record, or null if they have none. */
+    suspend fun fetchArtistDnp(artistId: Long): ArtistDnp? =
+        api.getArtistDnp(artistId).firstOrNull { it.isActive }
 }

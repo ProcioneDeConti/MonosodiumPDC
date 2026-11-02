@@ -106,6 +106,14 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
                 FavoritesAnalysisViewModel(username, app.postRepository) as T
         }
 
+    /** Same per-back-stack-entry idea as [searchViewModelFactory], for one artist's page. */
+    fun artistViewModelFactory(name: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                one.proci.e621.ui.screens.artist.ArtistViewModel(name, app.wikiRepository) as T
+        }
+
     /** Same per-back-stack-entry idea as [searchViewModelFactory]; null [userId] means "the signed-in user's own profile." */
     fun profileViewModelFactory(userId: Long?): ViewModelProvider.Factory =
         object : ViewModelProvider.Factory {

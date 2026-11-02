@@ -277,4 +277,10 @@ interface E621ApiService {
         @Query("search[name]") name: String,
         @Query("limit") limit: Int = 1,
     ): List<one.proci.e621.data.model.Artist>
+
+    /** Public. "Do not post" records for an artist id. */
+    @GET("avoid_postings.json")
+    suspend fun getArtistDnp(
+        @Query("search[artist_id]") artistId: Long,
+    ): List<one.proci.e621.data.model.ArtistDnp>
 }
