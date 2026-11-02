@@ -3,6 +3,15 @@ package one.proci.e621.ui.navigation
 import android.net.Uri
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.currentBackStackEntryAsState
+import one.proci.e621.ui.screens.you.YouScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -70,7 +79,7 @@ import one.proci.e621.ui.screens.usercomments.UserCommentsViewModel
 import one.proci.e621.ui.screens.wiki.WikiScreen
 import one.proci.e621.ui.screens.wiki.WikiViewModel
 
-private object Routes {
+internal object Routes {
     const val SEARCH = "search/{id}/{query}"
     const val FAVORITES = "favorites"
     const val DETAIL = "detail/{source}/{searchId}/{index}"
@@ -88,6 +97,7 @@ private object Routes {
     const val POPULAR = "popular"
     const val COLLECTIONS = "local_collections"
     const val WIKI = "wiki"
+    const val YOU = "you"
     const val ARTIST = "artist/{name}"
     const val ADVANCED_SEARCH = "advanced_search"
     const val DOWNLOADS = "downloads"
@@ -219,11 +229,78 @@ fun E621NavGraph(
         navController.navigate(Routes.collectionContent(id))
     }
 
+    var lastBrowseQuery by remember { mutableStateOf("") }
+    val notifications by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val currentTab = AppTab.forRoute(currentEntry?.destination?.route)
+
+    /**
+     * Tab switching without saveState/restoreState. Those can't work here: Browse's root is the
+     * start destination and every search page shares the one "search/{id}/{query}" destination,
+     * so restoring Browse's saved trail collided with the state being saved by the same switch,
+     * and tapping Browse did nothing. Instead the Browse trail simply stays on the back stack
+     * underneath, and the other tabs sit on top of it:
+     * - Browse pops back to the most recent search page (the trail is untouched).
+     * - Another tab pops back to that tab if it's already on the stack, otherwise back to the
+     *   most recent search page and opens the tab there - so Back from any tab returns to Browse.
+     * - Re-tapping the current tab returns to its root (Browse: the home search).
+     */
+    fun navigateToTab(tab: AppTab) {
+        val searchId = navController.graph.findNode(Routes.SEARCH)?.id ?: return
+        // Read fresh on every tap. A value captured during composition goes stale, because
+        // Compose reuses the bar's click lambdas and the tab looked like Browse forever.
+        val current = AppTab.forRoute(navController.currentBackStackEntry?.destination?.route)
+        if (tab == current) {
+            if (tab == AppTab.BROWSE) {
+                // Back to the home search, which is the bottom-most search page. Don't use
+                // findStartDestination(): with a filled-in start route ("search/1/") it reports
+                // the root graph itself, and popping to that empties the whole back stack.
+                val home = navController.currentBackStack.value.firstOrNull { it.destination.id == searchId }
+                while (home != null && navController.currentBackStackEntry != home) {
+                    if (!navController.popBackStack()) break
+                }
+            } else {
+                navController.graph.findNode(tab.route!!)?.id?.let { navController.popBackStack(it, inclusive = false) }
+            }
+            return
+        }
+        if (tab == AppTab.BROWSE) {
+            navController.popBackStack(searchId, inclusive = false)
+            return
+        }
+        val tabId = navController.graph.findNode(tab.route!!)?.id ?: return
+        val alreadyOpen = runCatching { navController.getBackStackEntry(tabId) }.isSuccess
+        if (alreadyOpen) {
+            navController.popBackStack(tabId, inclusive = false)
+        } else {
+            navController.popBackStack(searchId, inclusive = false)
+            navController.navigate(tab.route) { launchSingleTop = true }
+        }
+    }
+
     // Start destination is a search for everything (empty query) - the app's "home page". Every
     // subsequent search pushes a brand new "search/{id}/{query}" entry rather than mutating a
     // shared/hoisted screen, so no matter how many tag-search hops you make, Back always steps
     // back through exactly what you saw, one page at a time - like browser history.
-    NavHost(navController = navController, startDestination = startRoute) {
+    Scaffold(
+        // Screens handle their own system-bar insets; this Scaffold only reserves the bar's space.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            if (currentTab != null) {
+                AppBottomBar(
+                    current = currentTab,
+                    youBadgeCount = notifications.unreadMessageCount,
+                    youBadgeDot = notifications.forumUnread,
+                    onSelect = ::navigateToTab,
+                )
+            }
+        },
+    ) { shellPadding ->
+    NavHost(
+        navController = navController,
+        startDestination = startRoute,
+        modifier = Modifier.padding(shellPadding).consumeWindowInsets(shellPadding),
+    ) {
         composable(
             route = Routes.SEARCH,
             arguments = listOf(
@@ -259,8 +336,9 @@ fun E621NavGraph(
                 onDispose { backStackEntry.lifecycle.removeObserver(observer) }
             }
             val state by searchViewModel.uiState.collectAsStateWithLifecycle()
-            val notifications by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { notificationsViewModel.refresh() }
+            // "Save this search" from the You tab offers whatever Browse last showed.
+            SideEffect { lastBrowseQuery = state.activeQuery }
             PostGridScreen(
                 state = state,
                 onQueryChange = searchViewModel::onQueryChange,
@@ -275,19 +353,6 @@ fun E621NavGraph(
                 onLoadMore = searchViewModel::loadMore,
                 onDismissError = searchViewModel::dismissError,
                 onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_SEARCH, id, index)) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onOpenFavorites = { navController.navigate(Routes.FAVORITES) },
-                onOpenMessages = { navController.navigate(Routes.MESSAGES) },
-                onOpenForum = { navController.navigate(Routes.FORUM) },
-                onOpenSavedSearches = { currentQuery -> navController.navigate(Routes.savedSearches(currentQuery)) },
-                onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
-                onOpenPopular = { navController.navigate(Routes.POPULAR) },
-                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
-                onOpenWiki = { navController.navigate(Routes.WIKI) },
-                onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
-                onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
-                onOpenDashboard = { navController.navigate(Routes.DASHBOARD) },
-                onOpenProfile = { navigateToProfile(null) },
                 onSetBlacklistDisabled = searchViewModel::setBlacklistDisabled,
                 onThumbnailSizeChange = searchViewModel::setGridThumbnailSizeDp,
                 onQuickFavorite = searchViewModel::quickToggleFavorite,
@@ -295,21 +360,7 @@ fun E621NavGraph(
                 onQuickDownload = ::enqueueDownload,
                 onBulkFavorite = searchViewModel::bulkSetFavorite,
                 postSetRepository = app.postSetRepository,
-                unreadMessageCount = notifications.unreadMessageCount,
-                forumUnread = notifications.forumUnread,
                 tagSuggestionRepository = app.tagSuggestionRepository,
-                healthCheckRepository = app.healthCheckRepository,
-                useE6Ai = userSettings.useE6Ai,
-                e6aiPermanentlyDisabled = userSettings.e6aiPermanentlyDisabled,
-                onSetUseE6Ai = { enabled ->
-                    // Awaited (not fire-and-forget) before refreshing - SiteInterceptor reads the
-                    // settings StateFlow synchronously per-request, so refreshing before the
-                    // DataStore write actually lands would still fetch from the old site.
-                    coroutineScope.launch {
-                        app.userPreferences.setUseE6Ai(enabled)
-                        searchViewModel.refresh()
-                    }
-                },
             )
         }
         composable(
@@ -322,7 +373,7 @@ fun E621NavGraph(
             val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
             FavoritesScreen(
                 state = state,
-                onBack = { navController.popBackStack() },
+                onBack = null,
                 onRefresh = favoritesViewModel::refresh,
                 onLoadMore = favoritesViewModel::loadMore,
                 onDismissError = favoritesViewModel::dismissError,
@@ -796,7 +847,7 @@ fun E621NavGraph(
             val state by popularViewModel.uiState.collectAsStateWithLifecycle()
             PopularScreen(
                 state = state,
-                onBack = { navController.popBackStack() },
+                onBack = null,
                 onSetScale = popularViewModel::setScale,
                 onPrevious = popularViewModel::previousPeriod,
                 onNext = popularViewModel::nextPeriod,
@@ -870,6 +921,41 @@ fun E621NavGraph(
                 onRetry = artistViewModel::refresh,
                 onSearch = ::navigateToSearch,
                 onOpenProfile = { id -> navigateToProfile(id) },
+            )
+        }
+        composable(Routes.YOU) {
+            val notifications by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) { notificationsViewModel.refresh() }
+            YouScreen(
+                username = userSettings.username,
+                site = activeSite,
+                unreadMessageCount = notifications.unreadMessageCount,
+                forumUnread = notifications.forumUnread,
+                healthCheckRepository = app.healthCheckRepository,
+                useE6Ai = userSettings.useE6Ai,
+                e6aiPermanentlyDisabled = userSettings.e6aiPermanentlyDisabled,
+                onSetUseE6Ai = { enabled ->
+                    // Awaited (not fire-and-forget) before refreshing - SiteInterceptor reads the
+                    // settings StateFlow synchronously per-request, so refreshing before the
+                    // DataStore write actually lands would still fetch from the old site.
+                    coroutineScope.launch {
+                        app.userPreferences.setUseE6Ai(enabled)
+                        searchViewModels.values.forEach { it.refresh() }
+                        popularViewModel.refresh()
+                        favoritesViewModel.refresh()
+                    }
+                },
+                onOpenProfile = { navigateToProfile(null) },
+                onOpenMessages = { navController.navigate(Routes.MESSAGES) },
+                onOpenForum = { navController.navigate(Routes.FORUM) },
+                onOpenSavedSearches = { navController.navigate(Routes.savedSearches(lastBrowseQuery)) },
+                onOpenPostSets = { navController.navigate(Routes.POST_SETS) },
+                onOpenCollections = { navController.navigate(Routes.COLLECTIONS) },
+                onOpenWiki = { navController.navigate(Routes.WIKI) },
+                onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
+                onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
+                onOpenDashboard = { navController.navigate(Routes.DASHBOARD) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
         composable(Routes.WIKI) {
@@ -1026,5 +1112,6 @@ fun E621NavGraph(
                 onDelete = savedSearchesViewModel::remove,
             )
         }
+    }
     }
 }

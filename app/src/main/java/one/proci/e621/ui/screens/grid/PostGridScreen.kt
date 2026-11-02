@@ -208,19 +208,6 @@ fun PostGridScreen(
     onLoadMore: () -> Unit,
     onDismissError: () -> Unit,
     onPostClick: (index: Int) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenFavorites: () -> Unit,
-    onOpenMessages: () -> Unit,
-    onOpenForum: () -> Unit,
-    onOpenSavedSearches: (currentQuery: String) -> Unit,
-    onOpenPostSets: () -> Unit,
-    onOpenPopular: () -> Unit,
-    onOpenCollections: () -> Unit,
-    onOpenWiki: () -> Unit,
-    onOpenAdvancedSearch: () -> Unit,
-    onOpenDownloads: () -> Unit,
-    onOpenDashboard: () -> Unit,
-    onOpenProfile: () -> Unit,
     onSetBlacklistDisabled: (Boolean) -> Unit,
     onThumbnailSizeChange: (Int) -> Unit,
     onQuickFavorite: (one.proci.e621.data.model.Post) -> Unit,
@@ -228,17 +215,10 @@ fun PostGridScreen(
     onQuickDownload: (one.proci.e621.data.model.Post) -> Unit,
     onBulkFavorite: (Set<Long>, Boolean) -> Unit,
     postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
-    unreadMessageCount: Int,
-    forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
-    healthCheckRepository: HealthCheckRepository,
-    useE6Ai: Boolean,
-    onSetUseE6Ai: (Boolean) -> Unit,
-    e6aiPermanentlyDisabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var menuExpanded by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     var bulkAddToSetIds by remember { mutableStateOf<List<Long>?>(null) }
@@ -252,11 +232,8 @@ fun PostGridScreen(
                     onQueryChange = onQueryChange,
                     onSearchSubmit = onSearchSubmit,
                     onShuffle = { onSearchSubmit(withRandomOrder(state.activeQuery)) },
-                    onOpenMenu = { menuExpanded = true },
                     blacklistDisabled = state.blacklistDisabled,
                     onSetBlacklistDisabled = onSetBlacklistDisabled,
-                    unreadMessageCount = unreadMessageCount,
-                    forumUnread = forumUnread,
                     tagSuggestionRepository = tagSuggestionRepository,
                     snackbarHostState = snackbarHostState,
                     site = state.site,
@@ -296,32 +273,6 @@ fun PostGridScreen(
                 modifier = Modifier.padding(padding),
             )
         }
-
-        NavDrawerOverlay(
-            expanded = menuExpanded,
-            onDismiss = { menuExpanded = false },
-            username = state.username,
-            unreadMessageCount = unreadMessageCount,
-            forumUnread = forumUnread,
-            onOpenMessages = onOpenMessages,
-            onOpenForum = onOpenForum,
-            onOpenFavorites = onOpenFavorites,
-            onOpenSavedSearches = { onOpenSavedSearches(state.activeQuery) },
-            onOpenPostSets = onOpenPostSets,
-            onOpenPopular = onOpenPopular,
-            onOpenCollections = onOpenCollections,
-            onOpenWiki = onOpenWiki,
-            onOpenAdvancedSearch = onOpenAdvancedSearch,
-            onOpenDownloads = onOpenDownloads,
-            onOpenDashboard = onOpenDashboard,
-            onOpenProfile = onOpenProfile,
-            onOpenSettings = onOpenSettings,
-            site = state.site,
-            healthCheckRepository = healthCheckRepository,
-            useE6Ai = useE6Ai,
-            e6aiPermanentlyDisabled = e6aiPermanentlyDisabled,
-            onSetUseE6Ai = onSetUseE6Ai,
-        )
     }
 
     val addToSetIds = bulkAddToSetIds
@@ -334,282 +285,6 @@ fun PostGridScreen(
     }
 }
 
-/**
- * Slides in from the right edge (rather than Material3's built-in `ModalNavigationDrawer`, which
- * only opens from the layout-start edge - left, in this app's LTR-only UI).
- */
-@Composable
-private fun NavDrawerOverlay(
-    expanded: Boolean,
-    onDismiss: () -> Unit,
-    username: String,
-    unreadMessageCount: Int,
-    forumUnread: Boolean,
-    onOpenMessages: () -> Unit,
-    onOpenForum: () -> Unit,
-    onOpenFavorites: () -> Unit,
-    onOpenSavedSearches: () -> Unit,
-    onOpenPostSets: () -> Unit,
-    onOpenPopular: () -> Unit,
-    onOpenCollections: () -> Unit,
-    onOpenWiki: () -> Unit,
-    onOpenAdvancedSearch: () -> Unit,
-    onOpenDownloads: () -> Unit,
-    onOpenDashboard: () -> Unit,
-    onOpenProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
-    site: Site,
-    healthCheckRepository: HealthCheckRepository,
-    useE6Ai: Boolean,
-    onSetUseE6Ai: (Boolean) -> Unit,
-    e6aiPermanentlyDisabled: Boolean,
-) {
-    BackHandler(enabled = expanded, onBack = onDismiss)
-
-    fun dismissAnd(action: () -> Unit): () -> Unit = {
-        onDismiss()
-        action()
-    }
-
-    val context = LocalContext.current
-    val greetings = remember { loadGreetings(context) }
-    // Re-picked (not just re-shown) each time the drawer opens - keyed on `expanded` so the
-    // `remember` block reruns synchronously in the same composition pass the drawer appears in,
-    // rather than a frame later via LaunchedEffect, which would flash the previous/blank greeting.
-    val greeting = remember(expanded) { if (expanded) greetings.randomOrNull() else null }
-
-    var healthStatus by remember { mutableStateOf<HealthStatus>(HealthStatus.Checking) }
-    val healthScope = rememberCoroutineScope()
-    fun recheckHealth() {
-        healthScope.launch {
-            healthStatus = HealthStatus.Checking
-            healthStatus = healthCheckRepository.check()
-        }
-    }
-    // Re-pinged fresh every time the drawer opens (rather than kept running in the background),
-    // so the indicator always reflects a check made just now, against whichever site is active.
-    LaunchedEffect(expanded) { if (expanded) recheckHealth() }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = onDismiss,
-                    ),
-            )
-        }
-        AnimatedVisibility(
-            visible = expanded,
-            modifier = Modifier.align(Alignment.CenterEnd),
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it }),
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(0.78f)
-                    .widthIn(max = 300.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(vertical = 8.dp),
-                ) {
-                    if (greeting != null) {
-                        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
-                            // Left-aligned unconditionally (rather than the usual start/end, which
-                            // would flip for RTL scripts like Arabic/Hebrew) so the greeting always
-                            // hugs the same edge no matter which language it happens to land on.
-                            Text(
-                                text = "$greeting,",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Left,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            if (username.isNotBlank()) {
-                                Text(
-                                    text = username,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    textAlign = TextAlign.Left,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(onClick = dismissAnd(onOpenProfile)),
-                                )
-                            }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    }
-                    DrawerItem(
-                        icon = Icons.Filled.Email,
-                        label = stringResource(R.string.messages_title),
-                        tint = MaterialTheme.colorScheme.primary,
-                        badgeCount = unreadMessageCount,
-                        onClick = dismissAnd(onOpenMessages),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Forum,
-                        label = stringResource(R.string.forum_title),
-                        tint = MaterialTheme.colorScheme.primary,
-                        badgeDot = forumUnread,
-                        onClick = dismissAnd(onOpenForum),
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    DrawerItem(
-                        icon = Icons.Filled.Favorite,
-                        label = stringResource(R.string.favorites),
-                        onClick = dismissAnd(onOpenFavorites),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.TrendingUp,
-                        label = stringResource(R.string.popular_title),
-                        onClick = dismissAnd(onOpenPopular),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Collections,
-                        label = stringResource(R.string.collections_title),
-                        onClick = dismissAnd(onOpenCollections),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.MenuBook,
-                        label = stringResource(R.string.wiki_title),
-                        onClick = dismissAnd(onOpenWiki),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Bookmark,
-                        label = stringResource(R.string.saved_searches_title),
-                        tint = MaterialTheme.colorScheme.primary,
-                        onClick = dismissAnd(onOpenSavedSearches),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Tune,
-                        label = stringResource(R.string.advanced_search_title),
-                        onClick = dismissAnd(onOpenAdvancedSearch),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Download,
-                        label = stringResource(R.string.downloads_title),
-                        onClick = dismissAnd(onOpenDownloads),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Insights,
-                        label = stringResource(R.string.dashboard_title),
-                        onClick = dismissAnd(onOpenDashboard),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.PhotoLibrary,
-                        label = stringResource(R.string.post_sets_title),
-                        tint = MaterialTheme.colorScheme.primary,
-                        onClick = dismissAnd(onOpenPostSets),
-                    )
-                    DrawerItem(
-                        icon = Icons.Filled.Settings,
-                        label = stringResource(R.string.action_settings),
-                        onClick = dismissAnd(onOpenSettings),
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 4.dp))
-                    if (!e6aiPermanentlyDisabled) {
-                        SiteSwitchRow(useE6Ai = useE6Ai, onSetUseE6Ai = onSetUseE6Ai)
-                    }
-                    HealthCheckRow(site = site, status = healthStatus, onRecheck = ::recheckHealth)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawerItem(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    tint: Color = LocalContentColor.current,
-    badgeCount: Int = 0,
-    badgeDot: Boolean = false,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(icon, contentDescription = null, tint = tint)
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        if (badgeCount > 0) {
-            Badge { Text(if (badgeCount > 99) "99+" else badgeCount.toString()) }
-        } else if (badgeDot) {
-            Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.error, CircleShape))
-        }
-    }
-}
-
-@Composable
-private fun SiteSwitchRow(useE6Ai: Boolean, onSetUseE6Ai: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.drawer_use_e6ai), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(R.string.drawer_use_e6ai_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = useE6Ai, onCheckedChange = onSetUseE6Ai)
-    }
-}
-
-/** Tap to re-ping. Green/yellow/red dot mirrors the same rating-color language used elsewhere in the app. */
-@Composable
-private fun HealthCheckRow(site: Site, status: HealthStatus, onRecheck: () -> Unit) {
-    val dotColor = when (status) {
-        is HealthStatus.Checking -> RatingQuestionable
-        is HealthStatus.Ok -> RatingSafe
-        is HealthStatus.Error -> RatingExplicit
-    }
-    val detail = when (status) {
-        is HealthStatus.Checking -> stringResource(R.string.health_checking)
-        is HealthStatus.Ok -> stringResource(R.string.health_ok)
-        is HealthStatus.Error -> status.message
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onRecheck)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.size(10.dp).background(dotColor, CircleShape))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.health_check_title, site.displayName), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (status is HealthStatus.Error) RatingExplicit else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun SearchTopBar(
@@ -617,11 +292,8 @@ private fun SearchTopBar(
     onQueryChange: (String) -> Unit,
     onSearchSubmit: (String) -> Unit,
     onShuffle: () -> Unit,
-    onOpenMenu: () -> Unit,
     blacklistDisabled: Boolean,
     onSetBlacklistDisabled: (Boolean) -> Unit,
-    unreadMessageCount: Int,
-    forumUnread: Boolean,
     tagSuggestionRepository: TagSuggestionRepository,
     snackbarHostState: SnackbarHostState,
     site: Site,
@@ -895,11 +567,6 @@ private fun SearchTopBar(
                                 if (blacklistDisabled) R.string.blacklist_enable else R.string.blacklist_disable,
                             ),
                         )
-                    }
-                    IconButton(onClick = onOpenMenu) {
-                        BadgedBox(badge = { if (unreadMessageCount > 0 || forumUnread) Badge() }) {
-                            Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.action_menu))
-                        }
                     }
                 }
             }

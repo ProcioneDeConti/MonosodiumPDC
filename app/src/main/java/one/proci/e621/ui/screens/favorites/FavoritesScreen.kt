@@ -36,7 +36,7 @@ import one.proci.e621.ui.components.PostGridBody
 @Composable
 fun FavoritesScreen(
     state: FavoritesUiState,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onDismissError: () -> Unit,
@@ -72,8 +72,11 @@ fun FavoritesScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                    // Null when this screen is a bottom-bar tab rather than a pushed screen.
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
                     }
                 },
                 actions = {

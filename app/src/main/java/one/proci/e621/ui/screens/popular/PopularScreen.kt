@@ -40,7 +40,7 @@ import one.proci.e621.ui.theme.PillShape
 @Composable
 fun PopularScreen(
     state: PopularUiState,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onSetScale: (PopularScale) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
@@ -60,8 +60,11 @@ fun PopularScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.popular_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                    // Null when this screen is a bottom-bar tab rather than a pushed screen.
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
                     }
                 },
                 actions = {
