@@ -51,7 +51,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.proci.e621.R
@@ -294,11 +296,19 @@ private fun RatingChip(rating: String) {
             .background(color.copy(alpha = 0.9f)),
         contentAlignment = Alignment.Center,
     ) {
+        // Trim the font's built-in ascent/descent padding so the letter centers optically in the badge.
         Text(
             text = label,
             color = Color.White,
-            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
+            style = TextStyle(
+                fontSize = 10.sp,
+                lineHeight = 10.sp,
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Center,
+                    trim = LineHeightStyle.Trim.Both,
+                ),
+            ),
         )
     }
 }
