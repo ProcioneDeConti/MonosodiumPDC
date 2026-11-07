@@ -423,7 +423,7 @@
         entries in each array - drop the oldest pair once there are more than 10.
     -->
     <string-array name="whats_new_versions">
-        <item>2.36.0</item>
+        <item>2.41.0</item>
         <item>2.29.0</item>
         <item>2.7.4</item>
         <item>2.7.0</item>
@@ -434,7 +434,10 @@
         <item>• New bottom bar: Browse, Popular, Favorites and You. Everything from the old side menu (messages, forum, sets, collections, downloads, settings, the e6AI switch and more) now lives in the You tab, which shows your profile picture.\n• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• Livelier grid: thumbnails shimmer while loading, fade in, and press in when tapped; a softer info bar; and a placeholder grid instead of a blank screen while searching.\n• Opening a post grows it out of its thumbnail, and swiping back shrinks it home - with a live preview of the grid as you swipe.\n• A cleaner post viewer: a raised info panel with big Download and Share buttons, counts that roll when you vote or favourite, a little pop on the star, and the post details grouped into a card.\n• Settings is now split into pages - Account, Content &amp; filtering, Appearance, Media &amp; storage, Backup &amp; restore and About - instead of one long scroll.
 • Forum, messages, comments, sets, collections, downloads, saved searches and the wiki now use rounded cards, with friendlier empty and error screens; the Dashboard and favourites analysis get cleaner charts.
 • Forum threads now read oldest to newest, like most forums, and your reply scrolls into view at the bottom.
-• Zooming into a post now stays sharp - images load at full resolution.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.\n• Deleted posts: tap \"Try to load from source\" to fetch the image from the post\'s sources (X, Bluesky, Pixiv, DeviantArt, Fur Affinity and more, or the Wayback Machine), graded against the original. It\'s unreliable and usually fails, so treat any success as a bonus. Sign in to Fur Affinity under Settings &gt; Account for Mature/Adult works.
+• Zooming into a post now stays sharp - images load at full resolution.\n• New Background style setting (Settings &gt; Appearance): Charcoal, OLED black, Navy or Warm.\n• Artist pages: tap an artist tag &gt; Artist page for their links, other names, notes and Do Not Post status.\n• Analyze any user\'s favorites straight from their profile.\n• Deleted posts: tap \"Try to load from source\" to fetch the file from the post\'s sources (X, Bluesky, Pixiv, DeviantArt, Fur Affinity, Tumblr, Inkbunny, Itaku, Weasyl, SoFurry and more), look for an identical copy on other boorus, or check the Wayback Machine - graded against the original, videos included. It\'s unreliable and usually fails, so treat any success as a bonus.
+• Recovered copies are saved on your phone: they open instantly, show in the grid with a recycling badge (or \"Not found\" if a search came up empty), and can be downloaded. A report shows everywhere the search looked and why each place failed.
+• Recover up to 15 deleted posts at once: select them in a grid and tap Recover. You &gt; Recovered posts lists everything you\'ve un-deleted, and You &gt; Deleted favorites finds your own deleted favourites.
+• Optional Fur Affinity sign-in (now shows whether it has expired) and Gelbooru, Rule34.xxx and Weasyl API keys under Settings &gt; Account &gt; Source logins.
 • Seen posts: posts you\'ve opened are faded in search results, or hidden entirely - choose under Settings &gt; Content &amp; filtering.</item>
         <item>A big feature pass bringing the app in line with the desktop version:\n• Pools and Popular browsers, plus post sets, on-device collections, a wiki browser and an advanced search builder (all in the menu).\n• Post viewer: translation-note overlay, parent/child links, edit history, related tags, inline wiki previews, and Add to set / collection.\n• Comments: vote, edit or delete your own, and report others\'.\n• Long-press a thumbnail for quick favourite / upvote / download, or enter multi-select for bulk actions.\n• A download queue, a Light/Dark theme override, a blacklist tester, and an optional on-device usage Dashboard.\n• Shuffle button, delete dmails, upload-level on profiles.</item>
         <item>• Smoother grid scrolling and lower memory use while browsing.\n• Fixed a bug that could prevent saving images/videos to your device on Android 9.\n• Various under-the-hood efficiency and cleanup improvements.</item>
@@ -500,26 +503,150 @@
     <string name="deleted_post_message">This post has been deleted.</string>
     <string name="deleted_ghost_by">by %1$s</string>
     <string name="recover_button">Try to load from source</string>
-    <string name="recover_retry">Try again</string>
-    <string name="recover_explainer">Fetches the image from the post\'s source links on other sites. Don\'t count on it: most attempts fail (sources get deleted, locked behind logins or changed), and what it does find may not be the original file.</string>
-    <string name="recover_no_sources">It has no web sources to recover from.</string>
-    <string name="recover_none">No source yielded an image.</string>
+    <string name="recover_button_md5">Search for a copy</string>
+    <string name="recover_recovering">Recovering…</string>
+    <string name="recover_search_again">Search again</string>
+    <string name="recover_cancel">Cancel</string>
+    <string name="recover_explainer">Fetches the file from the post\'s source links on other sites, looks for an identical copy on other boorus, and checks the Wayback Machine. Don\'t count on it: most attempts fail (sources get deleted, locked behind logins or changed), and what it does find may not be the original file.</string>
+    <string name="recover_explainer_md5">No sources are listed, so this looks for an identical file on other sites by its checksum, and for an archived copy of the site\'s own file.</string>
+    <string name="recover_no_sources">It has no web sources and no file checksum to search with.</string>
+    <string name="recover_none">No copy found.</string>
+    <string name="recover_searched_before">Searched %1$s - no copy was found anywhere.</string>
+    <string name="recover_progress_starting">Starting…</string>
     <string name="recover_progress_fetching">Fetching post from %1$s (source %2$d of %3$d)</string>
-    <string name="recover_progress_downloading">Downloading image from %1$s</string>
-    <string name="recover_progress_downloading_n">Downloading image %2$d of %3$d from %1$s</string>
+    <string name="recover_progress_mirror">Looking for an identical copy on %1$s</string>
+    <string name="recover_progress_downloading">Downloading file from %1$s</string>
+    <string name="recover_progress_downloading_n">Downloading file %2$d of %3$d from %1$s</string>
     <string name="recover_progress_comparing">Comparing %1$s to the original</string>
-    <string name="recover_progress_archive">Checking the Wayback Machine for an archived copy</string>
-    <string name="recover_grade_exact">Exact match</string>
-    <string name="recover_grade_same">Same dimensions, different file</string>
-    <string name="recover_grade_rescaled">Different resolution</string>
-    <string name="recover_grade_mismatch">Doesn\'t match the original</string>
-    <string name="recover_from">From %1$s</string>
-    <string name="recover_from_archive">From %1$s, via the Wayback Machine</string>
+    <string name="recover_progress_scored">Scored %1$s from %2$s: %3$s</string>
+    <string name="recover_progress_unusable">Skipped a file from %1$s that isn\'t a usable image</string>
+    <string name="recover_progress_archive_host">Checking the Wayback Machine for %1$s</string>
+    <string name="recover_progress_capture">Trying the %1$s capture of %2$s</string>
+    <string name="recover_progress_time_limit">Stopped waiting for the remaining sources (time limit)</string>
+    <string name="recover_grade_exact">Exact match - identical to the original file</string>
+    <string name="recover_grade_same">Same dimensions - re-encoded or edited copy</string>
+    <string name="recover_grade_rescaled">Different resolution - the same image, not the original file</string>
+    <string name="recover_grade_mismatch">Doesn\'t match the original\'s shape - may be a different image</string>
+    <string name="recover_grade_exact_short">Exact match</string>
+    <string name="recover_grade_same_short">Same size, re-encoded</string>
+    <string name="recover_grade_rescaled_short">Different resolution</string>
+    <string name="recover_grade_mismatch_short">Shape differs</string>
+    <string name="recover_from">Deleted post - recovered from %1$s</string>
+    <string name="recover_from_archive">Deleted post - recovered from %1$s via the Wayback Machine</string>
+    <string name="recover_file_n_of">File %1$d of %2$d found - pick another below</string>
     <string name="recover_note_format">%1$s instead of %2$s</string>
     <string name="recover_note_dims">%1$d×%2$d instead of %3$d×%4$d</string>
     <string name="recover_note_smaller">smaller file than the original</string>
     <string name="recover_note_larger">larger file than the original</string>
     <string name="recover_note_shape">shape differs from the original</string>
+    <string name="recover_note_still">a still image of a video post</string>
+    <string name="recover_note_video">video - resolution not checked</string>
+    <string name="recover_report">Report</string>
+    <string name="recover_download">Download</string>
+    <string name="recover_saved">Saved</string>
+    <string name="recover_save_failed">Failed</string>
+    <string name="recover_remove">Remove</string>
+    <string name="recover_tile_not_found">Not found</string>
+    <string name="recover_tile_recovered">Recovered copy</string>
+
+    <!-- Recovery report card -->
+    <plurals name="recover_report_found">
+        <item quantity="one">Recovered %d file</item>
+        <item quantity="other">Recovered %d files</item>
+    </plurals>
+    <string name="recover_report_best">Best: %1$s from %2$s</string>
+    <string name="recover_report_best_exact">Best: %1$s from %2$s - the search stopped there</string>
+    <string name="recover_report_searched">searched %1$s</string>
+    <string name="recover_report_none">No copy found</string>
+    <string name="recover_report_no_sources">The post lists no sources, and no other site has a file with its checksum.</string>
+    <plurals name="recover_report_looked">
+        <item quantity="one">Looked in %d place - nothing usable turned up.</item>
+        <item quantity="other">Looked in %d places - nothing usable turned up.</item>
+    </plurals>
+    <string name="recover_report_copy">Copy details</string>
+    <string name="recover_report_copied">Copied</string>
+    <string name="recover_report_close">Close the report</string>
+    <string name="recover_report_own_copy">the site\'s own copy of the file</string>
+    <string name="recover_section_sources">Post\'s sources</string>
+    <string name="recover_section_mirrors">Identical-file search</string>
+    <string name="recover_section_archive">Wayback Machine</string>
+    <string name="recover_section_limits">Time limits</string>
+    <string name="recover_reason_front_page">Only the site\'s front page</string>
+    <string name="recover_reason_profile">An artist\'s profile page</string>
+    <string name="recover_reason_time">Ran out of time (%1$s)</string>
+    <string name="recover_reason_login">Needs a signed-in account</string>
+    <string name="recover_reason_login_expired">Saved sign-in expired</string>
+    <string name="recover_hint_sign_in">Sign in under Settings &gt; Account &gt; Source logins.</string>
+    <string name="recover_hint_sign_in_again">Sign in again under Settings &gt; Account &gt; Source logins.</string>
+    <string name="recover_reason_no_copy">No identical file</string>
+    <string name="recover_reason_no_key">No API key saved</string>
+    <string name="recover_reason_key_refused">API key refused</string>
+    <string name="recover_hint_check_key">Check the key under Settings &gt; Account &gt; Source logins.</string>
+    <string name="recover_reason_deleted_from">Deleted from %1$s</string>
+    <string name="recover_reason_never_archived">Never archived</string>
+    <string name="recover_reason_wayback_paused">Skipped - Wayback is rate-limiting</string>
+    <plurals name="recover_reason_archived">
+        <item quantity="one">Archived once, nothing usable</item>
+        <item quantity="other">Archived %d×, nothing usable</item>
+    </plurals>
+    <string name="recover_reason_gone">Gone (%1$d)</string>
+    <string name="recover_reason_refused">Access refused (%1$d)</string>
+    <string name="recover_reason_rate_limited">Rate-limited (429)</string>
+    <string name="recover_reason_down">Site down (%1$d)</string>
+    <string name="recover_reason_timed_out">Timed out</string>
+    <string name="recover_reason_no_media">No media found</string>
+    <string name="recover_reason_no_image">No image on the page</string>
+    <string name="recover_reason_not_image">Not an image</string>
+    <string name="recover_reason_private">Blocked (private address)</string>
+
+    <!-- Bulk recovery, Recovered posts page -->
+    <string name="recovery_bulk_button">Recover (%1$d)</string>
+    <string name="recovery_queue_too_many">Up to %1$d deleted posts can be recovered at a time.</string>
+    <string name="recovery_queue_nothing">Nothing to recover: these already have a copy, or have nothing to search with.</string>
+    <string name="recovery_queue_running">Recovering deleted posts</string>
+    <string name="recovery_queue_done">Recovery finished</string>
+    <string name="recovery_queue_progress">%1$d of %2$d done · %3$d recovered</string>
+    <plurals name="recovery_queue_found_of">
+        <item quantity="one">Recovered %1$d of %2$d</item>
+        <item quantity="other">Recovered %1$d of %2$d</item>
+    </plurals>
+    <string name="recovery_queue_cancel_all">Cancel all</string>
+    <string name="recovery_queue_retry">Retry unfinished</string>
+    <string name="recovery_queue_dismiss">Dismiss</string>
+    <string name="recovery_job_queued">Waiting</string>
+    <string name="recovery_job_failed">Failed</string>
+    <string name="recovery_job_cancelled">Cancelled</string>
+    <plurals name="recovery_job_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <plurals name="recovery_job_searched">
+        <item quantity="one">Not found - searched %d place</item>
+        <item quantity="other">Not found - searched %d places</item>
+    </plurals>
+    <string name="recovery_channel">Deleted-post recovery</string>
+    <string name="recovery_notify_title">Deleted posts</string>
+    <plurals name="recovery_notify_none">
+        <item quantity="one">No copy found for %d post.</item>
+        <item quantity="other">No copies found for %d posts.</item>
+    </plurals>
+    <plurals name="recovery_notify_found">
+        <item quantity="one">Recovered %1$d of %2$d post.</item>
+        <item quantity="other">Recovered %1$d of %2$d posts.</item>
+    </plurals>
+    <string name="recovered_title">Recovered posts</string>
+    <string name="recovered_empty_title">Nothing recovered yet</string>
+    <string name="recovered_empty_body">Deleted posts you recover show up here, most recent first. Open a deleted post and tap \"Try to load from source\", or select several in a grid and tap Recover.</string>
+    <string name="deleted_favorites_title">Deleted favorites</string>
+    <string name="settings_recovered">Recovered posts</string>
+    <string name="settings_recovered_hint">Copies of deleted posts found by recovery are kept on this device so they open instantly and show in the grid. They aren\'t part of the image cache and can\'t always be found again.</string>
+    <plurals name="settings_recovered_usage">
+        <item quantity="one">%1$d post · %2$s</item>
+        <item quantity="other">%1$d posts · %2$s</item>
+    </plurals>
+    <string name="settings_recovered_clear">Delete recovered copies</string>
+    <string name="settings_recovered_clear_confirm">Tap again to delete them all</string>
+    <string name="settings_recovered_cleared">Recovered copies deleted</string>
 
     <!-- Seen posts (Settings > Content, search grid) -->
     <string name="seen_settings_title">Seen posts</string>
@@ -541,6 +668,23 @@
     <string name="source_logins_help">Optional. Lets deleted-post recovery reach sources that need an account. You sign in on the site\'s own page; only its session is kept, encrypted on this device, and never included in backups.</string>
     <string name="source_logins_signed_in">Signed in</string>
     <string name="source_logins_signed_out">Not signed in. Needed for Mature/Adult submissions (enable them on your FA account too).</string>
+    <string name="source_logins_checking">Checking…</string>
+    <string name="source_logins_expired">Session expired</string>
+    <string name="source_logins_unverified">Signed in (couldn\'t verify)</string>
+    <string name="source_logins_expired_help">Fur Affinity no longer accepts the saved session (it expired, or you signed out or changed your password). Sign out, then sign in again.</string>
+    <string name="source_keys_title">API keys</string>
+    <string name="source_keys_help">Optional. Gelbooru and Rule34.xxx keys let recovery look for an identical copy there by checksum; a Weasyl key lets it use Weasyl\'s API. Find them in each site\'s account options. Kept encrypted on this device only.</string>
+    <string name="source_key_none">No key saved</string>
+    <string name="source_key_checking">Checking…</string>
+    <string name="source_key_valid">Key works</string>
+    <string name="source_key_rejected">Key rejected</string>
+    <string name="source_key_unverified">Couldn\'t verify</string>
+    <string name="source_key_user_id">User id</string>
+    <string name="source_key_label">API key</string>
+    <string name="source_key_replace">Replace saved key</string>
+    <string name="source_key_save">Save</string>
+    <string name="source_key_remove">Remove</string>
+    <string name="source_key_get">Get a key</string>
     <string name="source_logins_sign_in">Sign in</string>
     <string name="source_logins_sign_out">Sign out</string>
     <string name="source_login_title_fa">Sign in to Fur Affinity</string>

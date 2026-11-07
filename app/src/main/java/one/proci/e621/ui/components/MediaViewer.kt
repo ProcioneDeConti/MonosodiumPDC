@@ -40,7 +40,16 @@ fun MediaViewer(
     }
 
     when {
-        url == null && post.isDeleted -> DeletedPostRecovery(post = post, onTap = onTap, onDismiss = onDismiss, modifier = modifier)
+        url == null && post.isDeleted -> DeletedPostRecovery(
+            post = post,
+            isActive = isActive,
+            videoLoopEnabled = videoLoopEnabled,
+            videoPlaybackSpeed = videoPlaybackSpeed,
+            videoAutoplayEnabled = videoAutoplayEnabled,
+            onTap = onTap,
+            onDismiss = onDismiss,
+            modifier = modifier,
+        )
         url == null -> Unit
         post.isVideo -> VideoPlayer(
             url = url,

@@ -48,6 +48,8 @@ class AppViewModelFactory(private val app: E621Application) : ViewModelProvider.
             LocalCollectionsViewModel(app.localCollectionStore) as T
         modelClass.isAssignableFrom(WikiViewModel::class.java) ->
             WikiViewModel(app.wikiRepository) as T
+        modelClass.isAssignableFrom(one.proci.e621.ui.screens.recovered.RecoveredViewModel::class.java) ->
+            one.proci.e621.ui.screens.recovered.RecoveredViewModel(app.postRepository, app.userPreferences, app.postActionsRepository) as T
         modelClass.isAssignableFrom(DashboardViewModel::class.java) ->
             DashboardViewModel(app.usageStatsStore) as T
         else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

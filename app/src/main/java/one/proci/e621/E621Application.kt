@@ -82,6 +82,16 @@ class E621Application : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         one.proci.e621.data.recovery.SourceLogins.init(this)
+        one.proci.e621.data.recovery.RecoveredStore.init(this, applicationScope)
+        one.proci.e621.data.recovery.RecoveryQueue.init(this, applicationScope)
+        // Recovered copies are cached per site; UI without a site of its own (grid tiles, the
+        // deleted-post viewer) follows the active one.
+        applicationScope.launch {
+            userPreferences.settingsState
+                .map { it.site }
+                .distinctUntilChanged()
+                .collect { one.proci.e621.data.recovery.RecoveredStore.currentSite.value = it }
+        }
 
         applicationScope.launch {
             userPreferences.settingsState

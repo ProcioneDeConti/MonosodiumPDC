@@ -34,6 +34,9 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.DropdownMenu
@@ -136,12 +139,8 @@ fun PostThumbnail(
     ) {
         if (post.preview.url == null && post.isDeleted) {
             // e621 drops a deleted post's file URLs, which used to leave a blank, broken-looking tile.
-            DeletedGhost(
-                post = post,
-                compact = true,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxSize(),
-            )
+            // A copy recovered from its sources (RecoveredStore) shows instead, marked as such.
+            DeletedTile(post = post, dimmed = dimmed)
         } else {
             NetworkImage(
                 model = post.preview.url,
@@ -324,5 +323,78 @@ private fun RatingChip(rating: String) {
                 ),
             ),
         )
+    }
+}
+
+/**
+ * A deleted post's tile: its recovered copy (the small grid copy once made, else the file; a still
+ * placeholder for videos) with a faded recycling badge, a "Not found" mark for a post searched
+ * without result, or the plain ghost.
+ */
+@Composable
+private fun DeletedTile(post: Post, dimmed: Boolean) {
+    val site by one.proci.e621.data.recovery.RecoveredStore.currentSite.collectAsState()
+    val thumbs by one.proci.e621.data.recovery.RecoveredStore.thumbs.collectAsState()
+    val recovered = thumbs[site]?.get(post.id)
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            recovered?.file != null && !recovered.isVideo -> NetworkImage(
+                model = recovered.thumb ?: recovered.file,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                shimmerWhileLoading = true,
+                modifier = Modifier.fillMaxSize().then(if (dimmed) Modifier.graphicsLayer { alpha = 0.35f } else Modifier),
+            )
+            recovered?.file != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.Movie,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+            recovered?.notFoundAt != null -> androidx.compose.foundation.layout.Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.SearchOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.size(28.dp),
+                )
+                Text(
+                    stringResource(R.string.recover_tile_not_found),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                )
+            }
+            else -> DeletedGhost(
+                post = post,
+                compact = true,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        if (recovered?.file != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    // Below the animated-post badge, which sits in the same corner.
+                    .padding(end = 6.dp, top = if (post.isAnimated) 32.dp else 6.dp)
+                    .size(22.dp)
+                    .clip(PillShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.Recycling,
+                    contentDescription = stringResource(R.string.recover_tile_recovered),
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
     }
 }

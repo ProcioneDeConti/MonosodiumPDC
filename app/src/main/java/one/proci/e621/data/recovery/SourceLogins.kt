@@ -16,10 +16,12 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Optional sign-ins that let deleted-post recovery reach login-gated source pages (Fur Affinity
- * only, as on desktop). Only the site's session cookies are kept, encrypted with an Android
+ * Optional sign-ins and API keys that let deleted-post recovery reach login-gated source pages
+ * (Fur Affinity) and keyed lookups (Gelbooru / Rule34.xxx md5 search, Weasyl's API), as on
+ * desktop. Only the site's session cookies and the keys are kept, encrypted with an Android
  * Keystore key, in `noBackupFilesDir` - which Android never backs up or device-transfers, and
- * which the settings export doesn't include - so a session can't leave this device.
+ * which the settings export doesn't include - so they can't leave this device. Nothing secret is
+ * ever shown back in the UI; it only learns whether one is saved.
  */
 object SourceLogins {
 
@@ -42,7 +44,19 @@ object SourceLogins {
         ),
     }
 
+    /** Sites with an optional API key. [needsUserId]: the key only works together with the account's numeric user id. */
+    enum class KeySite(val key: String, val displayName: String, val needsUserId: Boolean, val keyPageUrl: String) {
+        GELBOORU("gelbooru", "Gelbooru", true, "https://gelbooru.com/index.php?page=account&s=options"),
+        RULE34("rule34", "Rule34.xxx", true, "https://rule34.xxx/index.php?page=account&s=options"),
+        WEASYL("weasyl", "Weasyl", false, "https://www.weasyl.com/control/apikeys"),
+    }
+
+    class ApiKey(val userId: String, val apiKey: String)
+
     private const val KEY_ALIAS = "source_logins"
+    private val keys = mutableMapOf<KeySite, ApiKey>()
+    private val _keysSaved = MutableStateFlow<Set<KeySite>>(emptySet())
+    val keysSaved: StateFlow<Set<KeySite>> = _keysSaved
     private lateinit var dir: File
     private val cookies = mutableMapOf<Site, String>()
     private val _signedIn = MutableStateFlow<Set<Site>>(emptySet())
@@ -58,6 +72,41 @@ object SourceLogins {
             if (cookie != null) cookies[site] = cookie else file.delete() // e.g. key lost after a restore
         }
         _signedIn.value = cookies.keys.toSet()
+        KeySite.entries.forEach { site ->
+            val file = File(dir, "key_${site.key}")
+            if (!file.exists()) return@forEach
+            val key = runCatching { decrypt(file.readText()) }.getOrNull()?.split('\n', limit = 2)
+            if (key != null && key.size == 2) keys[site] = ApiKey(key[0], key[1]) else file.delete()
+        }
+        _keysSaved.value = keys.keys.toSet()
+    }
+
+    fun apiKey(site: KeySite): ApiKey? = synchronized(keys) { keys[site] }
+
+    suspend fun saveKey(site: KeySite, userId: String, apiKey: String) = withContext(Dispatchers.IO) {
+        val key = ApiKey(userId.trim(), apiKey.trim())
+        File(dir, "key_${site.key}").writeText(encrypt("${key.userId}\n${key.apiKey}"))
+        synchronized(keys) { keys[site] = key }
+        _keysSaved.value = synchronized(keys) { keys.keys.toSet() }
+    }
+
+    suspend fun removeKey(site: KeySite) = withContext(Dispatchers.IO) {
+        File(dir, "key_${site.key}").delete()
+        synchronized(keys) { keys.remove(site) }
+        _keysSaved.value = synchronized(keys) { keys.keys.toSet() }
+    }
+
+    /** A saved sign-in's state, asked of the site itself (a stored cookie may have expired). */
+    enum class LoginStatus { SIGNED_OUT, SIGNED_IN, EXPIRED, UNVERIFIED }
+
+    suspend fun status(site: Site): LoginStatus {
+        val cookie = synchronized(cookies) { cookies[site] } ?: return LoginStatus.SIGNED_OUT
+        val page = withContext(Dispatchers.IO) { SourceRecovery.fetchPageWithCookie(site.checkUrl, cookie) }
+        return when {
+            page == null -> LoginStatus.UNVERIFIED
+            page.contains(site.loggedInMarker) -> LoginStatus.SIGNED_IN
+            else -> LoginStatus.EXPIRED
+        }
     }
 
     /** The saved session cookie for a request to [host], if that host belongs to a signed-in site. */

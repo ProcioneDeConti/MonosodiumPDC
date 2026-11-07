@@ -35,6 +35,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -217,8 +219,35 @@ fun PostGridBody(
             SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
         }
         if (selectionMode) {
+            val recoverScope = androidx.compose.runtime.rememberCoroutineScope()
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+            ) { }
             SelectionBar(
                 selected = posts.filter { it.id in selectedIds },
+                onRecover = { list ->
+                    val site = one.proci.e621.data.recovery.RecoveredStore.currentSite.value
+                    val result = one.proci.e621.data.recovery.RecoveryQueue.enqueue(site, list)
+                    val message = when (result) {
+                        is one.proci.e621.data.recovery.RecoveryQueue.EnqueueResult.Added -> {
+                            onExitSelection()
+                            // The "batch finished" notification (only shown while the app is in the background).
+                            if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                                androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            null
+                        }
+                        one.proci.e621.data.recovery.RecoveryQueue.EnqueueResult.TooMany ->
+                            context.getString(R.string.recovery_queue_too_many, one.proci.e621.data.recovery.RecoveryQueue.MAX_BATCH)
+                        one.proci.e621.data.recovery.RecoveryQueue.EnqueueResult.NothingToDo ->
+                            context.getString(R.string.recovery_queue_nothing)
+                    }
+                    if (message != null) recoverScope.launch { snackbarHostState.showSnackbar(message) }
+                },
                 bulkProgress = bulkProgress,
                 onExit = onExitSelection,
                 onBulkFavorite = onBulkFavorite,
@@ -234,6 +263,7 @@ fun PostGridBody(
 @Composable
 private fun SelectionBar(
     selected: List<Post>,
+    onRecover: (List<Post>) -> Unit,
     bulkProgress: one.proci.e621.data.util.BulkProgress?,
     onExit: () -> Unit,
     onBulkFavorite: (List<Post>) -> Unit,
@@ -298,6 +328,21 @@ private fun SelectionBar(
             }
             TextButton(enabled = enabled, onClick = { onBulkDownload(selected) }) {
                 Text(stringResource(R.string.bulk_download))
+            }
+            // Bulk un-delete: only when the selection holds deleted posts (searched one at a time).
+            val deletedCount = selected.count { it.isDeleted }
+            if (deletedCount > 0) {
+                TextButton(
+                    enabled = deletedCount <= one.proci.e621.data.recovery.RecoveryQueue.MAX_BATCH,
+                    onClick = { onRecover(selected.filter { it.isDeleted }) },
+                ) {
+                    androidx.compose.material3.Icon(
+                        androidx.compose.material.icons.Icons.Filled.Recycling,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp).padding(end = 4.dp),
+                    )
+                    Text(stringResource(R.string.recovery_bulk_button, deletedCount))
+                }
             }
         }
     }

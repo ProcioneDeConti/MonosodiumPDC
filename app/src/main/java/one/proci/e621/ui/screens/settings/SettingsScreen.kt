@@ -417,6 +417,8 @@ fun SettingsScreen(
                 }
             }
 
+            RecoveredFilesSection(snackbarHostState)
+
             SettingsSection(stringResource(R.string.settings_downloads)) {
                 Text(
                     stringResource(R.string.settings_downloads_hint),
@@ -1051,47 +1053,52 @@ private fun SettingsSection(
 }
 
 /**
- * Optional sign-ins for deleted-post recovery (Fur Affinity's Mature/Adult pages are login-gated).
- * The session lives encrypted on this device only - see [one.proci.e621.data.recovery.SourceLogins].
+ * Deleted-post recovery's on-device copies (RecoveredStore): their size and a clear button. Kept
+ * apart from the image cache - unlike it, these can't be fetched again once their sources die.
  */
 @Composable
-private fun SourceLoginsSection() {
-    val site = one.proci.e621.data.recovery.SourceLogins.Site.FUR_AFFINITY
-    val signedIn by one.proci.e621.data.recovery.SourceLogins.signedIn.collectAsState()
-    val isSignedIn = site in signedIn
-    var showLogin by remember { mutableStateOf(false) }
+private fun RecoveredFilesSection(snackbarHostState: androidx.compose.material3.SnackbarHostState) {
     val scope = rememberCoroutineScope()
-
-    SettingsSection(stringResource(R.string.source_logins_title)) {
+    val thumbs by one.proci.e621.data.recovery.RecoveredStore.thumbs.collectAsState()
+    var sizeBytes by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(thumbs) { sizeBytes = one.proci.e621.data.recovery.RecoveredStore.sizeBytes() }
+    val count = thumbs.values.sumOf { m -> m.values.count { it.hasCopy } }
+    var confirming by remember { mutableStateOf(false) }
+    val clearedMessage = stringResource(R.string.settings_recovered_cleared)
+    SettingsSection(stringResource(R.string.settings_recovered)) {
         Text(
-            stringResource(R.string.source_logins_help),
+            stringResource(R.string.settings_recovered_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Text(
+            androidx.compose.ui.res.pluralStringResource(
+                R.plurals.settings_recovered_usage, count, count,
+                android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, sizeBytes),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            enabled = sizeBytes > 0,
+            onClick = {
+                if (!confirming) {
+                    confirming = true
+                } else {
+                    confirming = false
+                    scope.launch {
+                        one.proci.e621.data.recovery.RecoveredStore.clearAll()
+                        sizeBytes = 0
+                        snackbarHostState.showSnackbar(clearedMessage)
+                    }
+                }
+            },
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Fur Affinity", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    stringResource(if (isSignedIn) R.string.source_logins_signed_in else R.string.source_logins_signed_out),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (isSignedIn) {
-                androidx.compose.material3.OutlinedButton(onClick = {
-                    scope.launch { one.proci.e621.data.recovery.SourceLogins.signOut(site) }
-                }) { Text(stringResource(R.string.source_logins_sign_out)) }
-            } else {
-                Button(onClick = { showLogin = true }) { Text(stringResource(R.string.source_logins_sign_in)) }
-            }
+            Text(
+                stringResource(if (confirming) R.string.settings_recovered_clear_confirm else R.string.settings_recovered_clear),
+                color = if (confirming) MaterialTheme.colorScheme.error else androidx.compose.ui.graphics.Color.Unspecified,
+            )
         }
-    }
-    if (showLogin) {
-        SourceLoginDialog(site = site, onDone = { showLogin = false })
     }
 }
 

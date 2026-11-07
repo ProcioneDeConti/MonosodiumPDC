@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -89,6 +91,8 @@ fun YouScreen(
     onOpenAdvancedSearch: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenDashboard: () -> Unit,
+    onOpenRecovered: () -> Unit,
+    onOpenDeletedFavorites: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -169,6 +173,11 @@ fun YouScreen(
                     .background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
                 ListRow(Icons.Filled.Tune, stringResource(R.string.advanced_search_title), onOpenAdvancedSearch)
+                // Deleted-post recovery: everything un-deleted so far, and your own deleted favorites to un-delete.
+                ListRow(Icons.Filled.Recycling, stringResource(R.string.recovered_title), onOpenRecovered)
+                if (username.isNotBlank()) {
+                    ListRow(Icons.Filled.RestoreFromTrash, stringResource(R.string.deleted_favorites_title), onOpenDeletedFavorites)
+                }
                 ListRow(Icons.Filled.Settings, stringResource(R.string.action_settings), onOpenSettings)
             }
         }

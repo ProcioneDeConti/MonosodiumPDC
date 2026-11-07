@@ -6,6 +6,9 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -86,6 +89,7 @@ internal object Routes {
     const val FAVORITES = "favorites"
     const val DETAIL = "detail/{source}/{searchId}/{index}"
     const val SETTINGS = "settings"
+    const val RECOVERED = "recovered"
     const val SETTINGS_PAGE = "settings/{page}"
     fun settingsPage(page: String) = "settings/$page"
     const val MESSAGES = "messages"
@@ -135,6 +139,7 @@ internal object Routes {
 
 private const val SOURCE_SEARCH = "search"
 private const val SOURCE_FAVORITES = "favorites"
+private const val SOURCE_RECOVERED = "recovered"
 private const val SOURCE_POOL = "pool"
 private const val SOURCE_POST_SET = "post_set"
 private const val SOURCE_POPULAR = "popular"
@@ -176,6 +181,7 @@ fun E621NavGraph(
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
     val postSetsViewModel: PostSetsViewModel = viewModel(factory = factory)
     val popularViewModel: PopularViewModel = viewModel(factory = factory)
+    val recoveredViewModel: one.proci.e621.ui.screens.recovered.RecoveredViewModel = viewModel(factory = factory)
     val localCollectionsViewModel: LocalCollectionsViewModel = viewModel(factory = factory)
     val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
     val wikiViewModel: WikiViewModel = viewModel(factory = factory)
@@ -470,6 +476,37 @@ fun E621NavGraph(
                         onBack = { navController.popBackStack() },
                         onLoadMore = {},
                         onPostUpdated = popularViewModel::updatePost,
+                        postActionsRepository = app.postActionsRepository,
+                        postSetRepository = app.postSetRepository,
+                        localCollectionStore = app.localCollectionStore,
+                        wikiRepository = app.wikiRepository,
+                        downloadQueue = app.downloadQueue,
+                        avatarRepository = app.avatarRepository,
+                        onAddTagToBlacklist = ::addTagToBlacklist,
+                        onSearchTag = ::navigateToSearch,
+                        onAddTagToSearch = ::navigateToSearch,
+                        onExcludeTagFromSearch = { tag -> navigateToSearch("-$tag") },
+                        onOpenProfile = { id -> navigateToProfile(id) },
+                        onOpenPool = ::navigateToPool,
+                        onOpenArtist = ::navigateToArtist,
+                        site = activeSite,
+                        videoLoopEnabled = userSettings.videoLoopEnabled,
+                        videoPlaybackSpeed = userSettings.videoPlaybackSpeed,
+                        videoAutoplayEnabled = userSettings.videoAutoplayEnabled,
+                        downloadLocationUri = userSettings.downloadLocationUri,
+                        matchingBlacklistTags = { post ->
+                            if (state.blacklistDisabled) userSettings.matchingBlacklistTags(post) else emptySet()
+                        },
+                    )
+                }
+                source == SOURCE_RECOVERED -> {
+                    val state by recoveredViewModel.uiState.collectAsStateWithLifecycle()
+                    PostDetailScreen(
+                        posts = state.posts,
+                        initialIndex = index,
+                        onBack = { navController.popBackStack() },
+                        onLoadMore = {},
+                        onPostUpdated = recoveredViewModel::updatePost,
                         postActionsRepository = app.postActionsRepository,
                         postSetRepository = app.postSetRepository,
                         localCollectionStore = app.localCollectionStore,
@@ -907,6 +944,20 @@ fun E621NavGraph(
                 onRestart = analysisViewModel::start,
             )
         }
+        sharedComposable(Routes.RECOVERED) {
+            LaunchedEffect(Unit) { recoveredViewModel.start() }
+            val state by recoveredViewModel.uiState.collectAsStateWithLifecycle()
+            one.proci.e621.ui.screens.recovered.RecoveredScreen(
+                state = state,
+                onBack = { navController.popBackStack() },
+                onRefresh = recoveredViewModel::refresh,
+                onPostClick = { index -> navController.navigate(Routes.detail(SOURCE_RECOVERED, NO_SEARCH_ID, index)) },
+                onSetBlacklistDisabled = recoveredViewModel::setBlacklistDisabled,
+                onThumbnailSizeChange = recoveredViewModel::setGridThumbnailSizeDp,
+                onQuickFavorite = recoveredViewModel::quickToggleFavorite,
+                onQuickUpvote = recoveredViewModel::quickUpvote,
+            )
+        }
         sharedComposable(Routes.DASHBOARD) {
             val state by dashboardViewModel.uiState.collectAsStateWithLifecycle()
             DashboardScreen(
@@ -985,6 +1036,8 @@ fun E621NavGraph(
                 onOpenAdvancedSearch = { navController.navigate(Routes.ADVANCED_SEARCH) },
                 onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) },
                 onOpenDashboard = { navController.navigate(Routes.DASHBOARD) },
+                onOpenRecovered = { navController.navigate(Routes.RECOVERED) },
+                onOpenDeletedFavorites = { navigateToSearch("fav:${userSettings.username} status:deleted") },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
@@ -1142,6 +1195,14 @@ fun E621NavGraph(
                 onDelete = savedSearchesViewModel::remove,
             )
         }
+    }
+    // Bulk un-delete progress (RecoveryQueue), over whatever screen is showing. The Box itself
+    // takes no touches; only the card does.
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier.fillMaxSize().padding(shellPadding),
+        contentAlignment = Alignment.BottomEnd,
+    ) {
+        one.proci.e621.ui.components.RecoveryQueuePanel(modifier = Modifier.padding(12.dp))
     }
     }
     }
