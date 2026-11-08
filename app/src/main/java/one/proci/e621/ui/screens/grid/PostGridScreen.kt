@@ -1,5 +1,6 @@
 ﻿package one.proci.e621.ui.screens.grid
 
+import androidx.compose.animation.togetherWith
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -222,25 +223,37 @@ fun PostGridScreen(
     onShowSeen: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var selectionMode by remember { mutableStateOf(false) }
-    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val selection = one.proci.e621.ui.components.rememberGridSelectionState()
     var bulkAddToSetIds by remember { mutableStateOf<List<Long>?>(null) }
-    fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
-    BackHandler(enabled = selectionMode) { exitSelection() }
     Box(modifier = modifier) {
         Scaffold(
             topBar = {
-                SearchTopBar(
-                    query = state.query,
-                    onQueryChange = onQueryChange,
-                    onSearchSubmit = onSearchSubmit,
-                    onShuffle = { onSearchSubmit(withRandomOrder(state.activeQuery)) },
-                    blacklistDisabled = state.blacklistDisabled,
-                    onSetBlacklistDisabled = onSetBlacklistDisabled,
-                    tagSuggestionRepository = tagSuggestionRepository,
-                    snackbarHostState = snackbarHostState,
-                    site = state.site,
-                )
+                // Swaps to a contextual bar (close / count / select all) while multi-selecting.
+                androidx.compose.animation.AnimatedContent(
+                    targetState = selection.active,
+                    transitionSpec = { androidx.compose.animation.fadeIn() togetherWith androidx.compose.animation.fadeOut() },
+                    label = "gridTopBar",
+                ) { selecting ->
+                    if (selecting) {
+                        one.proci.e621.ui.components.SelectionTopBar(
+                            selection = selection,
+                            allIds = remember(state.posts) { state.posts.map { it.id } },
+                            bulkProgress = state.bulkProgress,
+                        )
+                    } else {
+                        SearchTopBar(
+                            query = state.query,
+                            onQueryChange = onQueryChange,
+                            onSearchSubmit = onSearchSubmit,
+                            onShuffle = { onSearchSubmit(withRandomOrder(state.activeQuery)) },
+                            blacklistDisabled = state.blacklistDisabled,
+                            onSetBlacklistDisabled = onSetBlacklistDisabled,
+                            tagSuggestionRepository = tagSuggestionRepository,
+                            snackbarHostState = snackbarHostState,
+                            site = state.site,
+                        )
+                    }
+                }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
@@ -277,15 +290,10 @@ fun PostGridScreen(
                 onQuickFavorite = onQuickFavorite,
                 onQuickUpvote = onQuickUpvote,
                 onQuickDownload = onQuickDownload,
-                selectionMode = selectionMode,
-                selectedIds = selectedIds,
-                onToggleSelect = { p ->
-                    selectedIds = if (p.id in selectedIds) selectedIds - p.id else selectedIds + p.id
-                },
-                onEnterSelection = { p -> selectionMode = true; selectedIds = setOf(p.id) },
-                onExitSelection = ::exitSelection,
+                selection = selection,
                 onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
                 onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
+                onBulkUpvote = { list -> list.forEach(onQuickUpvote) },
                 onBulkDownload = { list -> list.forEach(onQuickDownload) },
                 onBulkAddToSet = postSetRepository?.let { { list -> bulkAddToSetIds = list.map { it.id } } },
                 bulkProgress = state.bulkProgress,

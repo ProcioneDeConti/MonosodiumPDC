@@ -1,5 +1,6 @@
 package one.proci.e621.ui.screens.favorites
 
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -55,48 +56,59 @@ fun FavoritesScreen(
     postSetRepository: one.proci.e621.data.repository.PostSetRepository?,
     modifier: Modifier = Modifier,
 ) {
-    var selectionMode by remember { mutableStateOf(false) }
-    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val selection = one.proci.e621.ui.components.rememberGridSelectionState()
     var bulkAddToSetIds by remember { mutableStateOf<List<Long>?>(null) }
-    fun exitSelection() { selectionMode = false; selectedIds = emptySet() }
-    androidx.activity.compose.BackHandler(enabled = selectionMode) { exitSelection() }
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (state.username.isBlank()) {
-                            stringResource(R.string.favorites)
-                        } else {
-                            stringResource(R.string.favorites_title_owned, state.username)
+            androidx.compose.animation.AnimatedContent(
+                targetState = selection.active,
+                transitionSpec = { androidx.compose.animation.fadeIn() togetherWith androidx.compose.animation.fadeOut() },
+                label = "favoritesTopBar",
+            ) { selecting ->
+                if (selecting) {
+                    one.proci.e621.ui.components.SelectionTopBar(
+                        selection = selection,
+                        allIds = remember(state.posts) { state.posts.map { it.id } },
+                        bulkProgress = bulkProgress,
+                    )
+                } else {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                if (state.username.isBlank()) {
+                                    stringResource(R.string.favorites)
+                                } else {
+                                    stringResource(R.string.favorites_title_owned, state.username)
+                                },
+                            )
+                        },
+                        navigationIcon = {
+                            // Null when this screen is a bottom-bar tab rather than a pushed screen.
+                            if (onBack != null) {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                                }
+                            }
+                        },
+                        actions = {
+                            if (state.username.isNotBlank()) {
+                                IconButton(onClick = { onOpenAnalysis(state.username) }) {
+                                    Icon(Icons.Filled.QueryStats, contentDescription = stringResource(R.string.fav_analysis_open))
+                                }
+                            }
+                            IconButton(onClick = { onSetBlacklistDisabled(!state.blacklistDisabled) }) {
+                                Icon(
+                                    if (state.blacklistDisabled) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = stringResource(
+                                        if (state.blacklistDisabled) R.string.blacklist_enable else R.string.blacklist_disable,
+                                    ),
+                                )
+                            }
                         },
                     )
-                },
-                navigationIcon = {
-                    // Null when this screen is a bottom-bar tab rather than a pushed screen.
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
-                        }
-                    }
-                },
-                actions = {
-                    if (state.username.isNotBlank()) {
-                        IconButton(onClick = { onOpenAnalysis(state.username) }) {
-                            Icon(Icons.Filled.QueryStats, contentDescription = stringResource(R.string.fav_analysis_open))
-                        }
-                    }
-                    IconButton(onClick = { onSetBlacklistDisabled(!state.blacklistDisabled) }) {
-                        Icon(
-                            if (state.blacklistDisabled) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = stringResource(
-                                if (state.blacklistDisabled) R.string.blacklist_enable else R.string.blacklist_disable,
-                            ),
-                        )
-                    }
-                },
-            )
+                }
+            }
         },
     ) { padding ->
         if (state.username.isBlank()) {
@@ -119,15 +131,10 @@ fun FavoritesScreen(
                 onQuickFavorite = onQuickFavorite,
                 onQuickUpvote = onQuickUpvote,
                 onQuickDownload = onQuickDownload,
-                selectionMode = selectionMode,
-                selectedIds = selectedIds,
-                onToggleSelect = { p ->
-                    selectedIds = if (p.id in selectedIds) selectedIds - p.id else selectedIds + p.id
-                },
-                onEnterSelection = { p -> selectionMode = true; selectedIds = setOf(p.id) },
-                onExitSelection = ::exitSelection,
+                selection = selection,
                 onBulkFavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), true) },
                 onBulkUnfavorite = { list -> onBulkFavorite(list.map { it.id }.toSet(), false) },
+                onBulkUpvote = { list -> list.forEach(onQuickUpvote) },
                 onBulkDownload = { list -> list.forEach(onQuickDownload) },
                 onBulkAddToSet = postSetRepository?.let { { list -> bulkAddToSetIds = list.map { it.id } } },
                 bulkProgress = bulkProgress,

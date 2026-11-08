@@ -123,13 +123,20 @@
     <string name="quick_action_favorite">Favorite</string>
     <string name="quick_action_unfavorite">Unfavorite</string>
     <string name="quick_action_download">Download</string>
-    <string name="quick_action_select">Select</string>
-    <string name="bulk_done">Done</string>
     <string name="bulk_selected_count">%1$d selected</string>
     <string name="bulk_favorite">Favorite</string>
     <string name="bulk_unfavorite">Unfavorite</string>
-    <string name="bulk_unfavorite_confirm">Confirm</string>
     <string name="bulk_download">Download</string>
+    <string name="selection_exit">Stop selecting</string>
+    <string name="selection_select_all">Select all loaded posts</string>
+    <string name="selection_deselect_all">Deselect all</string>
+    <string name="selection_add_to_set">Add to set</string>
+    <string name="selection_recover">Recover</string>
+    <plurals name="selection_unfavorite_title">
+        <item quantity="one">Unfavorite %1$d post?</item>
+        <item quantity="other">Unfavorite %1$d posts?</item>
+    </plurals>
+    <string name="selection_unfavorite_message">They\'ll be removed from your favorites. You can favorite them again afterwards.</string>
     <string name="bulk_progress">%1$d / %2$d…</string>
     <string name="action_delete">Delete</string>
     <string name="score">Score</string>
@@ -423,6 +430,7 @@
         entries in each array - drop the oldest pair once there are more than 10.
     -->
     <string-array name="whats_new_versions">
+        <item>2.42.0</item>
         <item>2.41.0</item>
         <item>2.29.0</item>
         <item>2.7.4</item>
@@ -431,6 +439,7 @@
         <item>2.6.3</item>
     </string-array>
     <string-array name="whats_new_entries">
+        <item>• Redesigned multi-select in Browse and Favorites: long-press a thumbnail to select it, then keep dragging to sweep up a whole run of posts (the grid scrolls when you reach the edge).\n• A new top bar shows the count and a Select all button; a floating bar along the bottom holds Favorite, Unfavorite, Upvote, Add to set, Download and Recover, each only lit when it would do something.\n• Selected posts shrink into a tinted frame with a check mark, and unfavoriting in bulk now asks first.</item>
         <item>• New bottom bar: Browse, Popular, Favorites and You. Everything from the old side menu (messages, forum, sets, collections, downloads, settings, the e6AI switch and more) now lives in the You tab, which shows your profile picture.\n• A fresher look: rounder, more varied shapes, a fuller type scale, and layered dark surfaces so sheets, menus and dialogs stand out from the background.\n• Livelier grid: thumbnails shimmer while loading, fade in, and press in when tapped; a softer info bar; and a placeholder grid instead of a blank screen while searching.\n• Opening a post grows it out of its thumbnail, and swiping back shrinks it home - with a live preview of the grid as you swipe.\n• A cleaner post viewer: a raised info panel with big Download and Share buttons, counts that roll when you vote or favourite, a little pop on the star, and the post details grouped into a card.\n• Settings is now split into pages - Account, Content &amp; filtering, Appearance, Media &amp; storage, Backup &amp; restore and About - instead of one long scroll.
 • Forum, messages, comments, sets, collections, downloads, saved searches and the wiki now use rounded cards, with friendlier empty and error screens; the Dashboard and favourites analysis get cleaner charts.
 • Forum threads now read oldest to newest, like most forums, and your reply scrolls into view at the bottom.

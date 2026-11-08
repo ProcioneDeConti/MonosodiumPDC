@@ -29,9 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Recycling
@@ -83,7 +81,6 @@ fun PostThumbnail(
     onQuickFavorite: (() -> Unit)? = null,
     onQuickUpvote: (() -> Unit)? = null,
     onQuickDownload: (() -> Unit)? = null,
-    onEnterSelection: (() -> Unit)? = null,
     /** When non-null the thumbnail is in multi-select mode; the value is whether this post is selected. */
     selected: Boolean? = null,
     /** Already opened before (seen-post tracking, dim mode): drawn faded so new posts stand out. */
@@ -104,8 +101,14 @@ fun PostThumbnail(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "thumbPress",
     )
-    val hasQuickActions = onQuickFavorite != null || onQuickUpvote != null ||
-        onQuickDownload != null || onEnterSelection != null
+    val hasQuickActions = onQuickFavorite != null || onQuickUpvote != null || onQuickDownload != null
+    // Selected tiles shrink into an accent-tinted frame (rather than a heavy border), so a run of
+    // selected posts reads at a glance.
+    val selectScale by animateFloatAsState(
+        targetValue = if (selected == true) 0.86f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+        label = "thumbSelect",
+    )
 
     Box(
         modifier = modifier
@@ -116,7 +119,10 @@ fun PostThumbnail(
                 scaleY = pressScale
             }
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(
+                if (selected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                else MaterialTheme.colorScheme.surfaceVariant,
+            )
             .then(
                 if (hasQuickActions && selected == null) {
                     Modifier.combinedClickable(
@@ -130,70 +136,63 @@ fun PostThumbnail(
                 },
             )
             .then(
-                when {
-                    selected == true -> Modifier.border(3.dp, FavoriteGold, shape)
-                    showCautionBorder -> Modifier.border(2.dp, CautionStripeBrush, shape)
-                    else -> Modifier
-                },
+                if (showCautionBorder) Modifier.border(2.dp, CautionStripeBrush, shape) else Modifier,
             ),
     ) {
-        if (post.preview.url == null && post.isDeleted) {
-            // e621 drops a deleted post's file URLs, which used to leave a blank, broken-looking tile.
-            // A copy recovered from its sources (RecoveredStore) shows instead, marked as such.
-            DeletedTile(post = post, dimmed = dimmed)
-        } else {
-            NetworkImage(
-                model = post.preview.url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                shimmerWhileLoading = true,
-                modifier = Modifier.fillMaxSize().then(if (dimmed) Modifier.graphicsLayer { alpha = 0.35f } else Modifier),
-            )
-        }
-
-        InfoDock(post = post, modifier = Modifier.align(Alignment.BottomCenter))
-
-        // Judged purely from the extension (see Post.isAnimated), not the file's actual content -
-        // a static image saved with a .gif extension would be mislabeled, but that's rare enough
-        // not to be worth actually inspecting frame data for.
-        if (post.isAnimated) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(22.dp)
-                    .clip(PillShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Movie,
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = selectScale
+                    scaleY = selectScale
+                    this.shape = shape
+                    clip = true
+                }
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            if (post.preview.url == null && post.isDeleted) {
+                // e621 drops a deleted post's file URLs, which used to leave a blank, broken-looking tile.
+                // A copy recovered from its sources (RecoveredStore) shows instead, marked as such.
+                DeletedTile(post = post, dimmed = dimmed)
+            } else {
+                NetworkImage(
+                    model = post.preview.url,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(13.dp),
+                    contentScale = ContentScale.Crop,
+                    shimmerWhileLoading = true,
+                    modifier = Modifier.fillMaxSize().then(if (dimmed) Modifier.graphicsLayer { alpha = 0.35f } else Modifier),
                 )
+            }
+
+            InfoDock(post = post, modifier = Modifier.align(Alignment.BottomCenter))
+
+            // Judged purely from the extension (see Post.isAnimated), not the file's actual content -
+            // a static image saved with a .gif extension would be mislabeled, but that's rare enough
+            // not to be worth actually inspecting frame data for.
+            if (post.isAnimated) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(22.dp)
+                        .clip(PillShape)
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Movie,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(13.dp),
+                    )
+                }
             }
         }
 
-        // In multi-select mode every thumbnail shows a checkbox: blank when unselected, filled
-        // (accent) when selected. A dark scrim keeps the blank box visible on light images.
+        // In multi-select mode every tile shows a round check: a hollow ring when unselected,
+        // a filled accent disc when selected.
         if (selected != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp)
-                    .clip(ChipShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = if (selected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
-                    contentDescription = null,
-                    tint = if (selected) FavoriteGold else Color.White,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            SelectionCheck(selected = selected, modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
         }
 
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
@@ -222,11 +221,42 @@ fun PostThumbnail(
                     onClick = { menuExpanded = false; action() },
                 )
             }
-            onEnterSelection?.let { action ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.quick_action_select)) },
-                    leadingIcon = { Icon(Icons.Filled.Checklist, contentDescription = null) },
-                    onClick = { menuExpanded = false; action() },
+        }
+    }
+}
+
+@Composable
+private fun SelectionCheck(selected: Boolean, modifier: Modifier = Modifier) {
+    val pop by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
+        label = "selectCheck",
+    )
+    Box(
+        modifier = modifier
+            .size(24.dp)
+            .clip(PillShape)
+            .background(Color.Black.copy(alpha = 0.3f))
+            .border(2.dp, Color.White.copy(alpha = 0.9f), PillShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (pop > 0.01f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = pop
+                        scaleY = pop
+                    }
+                    .clip(PillShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
