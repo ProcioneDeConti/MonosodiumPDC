@@ -13,6 +13,7 @@ import one.proci.e621.data.model.FavoriteResponse
 import one.proci.e621.data.model.ForumPost
 import one.proci.e621.data.model.ForumTopic
 import one.proci.e621.data.model.PostFlag
+import one.proci.e621.data.model.PostJson
 import one.proci.e621.data.model.PostsResponse
 import one.proci.e621.data.model.TagSuggestion
 import one.proci.e621.data.model.UpdateUserRequest
@@ -35,12 +36,15 @@ interface E621ApiService {
      * https://e621.net/help/api
      * `page` may be a plain page number, or "b<id>"/"a<id>" for keyset pagination
      * (before/after a given post id) which is what we use for infinite scroll.
+     * [mode] `extended` groups tags by category (v2 posts API; `basic` would return a flat list) -
+     * the app needs categories for the detail tag sections and grid chips.
      */
     @GET("posts.json")
     suspend fun getPosts(
         @Query("tags") tags: String?,
         @Query("limit") limit: Int = 50,
         @Query("page") page: String? = null,
+        @Query("mode") mode: String = PostJson.MODE_EXTENDED,
     ): PostsResponse
 
     /**
@@ -51,6 +55,7 @@ interface E621ApiService {
     suspend fun getPopular(
         @Query("date") date: String,
         @Query("scale") scale: String,
+        @Query("mode") mode: String = PostJson.MODE_EXTENDED,
     ): PostsResponse
 
     /** Requires Basic Auth; returns the authenticated user's own profile, including blacklisted_tags. */
@@ -129,9 +134,15 @@ interface E621ApiService {
     @DELETE("favorites/{postId}.json")
     suspend fun removeFavorite(@Path("postId") postId: Long): FavoriteResponse
 
-    /** Raw response body (rather than a parsed Post) so the app can display the JSON verbatim. */
+    /**
+     * Raw response body (rather than a parsed Post) so the app can display the JSON verbatim.
+     * v2 returns the bare post object, legacy wraps it in `{"post": ...}` - see [PostJson.singlePost].
+     */
     @GET("posts/{id}.json")
-    suspend fun getPostRawJson(@Path("id") postId: Long): ResponseBody
+    suspend fun getPostRawJson(
+        @Path("id") postId: Long,
+        @Query("mode") mode: String = PostJson.MODE_EXTENDED,
+    ): ResponseBody
 
     /** Public; a flagged post's flag history, most recent first - used to show why it was flagged. */
     @GET("post_flags.json")

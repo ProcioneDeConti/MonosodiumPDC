@@ -1,10 +1,13 @@
 package one.proci.e621.data.model
 
 import androidx.compose.runtime.Immutable
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
-@Serializable
+/** Accepts both the v2 bare array and the legacy `{"posts": [...]}` envelope - see [PostJson]. */
+@Serializable(with = PostsResponseSerializer::class)
 data class PostsResponse(
     val posts: List<Post> = emptyList(),
 )
@@ -37,8 +40,12 @@ data class Post(
     val duration: Double? = null,
     val relationships: PostRelationships = PostRelationships(),
     val flags: PostFlags = PostFlags(),
-    /** The authenticated user's own vote: 1 up, -1 down, 0 none. Always 0 when not signed in. */
-    @SerialName("vote_by") val voteBy: Int = 0,
+    /**
+     * The authenticated user's own vote: 1 up, -1 down, 0 none. Always 0 when not signed in.
+     * e621 calls it `vote` (v2: `stats.vote`, mapped by [PostJson]); `vote_by` is accepted too.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    @SerialName("vote") @JsonNames("vote_by") val voteBy: Int = 0,
     @SerialName("uploader_id") val uploaderId: Long? = null,
     @SerialName("approver_id") val approverId: Long? = null,
 ) {
@@ -61,6 +68,7 @@ data class Post(
     /** Tags paired with their e621 category, for category-colored tag chips in the detail view. */
     val categorizedTags: List<CategorizedTag> by lazy {
         tags.artist.map { CategorizedTag(it, TagCategory.ARTIST) } +
+            tags.contributor.map { CategorizedTag(it, TagCategory.CONTRIBUTOR) } +
             tags.copyright.map { CategorizedTag(it, TagCategory.COPYRIGHT) } +
             tags.character.map { CategorizedTag(it, TagCategory.CHARACTER) } +
             tags.species.map { CategorizedTag(it, TagCategory.SPECIES) } +
@@ -122,6 +130,8 @@ data class PostTags(
     val character: List<String> = emptyList(),
     val copyright: List<String> = emptyList(),
     val artist: List<String> = emptyList(),
+    /** New category (id 2) introduced alongside the v2 posts API. */
+    val contributor: List<String> = emptyList(),
     val invalid: List<String> = emptyList(),
     val lore: List<String> = emptyList(),
     val meta: List<String> = emptyList(),
@@ -151,6 +161,6 @@ enum class Rating(val tag: String, val letter: String) {
     EXPLICIT("rating:explicit", "e"),
 }
 
-enum class TagCategory { ARTIST, COPYRIGHT, CHARACTER, SPECIES, GENERAL, LORE, META }
+enum class TagCategory { ARTIST, CONTRIBUTOR, COPYRIGHT, CHARACTER, SPECIES, GENERAL, LORE, META }
 
 data class CategorizedTag(val name: String, val category: TagCategory)

@@ -1,7 +1,9 @@
 package one.proci.e621.data.model
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class Comment(
@@ -17,9 +19,11 @@ data class Comment(
     /**
      * The authenticated user's own vote on this comment: 1 up, -1 down, 0 none. e621's comment
      * index doesn't always serialize this, so it's defaulted and patched locally from a
-     * [VoteResponse] after voting (same as [Post.voteBy]).
+     * [VoteResponse] after voting (same as [Post.voteBy]). e621 names it `vote`; `vote_by` is
+     * still accepted.
      */
-    @SerialName("vote_by") val voteBy: Int = 0,
+    @OptIn(ExperimentalSerializationApi::class)
+    @SerialName("vote") @JsonNames("vote_by") val voteBy: Int = 0,
 )
 
 @Serializable

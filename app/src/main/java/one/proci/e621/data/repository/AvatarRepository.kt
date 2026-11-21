@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import one.proci.e621.data.api.E621ApiService
+import one.proci.e621.data.model.PostJson
 import one.proci.e621.data.util.PERMANENTLY_HIDDEN_TAG
 
 /** Sentinel stored in [AvatarRepository.cache] for "looked up, no avatar available" - ConcurrentHashMap can't hold null values. */
@@ -35,8 +36,9 @@ class AvatarRepository(private val api: E621ApiService) {
         val url = runCatching {
             val avatarId = api.getUser(userId).avatarId ?: return@runCatching null
             val raw = api.getPostRawJson(avatarId).use { it.string() }
-            val root = Json.parseToJsonElement(raw) as? JsonObject
-            val postObj = (root?.get("post") as? JsonObject) ?: root
+            // Normalized to the legacy layout so this reads the same fields for v2 and legacy.
+            val postObj = PostJson.singlePost(Json.parseToJsonElement(raw))
+                ?.let(PostJson::normalize) as? JsonObject
             // This fetches the avatar post directly by id, bypassing PostRepository.fetchPosts'
             // `-notkastar` search exclusion - checked again here so an avatar can't leak a
             // permanently hidden post's thumbnail. See PERMANENTLY_HIDDEN_TAG.

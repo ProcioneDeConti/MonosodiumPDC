@@ -18,6 +18,7 @@ data class TagSuggestion(
     val tagCategory: TagCategory
         get() = when (category) {
             1 -> TagCategory.ARTIST
+            2 -> TagCategory.CONTRIBUTOR
             3 -> TagCategory.COPYRIGHT
             4 -> TagCategory.CHARACTER
             5 -> TagCategory.SPECIES

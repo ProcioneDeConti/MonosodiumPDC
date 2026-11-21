@@ -124,6 +124,7 @@ class PostActionsRepository(
 
     private fun tagCategoryFromId(id: Int): TagCategory = when (id) {
         1 -> TagCategory.ARTIST
+        2 -> TagCategory.CONTRIBUTOR
         3 -> TagCategory.COPYRIGHT
         4 -> TagCategory.CHARACTER
         5 -> TagCategory.SPECIES

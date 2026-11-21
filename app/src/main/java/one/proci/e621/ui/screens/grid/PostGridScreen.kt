@@ -706,7 +706,7 @@ private fun categoryColor(category: TagCategory?): Color = when (category) {
     TagCategory.COPYRIGHT -> TagCopyright
     TagCategory.CHARACTER -> TagCharacter
     TagCategory.SPECIES -> TagSpecies
-    TagCategory.GENERAL, TagCategory.LORE, TagCategory.META, null -> TagGeneral
+    TagCategory.CONTRIBUTOR, TagCategory.GENERAL, TagCategory.LORE, TagCategory.META, null -> TagGeneral
 }
 
 /** Some category colors (artist/character) are light enough that white text loses contrast. */

@@ -1871,6 +1871,7 @@ private fun RatingChip(rating: String) {
 
 private val TAG_SECTION_ORDER = listOf(
     TagCategory.ARTIST,
+    TagCategory.CONTRIBUTOR,
     TagCategory.COPYRIGHT,
     TagCategory.CHARACTER,
     TagCategory.SPECIES,
@@ -1932,10 +1933,11 @@ private fun TagSection(
         TagCategory.COPYRIGHT -> TagCopyright
         TagCategory.CHARACTER -> TagCharacter
         TagCategory.SPECIES -> TagSpecies
-        TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> Color.White
+        TagCategory.CONTRIBUTOR, TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> Color.White
     }
     val label = when (category) {
         TagCategory.ARTIST -> "Artists"
+        TagCategory.CONTRIBUTOR -> "Contributors"
         TagCategory.COPYRIGHT -> "Copyright"
         TagCategory.CHARACTER -> "Characters"
         TagCategory.SPECIES -> "Species"
@@ -1991,7 +1993,7 @@ private fun TagChip(
         TagCategory.COPYRIGHT -> TagCopyright to Color.White
         TagCategory.CHARACTER -> TagCharacter to Color.Black
         TagCategory.SPECIES -> TagSpecies to Color.White
-        TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> TagGeneral to Color.White
+        TagCategory.CONTRIBUTOR, TagCategory.GENERAL, TagCategory.LORE, TagCategory.META -> TagGeneral to Color.White
     }
     val shape = ChipShape
     var menuExpanded by remember { mutableStateOf(false) }
